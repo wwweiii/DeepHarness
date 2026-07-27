@@ -1,0 +1,1559 @@
+{
+  "schema_version": 1,
+  "vendor_commit": "34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d",
+  "reviewed_at": "2026-07-27T16:55:08.356Z",
+  "entries": {
+    "acp.advertised:_meta.claudeCode.forkSession": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "acp.advertised:_meta.claudeCode.promptQueueing": {
+      "matrix_class": "A",
+      "rationale": "The operation is a native ACP session capability."
+    },
+    "acp.advertised:loadSession": {
+      "matrix_class": "A",
+      "rationale": "The operation is a native ACP session capability."
+    },
+    "acp.advertised:mcpCapabilities.http": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "acp.advertised:mcpCapabilities.sse": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "acp.advertised:promptCapabilities.embeddedContext": {
+      "matrix_class": "A",
+      "rationale": "The operation is a native ACP session capability."
+    },
+    "acp.advertised:promptCapabilities.image": {
+      "matrix_class": "C",
+      "rationale": "Runtime and source probes confirm an ACP contract gap."
+    },
+    "acp.advertised:sessionCapabilities.close": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "acp.advertised:sessionCapabilities.delete": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "acp.advertised:sessionCapabilities.list": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "acp.advertised:sessionCapabilities.resume": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "acp.agentInfo.version": {
+      "matrix_class": "C",
+      "rationale": "Runtime and source probes confirm an ACP contract gap."
+    },
+    "acp.authenticate": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "acp.cancel": {
+      "matrix_class": "A",
+      "rationale": "The operation is a native ACP session capability."
+    },
+    "acp.initialize": {
+      "matrix_class": "A",
+      "rationale": "The operation is a native ACP session capability."
+    },
+    "acp.listSessions": {
+      "matrix_class": "A",
+      "rationale": "The operation is a native ACP session capability."
+    },
+    "acp.loadSession": {
+      "matrix_class": "A",
+      "rationale": "The operation is a native ACP session capability."
+    },
+    "acp.newSession": {
+      "matrix_class": "A",
+      "rationale": "The operation is a native ACP session capability."
+    },
+    "acp.prompt": {
+      "matrix_class": "A",
+      "rationale": "The operation is a native ACP session capability."
+    },
+    "acp.prompt.image": {
+      "matrix_class": "C",
+      "rationale": "Runtime and source probes confirm an ACP contract gap."
+    },
+    "acp.setSessionConfigOption": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "acp.setSessionMode": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "acp.unstable_closeSession": {
+      "matrix_class": "A",
+      "rationale": "The operation is a native ACP session capability."
+    },
+    "acp.unstable_deleteSession": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "acp.unstable_forkSession": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "acp.unstable_resumeSession": {
+      "matrix_class": "A",
+      "rationale": "The operation is a native ACP session capability."
+    },
+    "acp.unstable_setSessionModel": {
+      "matrix_class": "B",
+      "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
+    },
+    "agent.claudeCodeGuideAgent": {
+      "matrix_class": "A",
+      "rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
+    },
+    "agent.custom-agent-definitions": {
+      "matrix_class": "A",
+      "rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
+    },
+    "agent.Explore": {
+      "matrix_class": "A",
+      "rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
+    },
+    "agent.general-purpose": {
+      "matrix_class": "A",
+      "rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
+    },
+    "agent.Plan": {
+      "matrix_class": "A",
+      "rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
+    },
+    "agent.statusline-setup": {
+      "matrix_class": "A",
+      "rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
+    },
+    "agent.verification": {
+      "matrix_class": "A",
+      "rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
+    },
+    "command.local-jsx.add-dir": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.agents": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.agents-platform": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.artifacts": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.assistant": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.autofix-pr": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.autonomy": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.branch": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.break-cache": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.brief": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.btw": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.buddy": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.chrome": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.color": {
+      "matrix_class": "E",
+      "rationale": "Terminal product-shell command is recorded but will not be reproduced by the Web Harness."
+    },
+    "command.local-jsx.config": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.context": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.coordinator": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.copy": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.daemon": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.desktop": {
+      "matrix_class": "E",
+      "rationale": "Terminal product-shell command is recorded but will not be reproduced by the Web Harness."
+    },
+    "command.local-jsx.diff": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.doctor": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.effort": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.exit": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.export": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.extra-usage": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.fast": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.feedback": {
+      "matrix_class": "E",
+      "rationale": "Terminal product-shell command is recorded but will not be reproduced by the Web Harness."
+    },
+    "command.local-jsx.fork": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.goal": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.help": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.hooks": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.ide": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.install": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.install-github-app": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.job": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.lang": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.local-memory": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.local-vault": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.login": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.logout": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.mcp": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.memory": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.memory-stores": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.mobile": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.mode": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.model": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.monitor": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.onboarding": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.output-style": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.passes": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.permissions": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.plan": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.plugin": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.privacy-settings": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.proactive": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.rate-limit-options": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.remote-control": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.remote-control-server": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.remote-env": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.rename": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.resume": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.session": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.skill-learning": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.skill-search": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.skill-store": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.skills": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.status": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.tag": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.tasks": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.teleport": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.terminal-setup": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.theme": {
+      "matrix_class": "E",
+      "rationale": "Terminal product-shell command is recorded but will not be reproduced by the Web Harness."
+    },
+    "command.local-jsx.think-back": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.torch": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.triggers": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.tui": {
+      "matrix_class": "E",
+      "rationale": "Terminal product-shell command is recorded but will not be reproduced by the Web Harness."
+    },
+    "command.local-jsx.ultraplan": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.ultrareview": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.upgrade": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.usage": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.vault": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.web-setup": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.web-tools": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local-jsx.workflows": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.advisor": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.attach": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.break-cache": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.bridge-kick": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.claim-main": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.clear": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.compact": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.context": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.debug-tool-call": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.detach": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.env": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.extra-usage": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.files": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.force-snip": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.heapdump": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.history": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.install-slack-app": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.issue": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.keybindings": {
+      "matrix_class": "E",
+      "rationale": "Terminal product-shell command is recorded but will not be reproduced by the Web Harness."
+    },
+    "command.local.peers": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.perf-issue": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.pipe-status": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.pipes": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.poor": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.provider": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.recap": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.release-notes": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.reload-plugins": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.rewind": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.send": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.share": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.stickers": {
+      "matrix_class": "E",
+      "rationale": "Terminal product-shell command is recorded but will not be reproduced by the Web Harness."
+    },
+    "command.local.subscribe-pr": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.summary": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.thinkback-play": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.tui": {
+      "matrix_class": "E",
+      "rationale": "Terminal product-shell command is recorded but will not be reproduced by the Web Harness."
+    },
+    "command.local.version": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.vim": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.local.voice": {
+      "matrix_class": "C",
+      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+    },
+    "command.prompt.commit": {
+      "matrix_class": "A",
+      "rationale": "Prompt commands can be advertised and invoked through the ACP command surface."
+    },
+    "command.prompt.commit-push-pr": {
+      "matrix_class": "A",
+      "rationale": "Prompt commands can be advertised and invoked through the ACP command surface."
+    },
+    "command.prompt.init": {
+      "matrix_class": "A",
+      "rationale": "Prompt commands can be advertised and invoked through the ACP command surface."
+    },
+    "command.prompt.init-verifiers": {
+      "matrix_class": "A",
+      "rationale": "Prompt commands can be advertised and invoked through the ACP command surface."
+    },
+    "command.prompt.insights": {
+      "matrix_class": "A",
+      "rationale": "Prompt commands can be advertised and invoked through the ACP command surface."
+    },
+    "command.prompt.pr-comments": {
+      "matrix_class": "A",
+      "rationale": "Prompt commands can be advertised and invoked through the ACP command surface."
+    },
+    "command.prompt.review": {
+      "matrix_class": "A",
+      "rationale": "Prompt commands can be advertised and invoked through the ACP command surface."
+    },
+    "command.prompt.security-review": {
+      "matrix_class": "A",
+      "rationale": "Prompt commands can be advertised and invoked through the ACP command surface."
+    },
+    "command.prompt.statusline": {
+      "matrix_class": "A",
+      "rationale": "Prompt commands can be advertised and invoked through the ACP command surface."
+    },
+    "feature.ABLATION_BASELINE": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.ACP": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.AGENT_MEMORY_SNAPSHOT": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.AGENT_TRIGGERS": {
+      "matrix_class": "A",
+      "rationale": "The feature is compiled into the kernel and is expected to be inherited through ACP."
+    },
+    "feature.AGENT_TRIGGERS_REMOTE": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.ALLOW_TEST_VERSIONS": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.AUTO_THEME": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.AUTOFIX_PR": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.AWAY_SUMMARY": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.BASH_CLASSIFIER": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.BG_SESSIONS": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.BREAK_CACHE_COMMAND": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.BRIDGE_MODE": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.BUDDY": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.BUILDING_CLAUDE_APPS": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.BUILTIN_EXPLORE_PLAN_AGENTS": {
+      "matrix_class": "A",
+      "rationale": "The feature is compiled into the kernel and is expected to be inherited through ACP."
+    },
+    "feature.CACHED_MICROCOMPACT": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.CCR_AUTO_CONNECT": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.CCR_MIRROR": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.CCR_REMOTE_SETUP": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.CHICAGO_MCP": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.COMMIT_ATTRIBUTION": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.COMPACTION_REMINDERS": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.CONNECTOR_TEXT": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.CONTEXT_COLLAPSE": {
+      "matrix_class": "C",
+      "rationale": "The feature is disabled or has a confirmed ACP reachability gap."
+    },
+    "feature.COORDINATOR_MODE": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.COWORKER_TYPE_TELEMETRY": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.DAEMON": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.DIRECT_CONNECT": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.DOWNLOAD_USER_SETTINGS": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.DUMP_SYSTEM_PROMPT": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.ENHANCED_TELEMETRY_BETA": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.EXPERIMENTAL_SEARCH_EXTRA_TOOLS": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.EXPERIMENTAL_SKILL_SEARCH": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.EXTRACT_MEMORIES": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.FILE_PERSISTENCE": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.FORK_SUBAGENT": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.GOAL": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.HARD_FAIL": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.HISTORY_PICKER": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.HISTORY_SNIP": {
+      "matrix_class": "C",
+      "rationale": "The feature is disabled or has a confirmed ACP reachability gap."
+    },
+    "feature.HOOK_PROMPTS": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.IS_LIBC_GLIBC": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.IS_LIBC_MUSL": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.KAIROS": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.KAIROS_BRIEF": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.KAIROS_CHANNELS": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.KAIROS_GITHUB_WEBHOOKS": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.KAIROS_PUSH_NOTIFICATION": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.LAN_PIPES": {
+      "matrix_class": "C",
+      "rationale": "The feature is disabled or has a confirmed ACP reachability gap."
+    },
+    "feature.LODESTONE": {
+      "matrix_class": "A",
+      "rationale": "The feature is compiled into the kernel and is expected to be inherited through ACP."
+    },
+    "feature.MCP_RICH_OUTPUT": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.MCP_SKILLS": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.MEMORY_SHAPE_TELEMETRY": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.MESSAGE_ACTIONS": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.MONITOR_TOOL": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.NATIVE_CLIENT_ATTESTATION": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.NATIVE_CLIPBOARD_IMAGE": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.NEW_INIT": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.OVERFLOW_TEST_TOOL": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.PERFETTO_TRACING": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.POOR": {
+      "matrix_class": "A",
+      "rationale": "The feature is compiled into the kernel and is expected to be inherited through ACP."
+    },
+    "feature.POWERSHELL_AUTO_MODE": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.PROACTIVE": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.PROMPT_CACHE_BREAK_DETECTION": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.QUICK_SEARCH": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.REACTIVE_COMPACT": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.REVIEW_ARTIFACT": {
+      "matrix_class": "C",
+      "rationale": "The feature is disabled or has a confirmed ACP reachability gap."
+    },
+    "feature.RUN_SKILL_GENERATOR": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.SHOT_STATS": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.SKILL_IMPROVEMENT": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.SKILL_LEARNING": {
+      "matrix_class": "C",
+      "rationale": "The feature is disabled or has a confirmed ACP reachability gap."
+    },
+    "feature.SKIP_DETECTION_WHEN_AUTOUPDATES_DISABLED": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.SLOW_OPERATION_LOGGING": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.SSH_REMOTE": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.STREAMLINED_OUTPUT": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.TEAMMEM": {
+      "matrix_class": "C",
+      "rationale": "The feature is disabled or has a confirmed ACP reachability gap."
+    },
+    "feature.TEMPLATES": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.TERMINAL_PANEL": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.TOKEN_BUDGET": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.TORCH": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.TRANSCRIPT_CLASSIFIER": {
+      "matrix_class": "E",
+      "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
+    },
+    "feature.TREE_SITTER_BASH": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.TREE_SITTER_BASH_SHADOW": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.UDS_INBOX": {
+      "matrix_class": "C",
+      "rationale": "The feature is disabled or has a confirmed ACP reachability gap."
+    },
+    "feature.ULTRAPLAN": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.ULTRATHINK": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.UNATTENDED_RETRY": {
+      "matrix_class": "C",
+      "rationale": "The source capability is not compiled into the locked default vendor build."
+    },
+    "feature.UPLOAD_USER_SETTINGS": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.VERIFICATION_AGENT": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "feature.VOICE_MODE": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.WEB_BROWSER_TOOL": {
+      "matrix_class": "D",
+      "rationale": "The feature depends on platform facilities or external integrations."
+    },
+    "feature.WORKFLOW_SCRIPTS": {
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+    },
+    "integration.browser": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "integration.hooks": {
+      "matrix_class": "B",
+      "rationale": "Extension state and errors require a Harness projection and audit surface."
+    },
+    "integration.lsp": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "integration.mcp-runtime": {
+      "matrix_class": "C",
+      "rationale": "MCP integration is present but dynamic clients are not wired into ACP session creation."
+    },
+    "integration.package:@ant/claude-for-chrome-mcp": {
+      "matrix_class": "D",
+      "rationale": "Computer and browser integration requires an optional platform runtime and explicit enablement."
+    },
+    "integration.package:@ant/computer-use-input": {
+      "matrix_class": "D",
+      "rationale": "Computer and browser integration requires an optional platform runtime and explicit enablement."
+    },
+    "integration.package:@ant/computer-use-mcp": {
+      "matrix_class": "D",
+      "rationale": "Computer and browser integration requires an optional platform runtime and explicit enablement."
+    },
+    "integration.package:@ant/computer-use-swift": {
+      "matrix_class": "D",
+      "rationale": "Computer and browser integration requires an optional platform runtime and explicit enablement."
+    },
+    "integration.package:@ant/ink": {
+      "matrix_class": "E",
+      "rationale": "Package is an internal vendor implementation component rather than a Harness integration surface."
+    },
+    "integration.package:@ant/model-provider": {
+      "matrix_class": "E",
+      "rationale": "Package is an internal vendor implementation component rather than a Harness integration surface."
+    },
+    "integration.package:acp-link": {
+      "matrix_class": "D",
+      "rationale": "Remote ACP linking is an optional platform integration outside the core stdio boundary."
+    },
+    "integration.package:agent-tools": {
+      "matrix_class": "E",
+      "rationale": "Package is an internal vendor implementation component rather than a Harness integration surface."
+    },
+    "integration.package:audio-capture-napi": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "integration.package:builtin-tools": {
+      "matrix_class": "E",
+      "rationale": "Package is an internal vendor implementation component rather than a Harness integration surface."
+    },
+    "integration.package:cloud-artifacts": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "integration.package:color-diff-napi": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "integration.package:image-processor-napi": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "integration.package:mcp-client": {
+      "matrix_class": "C",
+      "rationale": "MCP integration is present but dynamic clients are not wired into ACP session creation."
+    },
+    "integration.package:modifiers-napi": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "integration.package:remote-control-server": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "integration.package:url-handler-napi": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "integration.package:weixin": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "integration.package:workflow-engine": {
+      "matrix_class": "B",
+      "rationale": "Workflow execution requires Harness lifecycle, persistence, and audit adaptation."
+    },
+    "integration.plugins": {
+      "matrix_class": "B",
+      "rationale": "Extension state and errors require a Harness projection and audit surface."
+    },
+    "integration.scm-github": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "integration.skills": {
+      "matrix_class": "B",
+      "rationale": "Extension state and errors require a Harness projection and audit surface."
+    },
+    "integration.telemetry": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "integration.voice": {
+      "matrix_class": "D",
+      "rationale": "Integration requires an optional platform runtime, credentials, callback, or external service."
+    },
+    "provider.bedrock": {
+      "matrix_class": "D",
+      "rationale": "Provider support is conditional on credentials, endpoint configuration, and a provider contract test."
+    },
+    "provider.firstParty": {
+      "matrix_class": "D",
+      "rationale": "Provider support is conditional on credentials, endpoint configuration, and a provider contract test."
+    },
+    "provider.foundry": {
+      "matrix_class": "D",
+      "rationale": "Provider support is conditional on credentials, endpoint configuration, and a provider contract test."
+    },
+    "provider.gemini": {
+      "matrix_class": "D",
+      "rationale": "Provider support is conditional on credentials, endpoint configuration, and a provider contract test."
+    },
+    "provider.grok": {
+      "matrix_class": "D",
+      "rationale": "Provider support is conditional on credentials, endpoint configuration, and a provider contract test."
+    },
+    "provider.openai": {
+      "matrix_class": "D",
+      "rationale": "Provider support is conditional on credentials, endpoint configuration, and a provider contract test."
+    },
+    "provider.vertex": {
+      "matrix_class": "D",
+      "rationale": "Provider support is conditional on credentials, endpoint configuration, and a provider contract test."
+    },
+    "runtime_flag.ANTHROPIC_BASE_URL": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.CLAUDE_CODE_ENABLE_TASKS": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.CLAUDE_CODE_ENTRYPOINT": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.CLAUDE_CODE_REPL": {
+      "matrix_class": "D",
+      "rationale": "Runtime condition changes an optional provider or platform-dependent capability."
+    },
+    "runtime_flag.CLAUDE_CODE_SIMPLE": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.CLAUDE_CODE_TASK_LIST_ID": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.CLAUDE_CODE_USE_BEDROCK": {
+      "matrix_class": "D",
+      "rationale": "Runtime condition changes an optional provider or platform-dependent capability."
+    },
+    "runtime_flag.CLAUDE_CODE_USE_FOUNDRY": {
+      "matrix_class": "D",
+      "rationale": "Runtime condition changes an optional provider or platform-dependent capability."
+    },
+    "runtime_flag.CLAUDE_CODE_USE_GEMINI": {
+      "matrix_class": "D",
+      "rationale": "Runtime condition changes an optional provider or platform-dependent capability."
+    },
+    "runtime_flag.CLAUDE_CODE_USE_GROK": {
+      "matrix_class": "D",
+      "rationale": "Runtime condition changes an optional provider or platform-dependent capability."
+    },
+    "runtime_flag.CLAUDE_CODE_USE_OPENAI": {
+      "matrix_class": "D",
+      "rationale": "Runtime condition changes an optional provider or platform-dependent capability."
+    },
+    "runtime_flag.CLAUDE_CODE_USE_POWERSHELL_TOOL": {
+      "matrix_class": "D",
+      "rationale": "Runtime condition changes an optional provider or platform-dependent capability."
+    },
+    "runtime_flag.CLAUDE_CODE_USE_VERTEX": {
+      "matrix_class": "D",
+      "rationale": "Runtime condition changes an optional provider or platform-dependent capability."
+    },
+    "runtime_flag.CLAUDE_CODE_VERIFY_PLAN": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.CLAUDE_REPL_MODE": {
+      "matrix_class": "D",
+      "rationale": "Runtime condition changes an optional provider or platform-dependent capability."
+    },
+    "runtime_flag.ENABLE_LSP_TOOL": {
+      "matrix_class": "D",
+      "rationale": "Runtime condition changes an optional provider or platform-dependent capability."
+    },
+    "runtime_flag.ENABLE_SEARCH_EXTRA_TOOLS": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.IS_SANDBOX": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.NODE_ENV": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.PERMISSION_DENY_RULES": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.REPL_MODE": {
+      "matrix_class": "D",
+      "rationale": "Runtime condition changes an optional provider or platform-dependent capability."
+    },
+    "runtime_flag.SKILL_SEARCH_ENABLED": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.TODO_V2": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.USER_TYPE": {
+      "matrix_class": "B",
+      "rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
+    },
+    "runtime_flag.WORKTREE_MODE": {
+      "matrix_class": "D",
+      "rationale": "Runtime condition changes an optional provider or platform-dependent capability."
+    },
+    "tool.AgentTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.ArtifactTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.AskUserQuestionTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.BashTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.BriefTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.ConfigTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.CronCreateTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.CronDeleteTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.CronListTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.CtxInspectTool": {
+      "matrix_class": "C",
+      "rationale": "Vendor capability is blocked or incomplete on the current ACP path."
+    },
+    "tool.DiscoverSkillsTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.EnterPlanModeTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.EnterWorktreeTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.ExecuteExtraTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.ExecuteTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.ExitPlanModeTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.ExitPlanModeV2Tool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.ExitWorktreeTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.FileEditTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.FileReadTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.FileWriteTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.GlobTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.GoalTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.GrepTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.ListMcpResourcesTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.ListPeersTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.LocalMemoryRecallTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.LSPTool": {
+      "matrix_class": "D",
+      "rationale": "Availability depends on container platform, runtime, credentials, or an external service."
+    },
+    "tool.McpAuthTool": {
+      "matrix_class": "C",
+      "rationale": "Vendor capability is blocked or incomplete on the current ACP path."
+    },
+    "tool.MCPTool": {
+      "matrix_class": "C",
+      "rationale": "Vendor capability is blocked or incomplete on the current ACP path."
+    },
+    "tool.MonitorTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.NotebookEditTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.OverflowTestTool": {
+      "matrix_class": "E",
+      "rationale": "Internal or test-only capability is not part of the Agent Harness product surface."
+    },
+    "tool.PowerShellTool": {
+      "matrix_class": "D",
+      "rationale": "Availability depends on container platform, runtime, credentials, or an external service."
+    },
+    "tool.PushNotificationTool": {
+      "matrix_class": "D",
+      "rationale": "Availability depends on container platform, runtime, credentials, or an external service."
+    },
+    "tool.ReadMcpResourceTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.RemoteTriggerTool": {
+      "matrix_class": "D",
+      "rationale": "Availability depends on container platform, runtime, credentials, or an external service."
+    },
+    "tool.REPLTool": {
+      "matrix_class": "D",
+      "rationale": "Availability depends on container platform, runtime, credentials, or an external service."
+    },
+    "tool.ReviewArtifactTool": {
+      "matrix_class": "C",
+      "rationale": "Vendor capability is blocked or incomplete on the current ACP path."
+    },
+    "tool.ScheduleCronTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.SearchExtraToolsTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.SendMessageTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.SendUserFileTool": {
+      "matrix_class": "D",
+      "rationale": "Availability depends on container platform, runtime, credentials, or an external service."
+    },
+    "tool.SkillTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.SleepTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.SnipTool": {
+      "matrix_class": "C",
+      "rationale": "Vendor capability is blocked or incomplete on the current ACP path."
+    },
+    "tool.SubscribePRTool": {
+      "matrix_class": "D",
+      "rationale": "Availability depends on container platform, runtime, credentials, or an external service."
+    },
+    "tool.SuggestBackgroundPRTool": {
+      "matrix_class": "D",
+      "rationale": "Availability depends on container platform, runtime, credentials, or an external service."
+    },
+    "tool.SyntheticOutputTool": {
+      "matrix_class": "E",
+      "rationale": "Internal or test-only capability is not part of the Agent Harness product surface."
+    },
+    "tool.TaskCreateTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.TaskGetTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.TaskListTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.TaskOutputTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.TaskStopTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.TaskUpdateTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.TeamCreateTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.TeamDeleteTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.TerminalCaptureTool": {
+      "matrix_class": "D",
+      "rationale": "Availability depends on container platform, runtime, credentials, or an external service."
+    },
+    "tool.TestingPermissionTool": {
+      "matrix_class": "E",
+      "rationale": "Internal or test-only capability is not part of the Agent Harness product surface."
+    },
+    "tool.TodoWriteTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.TungstenTool": {
+      "matrix_class": "E",
+      "rationale": "Internal or test-only capability is not part of the Agent Harness product surface."
+    },
+    "tool.VaultHttpFetchTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.VerifyPlanExecutionTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    },
+    "tool.WebBrowserTool": {
+      "matrix_class": "D",
+      "rationale": "Availability depends on container platform, runtime, credentials, or an external service."
+    },
+    "tool.WebFetchTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.WebSearchTool": {
+      "matrix_class": "A",
+      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+    },
+    "tool.WorkflowTool": {
+      "matrix_class": "B",
+      "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
+    }
+  }
+}

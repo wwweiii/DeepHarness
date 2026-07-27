@@ -1,0 +1,12 @@
+services:
+  postgres:
+    tmpfs:
+      - /var/lib/postgresql/data:size=256m
+    volumes: []
+
+  gateway:
+    ports: []
+
+  capability-audit:
+    environment:
+      NODE_ENV: test

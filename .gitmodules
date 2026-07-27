@@ -1,0 +1,4 @@
+[submodule "vendor/claude-code"]
+	path = vendor/claude-code
+	url = https://github.com/claude-code-best/claude-code.git
+	branch = main

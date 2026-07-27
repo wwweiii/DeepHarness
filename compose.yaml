@@ -1,0 +1,90 @@
+name: deepharness
+
+services:
+  postgres:
+    image: postgres:17.5-alpine
+    environment:
+      POSTGRES_DB: deepharness
+      POSTGRES_USER: deepharness
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-deepharness-local-only}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U deepharness -d deepharness"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    networks: [control]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+    command: ["bun", "run", "apps/gateway/src/server.ts"]
+    environment:
+      PORT: "8080"
+      DATABASE_URL: postgres://deepharness:${POSTGRES_PASSWORD:-deepharness-local-only}@postgres:5432/deepharness
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:8080/readyz');process.exit(r.ok?0:1)"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    networks: [control]
+    ports:
+      - "127.0.0.1:${GATEWAY_PORT:-8080}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    init: true
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+    command: ["bun", "run", "apps/worker/src/main.ts"]
+    environment:
+      PORT: "8081"
+      GATEWAY_URL: http://gateway:8080
+    depends_on:
+      gateway:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:8081/readyz');process.exit(r.ok?0:1)"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    networks: [control]
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    init: true
+    restart: unless-stopped
+
+  capability-audit:
+    profiles: [audit]
+    build:
+      context: .
+      dockerfile: docker/vendor-audit.Dockerfile
+      target: audit
+    environment:
+      NODE_ENV: production
+      USER_TYPE: external
+    networks: [control]
+    volumes:
+      - ./artifacts/capabilities:/workspace/artifacts/capabilities
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    init: true
+
+networks:
+  control:
+    driver: bridge
+
+volumes:
+  postgres-data:

@@ -1,0 +1,8 @@
+.git
+.git/**
+.codegraph
+.DS_Store
+**/node_modules
+**/dist
+vendor/claude-code/.git
+artifacts/capabilities/*.json

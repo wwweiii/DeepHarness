@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "vendor_commit": "34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d",
+  "generated_at": "2026-07-27T17:08:48.003Z",
+  "probe": "ccb-bun-acp-stdio",
+  "command": [
+    "bun",
+    "/opt/claude-code/dist/cli-bun.js",
+    "--acp"
+  ],
+  "initialize": {
+    "protocolVersion": 1,
+    "authMethods": [],
+    "agentInfo": {
+      "name": "claude-code",
+      "title": "Claude Code",
+      "version": "2.1.888"
+    },
+    "agentCapabilities": {
+      "_meta": {
+        "claudeCode": {
+          "promptQueueing": true,
+          "forkSession": true
+        }
+      },
+      "promptCapabilities": {
+        "image": false,
+        "embeddedContext": true
+      },
+      "mcpCapabilities": {
+        "http": true,
+        "sse": true
+      },
+      "loadSession": true,
+      "sessionCapabilities": {
+        "list": {},
+        "resume": {},
+        "close": {},
+        "delete": {}
+      }
+    }
+  },
+  "new_session": {
+    "sessionId": "5934c0b7-75ae-48d2-81ff-0b1395686802",
+    "modes": {
+      "currentModeId": "default",
+      "availableModes": [
+        {
+          "id": "default",
+          "name": "Default",
+          "description": "Standard behavior, prompts for dangerous operations"
+        },
+        {
+          "id": "acceptEdits",
+          "name": "Accept Edits",
+          "description": "Auto-accept file edit operations"
+        },
+        {
+          "id": "plan",
+          "name": "Plan Mode",
+          "description": "Planning mode, no actual tool execution"
+        },
+        {
+          "id": "auto",
+          "name": "Auto",
+          "description": "Use a model classifier to approve/deny permission prompts."
+        },
+        {
+          "id": "bypassPermissions",
+          "name": "Bypass Permissions",
+          "description": "Skip all permission checks"
+        },
+        {
+          "id": "dontAsk",
+          "name": "Don't Ask",
+          "description": "Don't prompt for permissions, deny if not pre-approved"
+        }
+      ]
+    },
+    "models": {
+      "availableModels": [
+        {
+          "modelId": "",
+          "name": "Default (recommended)",
+          "description": "Use the default model (currently Sonnet 4.6) · $3/$15 per Mtok"
+        },
+        {
+          "modelId": "opus[1m]",
+          "name": "Opus 4.7 (1M context)",
+          "description": "Opus 4.7 with 1M context · Most capable for complex work"
+        },
+        {
+          "modelId": "claude-opus-4-6[1m]",
+          "name": "Opus 4.6 (1M context)",
+          "description": "Opus 4.6 with 1M context · $5/$25 per Mtok"
+        },
+        {
+          "modelId": "sonnet[1m]",
+          "name": "Sonnet (1M context)",
+          "description": "Sonnet 4.6 for long sessions · $3/$15 per Mtok"
+        },
+        {
+          "modelId": "haiku",
+          "name": "Haiku",
+          "description": "Haiku 4.5 · Fastest for quick answers · $1/$5 per Mtok"
+        }
+      ],
+      "currentModelId": "claude-sonnet-4-6"
+    },
+    "configOptions": [
+      {
+        "id": "mode",
+        "name": "Mode",
+        "description": "Session permission mode",
+        "category": "mode",
+        "type": "select",
+        "currentValue": "default",
+        "options": [
+          {
+            "value": "default",
+            "name": "Default",
+            "description": "Standard behavior, prompts for dangerous operations"
+          },
+          {
+            "value": "acceptEdits",
+            "name": "Accept Edits",
+            "description": "Auto-accept file edit operations"
+          },
+          {
+            "value": "plan",
+            "name": "Plan Mode",
+            "description": "Planning mode, no actual tool execution"
+          },
+          {
+            "value": "auto",
+            "name": "Auto",
+            "description": "Use a model classifier to approve/deny permission prompts."
+          },
+          {
+            "value": "bypassPermissions",
+            "name": "Bypass Permissions",
+            "description": "Skip all permission checks"
+          },
+          {
+            "value": "dontAsk",
+            "name": "Don't Ask",
+            "description": "Don't prompt for permissions, deny if not pre-approved"
+          }
+        ]
+      },
+      {
+        "id": "model",
+        "name": "Model",
+        "description": "AI model to use",
+        "category": "model",
+        "type": "select",
+        "currentValue": "claude-sonnet-4-6",
+        "options": [
+          {
+            "value": "",
+            "name": "Default (recommended)",
+            "description": "Use the default model (currently Sonnet 4.6) · $3/$15 per Mtok"
+          },
+          {
+            "value": "opus[1m]",
+            "name": "Opus 4.7 (1M context)",
+            "description": "Opus 4.7 with 1M context · Most capable for complex work"
+          },
+          {
+            "value": "claude-opus-4-6[1m]",
+            "name": "Opus 4.6 (1M context)",
+            "description": "Opus 4.6 with 1M context · $5/$25 per Mtok"
+          },
+          {
+            "value": "sonnet[1m]",
+            "name": "Sonnet (1M context)",
+            "description": "Sonnet 4.6 for long sessions · $3/$15 per Mtok"
+          },
+          {
+            "value": "haiku",
+            "name": "Haiku",
+            "description": "Haiku 4.5 · Fastest for quick answers · $1/$5 per Mtok"
+          }
+        ]
+      }
+    ]
+  },
+  "available_commands": [
+    {
+      "name": "init",
+      "description": "Initialize a new CLAUDE.md file with codebase documentation"
+    },
+    {
+      "name": "pr-comments",
+      "description": "Get comments from a GitHub pull request"
+    },
+    {
+      "name": "statusline",
+      "description": "Set up Claude Code's status line UI"
+    },
+    {
+      "name": "review",
+      "description": "Review a pull request"
+    },
+    {
+      "name": "security-review",
+      "description": "Complete a security review of the pending changes on the current branch"
+    },
+    {
+      "name": "insights",
+      "description": "Generate a report analyzing your Claude Code sessions"
+    },
+    {
+      "name": "commit",
+      "description": "Create a git commit"
+    },
+    {
+      "name": "commit-push-pr",
+      "description": "Commit, push, and open a PR"
+    },
+    {
+      "name": "init-verifiers",
+      "description": "Create verifier skill(s) for automated verification of code changes"
+    }
+  ],
+  "notifications_observed": 1,
+  "stderr_tail": [],
+  "gaps": [
+    {
+      "id": "gap.acp.image-input",
+      "status": "expected_failure",
+      "summary": "ACP advertises image:false and prompt conversion has no image branch.",
+      "evidence": [
+        {
+          "path": "acp.initialize.agentCapabilities.promptCapabilities.image",
+          "line": 1,
+          "detail": "observed=false",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "src/services/acp/promptConversion.ts",
+          "line": 1,
+          "detail": "No image conversion branch found",
+          "evidenceType": "source"
+        }
+      ],
+      "upstream_strategy": "Prefer a generic upstream ACP fix, then consume a verified vendor update; use an external protocol adapter only when it does not import vendor internals."
+    },
+    {
+      "id": "gap.acp.dynamic-mcp-tools",
+      "status": "expected_failure",
+      "summary": "ACP createSession still constructs QueryEngine with mcpClients: [].",
+      "evidence": [
+        {
+          "path": "src/services/acp/agent/createSessionMethod.ts",
+          "line": 181,
+          "detail": "QueryEngine ACP configuration",
+          "evidenceType": "source"
+        },
+        {
+          "path": "acp.initialize.agentCapabilities.mcpCapabilities",
+          "line": 1,
+          "detail": "advertised={\"http\":true,\"sse\":true}",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Prefer a generic upstream ACP fix, then consume a verified vendor update; use an external protocol adapter only when it does not import vendor internals."
+    },
+    {
+      "id": "gap.acp.local-commands",
+      "status": "expected_failure",
+      "summary": "124 local/local-jsx commands were absent from ACP available commands.",
+      "evidence": [
+        {
+          "path": "acp.session.update.available_commands_update",
+          "line": 1,
+          "detail": "advertised=9, local_static=124",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "src/commands/add-dir/index.ts",
+          "line": 4,
+          "detail": "local-jsx command definition",
+          "evidenceType": "source"
+        },
+        {
+          "path": "src/commands/agents/index.ts",
+          "line": 4,
+          "detail": "local-jsx command definition",
+          "evidenceType": "source"
+        },
+        {
+          "path": "src/commands/agents-platform/index.ts",
+          "line": 9,
+          "detail": "local-jsx command definition",
+          "evidenceType": "source"
+        }
+      ],
+      "upstream_strategy": "Prefer a generic upstream ACP fix, then consume a verified vendor update; use an external protocol adapter only when it does not import vendor internals."
+    },
+    {
+      "id": "gap.acp.agent-version-drift",
+      "status": "expected_failure",
+      "summary": "ACP agentInfo.version=2.1.888 differs from vendor package version=2.8.4.",
+      "evidence": [
+        {
+          "path": "acp.initialize.agentInfo.version",
+          "line": 1,
+          "detail": "observed=2.1.888",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "package.json",
+          "line": 3,
+          "detail": "vendor package version=2.8.4",
+          "evidenceType": "source"
+        }
+      ],
+      "upstream_strategy": "Prefer a generic upstream ACP fix, then consume a verified vendor update; use an external protocol adapter only when it does not import vendor internals."
+    }
+  ]
+}
