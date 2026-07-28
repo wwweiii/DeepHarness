@@ -115,10 +115,10 @@ function textResponse(body: RequestBody, text: string, delayMs: number): Respons
   })
 }
 
-function toolUseResponse(body: RequestBody, toolName: string): Response {
+function toolUseResponse(body: RequestBody, toolName: string, toolInput: Record<string, unknown>): Response {
   const model = body.model ?? 'claude-sonnet-4-6'
   const toolId = `toolu_${crypto.randomUUID().replaceAll('-', '')}`
-  const input = JSON.stringify({ file_path: '/workspace/source/phase-1-marker.txt' })
+  const input = JSON.stringify(toolInput)
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       controller.enqueue(sse('message_start', messageStart(model)))
@@ -153,6 +153,108 @@ function toolUseResponse(body: RequestBody, toolName: string): Response {
   })
 }
 
+function findTool(body: RequestBody, names: string[]): string | null {
+  for (const name of names) {
+    const exact = body.tools?.find(tool => tool.name?.toLowerCase() === name.toLowerCase())
+    if (exact?.name) return exact.name
+  }
+  for (const name of names) {
+    const partial = body.tools?.find(tool => tool.name?.toLowerCase().includes(name.toLowerCase()))
+    if (partial?.name) return partial.name
+  }
+  return null
+}
+
+function requestedTool(body: RequestBody, prompt: string): { name: string; input: Record<string, unknown> } | null {
+  const scenarios: Array<{ marker: string; names: string[]; input: Record<string, unknown> }> = [
+    {
+      marker: '[tool:read]',
+      names: ['Read', 'FileRead'],
+      input: { file_path: '/workspace/source/phase-1-marker.txt' },
+    },
+    {
+      marker: '[tool:write]',
+      names: ['Write', 'FileWrite'],
+      input: {
+        file_path: '/tmp/deepharness-phase2.ipynb',
+        content: '{"cells":[],"metadata":{},"nbformat":4,"nbformat_minor":5}\n',
+      },
+    },
+    {
+      marker: '[tool:edit]',
+      names: ['Edit', 'FileEdit'],
+      input: {
+        file_path: '/tmp/deepharness-phase2.ipynb',
+        old_string: '"nbformat_minor":5',
+        new_string: '"nbformat_minor":4',
+      },
+    },
+    {
+      marker: '[tool:bash]',
+      names: ['Bash'],
+      input: { command: "printf 'DEEPHARNESS_PHASE_2_BASH_OK'" },
+    },
+    {
+      marker: '[tool:glob]',
+      names: ['Glob'],
+      input: { pattern: 'phase-1-marker.txt', path: '/workspace/source' },
+    },
+    {
+      marker: '[tool:grep]',
+      names: ['Grep'],
+      input: {
+        pattern: 'DEEPHARNESS_PHASE_1_WORKSPACE_READ_OK',
+        path: '/workspace/source/phase-1-marker.txt',
+        output_mode: 'content',
+      },
+    },
+    {
+      marker: '[tool:notebook]',
+      names: ['NotebookEdit'],
+      input: {
+        notebook_path: '/tmp/deepharness-phase2.ipynb',
+        new_source: 'print("DEEPHARNESS_PHASE_2_NOTEBOOK_OK")',
+        cell_type: 'code',
+        edit_mode: 'insert',
+      },
+    },
+    {
+      marker: '[tool:todo]',
+      names: ['TodoWrite'],
+      input: {
+        todos: [
+          { content: 'Inspect the core tool bridge', status: 'completed', activeForm: 'Inspecting the core tool bridge' },
+          { content: 'Verify the phase 2 renderer', status: 'in_progress', activeForm: 'Verifying the phase 2 renderer' },
+        ],
+      },
+    },
+    {
+      marker: '[tool:plan]',
+      names: ['EnterPlanMode'],
+      input: {},
+    },
+    {
+      marker: '[tool:question]',
+      names: ['AskUserQuestion'],
+      input: {
+        questions: [{
+          question: 'Which verification path should continue?',
+          header: 'Verification',
+          multiSelect: false,
+          options: [
+            { label: 'Contract tests', description: 'Continue with deterministic ACP contracts.' },
+            { label: 'Manual smoke', description: 'Continue with a credentialed smoke profile.' },
+          ],
+        }],
+      },
+    },
+  ]
+  const scenario = scenarios.find(candidate => prompt.toLowerCase().includes(candidate.marker))
+  if (!scenario) return null
+  const name = findTool(body, scenario.names)
+  return name ? { name, input: scenario.input } : null
+}
+
 const server = Bun.serve({
   hostname: '0.0.0.0',
   port,
@@ -185,14 +287,25 @@ const server = Bun.serve({
       }))
     }
     const result = toolResult(body)
-    if (result !== null) {
-      return textResponse(body, `Workspace marker read through ACP:\n${result}`, 20)
-    }
+    if (result !== null) return textResponse(body, `Tool completed through ACP:\n${result}`, 20)
     const prompt = userText(body)
+    if (prompt.toLowerCase().includes('[tool:unknown]')) {
+      return toolUseResponse(body, 'FutureHarnessTool', {
+        payload: '<script>window.__deepharnessUnsafeToolExecuted = true</script>',
+        nested: { retained: true },
+      })
+    }
+    const requested = requestedTool(body, prompt)
+    if (requested) return toolUseResponse(body, requested.name, requested.input)
     if (/phase-1-marker\.txt|workspace marker/i.test(prompt)) {
       const tool = body.tools?.find(candidate => /^(read|fileread)$/i.test(candidate.name ?? ''))
         ?? body.tools?.find(candidate => /read/i.test(candidate.name ?? ''))
-      if (tool?.name) return toolUseResponse(body, tool.name)
+      if (tool?.name) return toolUseResponse(body, tool.name, {
+        file_path: '/workspace/source/phase-1-marker.txt',
+      })
+    }
+    if (prompt.includes('[queue]')) {
+      return textResponse(body, `Queue stream ${'working '.repeat(50)}`, 75)
     }
     if (prompt.includes('[slow]')) {
       return textResponse(body, `Slow stream ${'still running '.repeat(100)}`, 250)

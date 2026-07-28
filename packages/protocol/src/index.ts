@@ -25,6 +25,17 @@ export type HarnessEventType =
   | 'assistant.text_delta'
   | 'assistant.reasoning_delta'
   | 'assistant.message_completed'
+  | 'tool.call_started'
+  | 'tool.call_updated'
+  | 'tool.call_completed'
+  | 'permission.requested'
+  | 'permission.resolved'
+  | 'question.requested'
+  | 'question.resolved'
+  | 'plan.updated'
+  | 'todo.updated'
+  | 'prompt.queue_updated'
+  | 'session.configuration_changed'
   | 'usage.updated'
   | 'turn.completed'
   | 'turn.failed'
@@ -39,6 +50,17 @@ export const HARNESS_EVENT_TYPES: HarnessEventType[] = [
   'assistant.text_delta',
   'assistant.reasoning_delta',
   'assistant.message_completed',
+  'tool.call_started',
+  'tool.call_updated',
+  'tool.call_completed',
+  'permission.requested',
+  'permission.resolved',
+  'question.requested',
+  'question.resolved',
+  'plan.updated',
+  'todo.updated',
+  'prompt.queue_updated',
+  'session.configuration_changed',
   'usage.updated',
   'turn.completed',
   'turn.failed',
@@ -78,6 +100,28 @@ export type WorkerCommand =
       sessionId: string
       payload: { turnId: string | null }
     }
+  | {
+      id: string
+      type: 'resolve_permission'
+      sessionId: string
+      payload: {
+        permissionRequestId: string
+        optionId: string
+        answers?: Record<string, string>
+      }
+    }
+  | {
+      id: string
+      type: 'set_mode'
+      sessionId: string
+      payload: { modeId: string }
+    }
+  | {
+      id: string
+      type: 'set_model'
+      sessionId: string
+      payload: { modelId: string }
+    }
 
 export type GatewayToWorkerMessage =
   | { kind: 'registered'; workerId: string }
@@ -93,6 +137,8 @@ export type WorkerToGatewayMessage =
         workspacePath: string
         version: string
         vendorCommit: string
+        providerId: string
+        credentialStatus: 'configured' | 'missing'
       }
     }
   | {
@@ -116,10 +162,63 @@ export interface SessionRecord {
   status: SessionStatus
   permissionMode: string
   modelId: string | null
+  providerId: string
+  availableModes: SessionMode[]
+  availableModels: SessionModel[]
+  configOptions: SessionConfigOption[]
+  promptQueueDepth: number
   activeTurnId: string | null
   lastEventSeq: number
   createdAt: string
   updatedAt: string
+}
+
+export interface SessionMode {
+  id: string
+  name: string
+  description?: string
+}
+
+export interface SessionModel {
+  modelId: string
+  name: string
+  description?: string
+}
+
+export interface SessionConfigOption {
+  id: string
+  name: string
+  type: string
+  currentValue?: string
+  options?: JsonValue[]
+}
+
+export interface PermissionOption {
+  optionId: string
+  kind: string
+  name: string
+}
+
+export interface ProviderProfile {
+  id: string
+  name: string
+  vendorProvider: string
+  activationEnvironment: Record<string, string>
+  credentialEnvironment: string[]
+  credentialAlternatives: string[][]
+  credentialStatus: 'configured' | 'missing'
+  active: boolean
+  automatedTest: 'fake_passed' | 'config_validated' | 'not_tested'
+  smokeCommand: string
+}
+
+export interface CapabilityView {
+  vendorCommit: string
+  generatedAt: string
+  summary: Record<string, JsonValue>
+  capabilities: Array<Record<string, JsonValue>>
+  knownGaps: JsonValue[]
+  providers: ProviderProfile[]
 }
 
 export interface SessionSnapshot {

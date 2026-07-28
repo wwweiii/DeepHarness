@@ -2,6 +2,7 @@ import type {
   GatewayToWorkerMessage,
   WorkerToGatewayMessage,
 } from '@deepharness/protocol'
+import { activeProviderStatus } from './provider.ts'
 import { WorkerSupervisor } from './supervisor.ts'
 
 const port = Number.parseInt(process.env.PORT ?? '8081', 10)
@@ -21,6 +22,7 @@ function send(message: WorkerToGatewayMessage): void {
 }
 
 const supervisor = new WorkerSupervisor(send)
+const provider = activeProviderStatus()
 
 function connect(): void {
   const url = new URL('/internal/worker', gatewayUrl)
@@ -32,11 +34,13 @@ function connect(): void {
       kind: 'register',
       worker: {
         id: workerId,
-        name: 'DeepHarness phase 1 worker',
+        name: 'DeepHarness phase 2 worker',
         maxConcurrency: 1,
         workspacePath,
-        version: '0.1.0',
+        version: '0.2.0',
         vendorCommit,
+        providerId: provider.providerId,
+        credentialStatus: provider.credentialStatus,
       },
     })
     while (outbound.length > 0 && socket?.readyState === WebSocket.OPEN) {

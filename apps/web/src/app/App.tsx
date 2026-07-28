@@ -3,11 +3,12 @@ import type {
   SessionRecord,
   SessionSnapshot,
 } from '@deepharness/protocol'
-import { Activity, Box, CirclePlus, Radio, Square } from 'lucide-react'
+import { Activity, Blocks, Box, CirclePlus, MessagesSquare, Radio, Square } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Thread } from '../features/chat/messages/Thread.tsx'
 import { HarnessRuntimeProvider } from '../features/chat/runtime/HarnessRuntimeProvider.tsx'
 import type { HarnessProjection } from '../features/chat/runtime/reducer.ts'
+import { CapabilityPage } from '../features/capabilities/CapabilityPage.tsx'
 import { requestId } from '../lib/requestId.ts'
 
 interface LiveState {
@@ -20,6 +21,13 @@ const initialProjection: HarnessProjection = {
   status: 'queued',
   error: null,
   usage: null,
+  plan: [],
+  permissionMode: null,
+  modelId: null,
+  promptQueueDepth: 0,
+  eventCount: 0,
+  availableModes: [],
+  availableModels: [],
 }
 
 async function createSession(): Promise<void> {
@@ -29,7 +37,7 @@ async function createSession(): Promise<void> {
       'content-type': 'application/json',
       'idempotency-key': requestId(),
     },
-    body: JSON.stringify({ permissionMode: 'acceptEdits' }),
+    body: JSON.stringify({ permissionMode: 'default' }),
   })
   if (!response.ok) {
     const body = await response.json().catch(() => ({})) as { error?: string }
@@ -54,6 +62,7 @@ function Shell({
     projection: initialProjection,
     connected: false,
   })
+  const [view, setView] = useState<'chat' | 'capabilities'>('chat')
   const onProjection = useCallback((value: {
     projection: HarnessProjection
     connected: boolean
@@ -73,6 +82,22 @@ function Shell({
       headers: { 'idempotency-key': requestId() },
     })
   }
+
+  const changeConfiguration = async (kind: 'mode' | 'model', value: string) => {
+    await fetch(`/api/sessions/${session.id}/${kind}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'idempotency-key': requestId() },
+      body: JSON.stringify(kind === 'mode' ? { modeId: value } : { modelId: value }),
+    })
+  }
+  const modes = live.projection.availableModes.length > 0
+    ? live.projection.availableModes
+    : session.availableModes
+  const models = live.projection.availableModels.length > 0
+    ? live.projection.availableModels
+    : session.availableModels
+  const currentMode = live.projection.permissionMode ?? session.permissionMode
+  const currentModel = live.projection.modelId ?? session.modelId
 
   return (
     <HarnessRuntimeProvider
@@ -101,13 +126,25 @@ function Shell({
               <small>{statusLabel(live.projection.status)}</small>
             </span>
           </button>
+          <div className="rail-label">Views</div>
+          <button className={view === 'chat' ? 'view-item active' : 'view-item'} onClick={() => setView('chat')}>
+            <MessagesSquare size={16} /> Chat
+          </button>
+          <button className={view === 'capabilities' ? 'view-item active' : 'view-item'} onClick={() => setView('capabilities')}>
+            <Blocks size={16} /> Capabilities
+          </button>
           <div className="rail-footer">
             <Box size={16} aria-hidden="true" />
             Shared workspace
           </div>
         </aside>
 
-        <main className="workbench">
+        <main className={`workbench workbench-${view}`}>
+          <div className="mobile-view-tabs">
+            <button className={view === 'chat' ? 'active' : ''} onClick={() => setView('chat')}>Chat</button>
+            <button className={view === 'capabilities' ? 'active' : ''} onClick={() => setView('capabilities')}>Capabilities</button>
+          </div>
+          {view === 'chat' ? <>
           <header className="workbench-header">
             <div>
               <span className="mobile-brand">DeepHarness</span>
@@ -136,7 +173,8 @@ function Shell({
           {!workerOnline && (
             <div className="offline-banner" role="status">Worker is offline. History remains available.</div>
           )}
-          <Thread isRunning={isRunning} />
+          <Thread isRunning={isRunning} sessionId={session.id} />
+          </> : <CapabilityPage />}
         </main>
 
         <aside className="inspector">
@@ -151,21 +189,46 @@ function Shell({
             </div>
             <div>
               <dt>Mode</dt>
-              <dd>{session.permissionMode}</dd>
+              <dd>
+                <select
+                  aria-label="Permission mode"
+                  value={currentMode}
+                  disabled={live.projection.status !== 'idle'}
+                  onChange={event => void changeConfiguration('mode', event.target.value)}
+                >
+                  {modes.map(mode => <option key={mode.id} value={mode.id}>{mode.name}</option>)}
+                  {modes.length === 0 && <option value={currentMode}>{currentMode}</option>}
+                </select>
+              </dd>
             </div>
             <div>
               <dt>Model</dt>
-              <dd>{session.modelId || 'Vendor default'}</dd>
+              <dd>
+                <select
+                  aria-label="Model"
+                  value={currentModel ?? ''}
+                  disabled={live.projection.status !== 'idle'}
+                  onChange={event => void changeConfiguration('model', event.target.value)}
+                >
+                  {models.map(model => <option key={model.modelId} value={model.modelId}>{model.name}</option>)}
+                  {models.length === 0 && <option value={currentModel ?? ''}>{currentModel || 'Vendor default'}</option>}
+                </select>
+              </dd>
             </div>
+            <div><dt>Provider</dt><dd>{session.providerId}</dd></div>
+            <div><dt>Prompt queue</dt><dd>{live.projection.promptQueueDepth}</dd></div>
             <div>
               <dt>Events</dt>
-              <dd>{initialEvents.length + Math.max(0, live.projection.messages.length - 1)}</dd>
+              <dd>{live.projection.eventCount}</dd>
             </div>
           </dl>
           {live.projection.usage && (
             <div className="usage-block">
               <span>Latest usage</span>
-              <code>{JSON.stringify(live.projection.usage)}</code>
+              <dl className="usage-values">
+                {Object.entries(live.projection.usage).map(([key, value]) => <div key={key}><dt>{key}</dt><dd>{String(value)}</dd></div>)}
+                {!('costUsd' in live.projection.usage) && <div><dt>costUsd</dt><dd>Unavailable from ACP</dd></div>}
+              </dl>
             </div>
           )}
         </aside>

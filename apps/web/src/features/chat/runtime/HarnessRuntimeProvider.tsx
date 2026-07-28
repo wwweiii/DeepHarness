@@ -52,13 +52,19 @@ export function HarnessRuntimeProvider({
   const runtime = useExternalStoreRuntime({
     messages: store.projection.messages,
     isRunning: store.projection.status === 'running' || store.projection.status === 'cancelling',
-    isDisabled: !store.connected || store.projection.status !== 'idle',
+    isDisabled: !store.connected || ['queued', 'starting', 'error', 'closed'].includes(store.projection.status),
+    isSendDisabled: store.projection.status === 'cancelling' || store.projection.status === 'interrupted',
     convertMessage: message => message,
     onNew: async message => {
       const text = messageText(message)
       if (text) await post(`/api/sessions/${sessionId}/prompts`, { text })
     },
     onCancel: async () => post(`/api/sessions/${sessionId}/cancel`, {}),
+    onRespondToToolApproval: async ({ approvalId, approved, optionId }) => {
+      await post(`/api/sessions/${sessionId}/permissions/${approvalId}/resolve`, {
+        optionId: optionId ?? (approved ? 'allow' : 'reject'),
+      })
+    },
   })
 
   return <AssistantRuntimeProvider runtime={runtime}>{children}</AssistantRuntimeProvider>

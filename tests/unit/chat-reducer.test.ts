@@ -63,4 +63,147 @@ describe('Harness event projection', () => {
     expect(failed.messages[1]?.status).toMatchObject({ type: 'incomplete', reason: 'error' })
     expect(failed.messages[1]?.content).toEqual([])
   })
+
+  test('preserves unknown tool input, partial output, final output, and errors', () => {
+    const projection = projectHarnessEvents([
+      event(2, 'user.message_created', { text: 'Use a new tool' }),
+      event(3, 'turn.started'),
+      event(4, 'tool.call_started', {
+        toolCallId: 'tool-unknown',
+        toolName: 'FutureTool',
+        rawInput: { nested: { value: '<script>not executable</script>' } },
+        status: 'pending',
+      }),
+      event(5, 'tool.call_updated', {
+        toolCallId: 'tool-unknown',
+        toolName: 'FutureTool',
+        rawOutput: { chunk: 'partial' },
+        status: 'in_progress',
+      }),
+      event(6, 'tool.call_completed', {
+        toolCallId: 'tool-unknown',
+        toolName: 'FutureTool',
+        rawOutput: { message: 'final failure' },
+        status: 'failed',
+      }),
+    ])
+    const part = projection.messages[1]?.content[0] as any
+    expect(part).toMatchObject({
+      type: 'tool-call',
+      toolCallId: 'tool-unknown',
+      toolName: 'FutureTool',
+      args: { nested: { value: '<script>not executable</script>' } },
+      result: { message: 'final failure' },
+      isError: true,
+    })
+    expect(part.argsText).toContain('<script>not executable</script>')
+  })
+
+  test('replays approvals, denials, expiration, and pending questions', () => {
+    const requested = event(5, 'permission.requested', {
+      permissionRequestId: '00000000-0000-4000-8000-000000000501',
+      toolCallId: 'tool-permission',
+      toolName: 'Bash',
+      input: { command: 'printf ok' },
+      options: [
+        { optionId: 'allow', kind: 'allow_once', name: 'Allow once' },
+        { optionId: 'reject', kind: 'reject_once', name: 'Reject' },
+      ],
+    })
+    const approved = projectHarnessEvents([
+      event(2, 'turn.started'),
+      requested,
+      requested,
+      event(6, 'permission.resolved', {
+        permissionRequestId: '00000000-0000-4000-8000-000000000501',
+        toolCallId: 'tool-permission',
+        toolName: 'Bash',
+        status: 'approved',
+        optionId: 'allow',
+      }),
+    ])
+    expect((approved.messages[0]?.content[0] as any).approval).toMatchObject({
+      approved: true,
+      optionId: 'allow',
+    })
+    expect(approved.eventCount).toBe(3)
+
+    const expired = projectHarnessEvents([
+      event(2, 'turn.started'),
+      requested,
+      event(6, 'permission.resolved', {
+        permissionRequestId: '00000000-0000-4000-8000-000000000501',
+        toolCallId: 'tool-permission',
+        toolName: 'Bash',
+        status: 'expired',
+        optionId: 'reject',
+      }),
+    ])
+    expect((expired.messages[0]?.content[0] as any).approval).toMatchObject({
+      approved: false,
+      resolution: 'expired',
+    })
+
+    const question = projectHarnessEvents([
+      event(2, 'turn.started'),
+      event(3, 'permission.requested', {
+        permissionRequestId: '00000000-0000-4000-8000-000000000502',
+        toolCallId: 'tool-question',
+        toolName: 'AskUserQuestion',
+        input: { questions: [{ question: 'Continue?', options: [{ label: 'Yes' }] }] },
+        options: [{ optionId: 'allow', kind: 'allow_once', name: 'Answer' }],
+      }),
+      event(4, 'question.requested', {
+        permissionRequestId: '00000000-0000-4000-8000-000000000502',
+        toolCallId: 'tool-question',
+        toolName: 'AskUserQuestion',
+      }),
+    ])
+    const questionPart = question.messages[0]?.content[0] as any
+    expect(questionPart.toolName).toBe('AskUserQuestion')
+    expect(questionPart.args.questions[0].question).toBe('Continue?')
+    expect(questionPart.approval.approved).toBeUndefined()
+    expect(question.messages[0]?.status).toEqual({ type: 'requires-action', reason: 'tool-calls' })
+  })
+
+  test('projects Plan/Todo, usage, queue depth, and ACP configuration', () => {
+    const projection = projectHarnessEvents([
+      event(1, 'session.status_changed', {
+        status: 'idle',
+        permissionMode: 'default',
+        modelId: 'model-a',
+        availableModes: [{ id: 'default', name: 'Default' }],
+        availableModels: [{ modelId: 'model-a', name: 'Model A' }],
+      }),
+      event(2, 'turn.started'),
+      event(3, 'tool.call_started', {
+        toolCallId: 'tool-todo',
+        toolName: 'TodoWrite',
+        rawInput: { todos: [{ content: 'Verify', status: 'in_progress' }] },
+      }),
+      event(4, 'plan.updated', {
+        entries: [{ content: 'Verify', status: 'in_progress' }],
+      }),
+      event(5, 'todo.updated', {
+        entries: [{ content: 'Verify', status: 'completed' }],
+      }),
+      event(6, 'usage.updated', {
+        inputTokens: 17,
+        outputTokens: 4,
+        totalTokens: 21,
+      }),
+      event(7, 'prompt.queue_updated', { depth: 2 }),
+      event(8, 'session.configuration_changed', {
+        permissionMode: 'acceptEdits',
+        modelId: 'model-b',
+      }),
+    ])
+    expect(projection.plan).toEqual([{ content: 'Verify', status: 'in_progress' }])
+    expect(projection.usage).toMatchObject({ totalTokens: 21 })
+    expect(projection.promptQueueDepth).toBe(2)
+    expect(projection.permissionMode).toBe('acceptEdits')
+    expect(projection.modelId).toBe('model-b')
+    expect(projection.availableModes).toEqual([{ id: 'default', name: 'Default' }])
+    expect(projection.messages[0]?.content).toHaveLength(2)
+  })
 })

@@ -1,402 +1,958 @@
 {
   "schema_version": 1,
-  "status": "baseline_created",
-  "previous_vendor_commit": null,
+  "status": "compared",
+  "previous_vendor_commit": "34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d",
   "current_vendor_commit": "34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d",
-  "generated_at": "2026-07-28T03:12:31.315Z",
-  "added": [
-    "acp.advertised:_meta.claudeCode.forkSession",
-    "acp.advertised:_meta.claudeCode.promptQueueing",
-    "acp.advertised:loadSession",
-    "acp.advertised:mcpCapabilities.http",
-    "acp.advertised:mcpCapabilities.sse",
-    "acp.advertised:promptCapabilities.embeddedContext",
-    "acp.advertised:promptCapabilities.image",
-    "acp.advertised:sessionCapabilities.close",
-    "acp.advertised:sessionCapabilities.delete",
-    "acp.advertised:sessionCapabilities.list",
-    "acp.advertised:sessionCapabilities.resume",
-    "acp.agentInfo.version",
-    "acp.authenticate",
-    "acp.cancel",
-    "acp.initialize",
-    "acp.listSessions",
-    "acp.loadSession",
-    "acp.newSession",
-    "acp.prompt",
-    "acp.prompt.image",
-    "acp.sessionUpdate.text",
-    "acp.setSessionConfigOption",
-    "acp.setSessionMode",
-    "acp.unstable_closeSession",
-    "acp.unstable_deleteSession",
-    "acp.unstable_forkSession",
-    "acp.unstable_resumeSession",
-    "acp.unstable_setSessionModel",
-    "agent.Explore",
-    "agent.Plan",
-    "agent.claudeCodeGuideAgent",
-    "agent.custom-agent-definitions",
-    "agent.general-purpose",
-    "agent.statusline-setup",
-    "agent.verification",
-    "command.local-jsx.add-dir",
-    "command.local-jsx.agents",
-    "command.local-jsx.agents-platform",
-    "command.local-jsx.artifacts",
-    "command.local-jsx.assistant",
-    "command.local-jsx.autofix-pr",
-    "command.local-jsx.autonomy",
-    "command.local-jsx.branch",
-    "command.local-jsx.break-cache",
-    "command.local-jsx.brief",
-    "command.local-jsx.btw",
-    "command.local-jsx.buddy",
-    "command.local-jsx.chrome",
-    "command.local-jsx.color",
-    "command.local-jsx.config",
-    "command.local-jsx.context",
-    "command.local-jsx.coordinator",
-    "command.local-jsx.copy",
-    "command.local-jsx.daemon",
-    "command.local-jsx.desktop",
-    "command.local-jsx.diff",
-    "command.local-jsx.doctor",
-    "command.local-jsx.effort",
-    "command.local-jsx.exit",
-    "command.local-jsx.export",
-    "command.local-jsx.extra-usage",
-    "command.local-jsx.fast",
-    "command.local-jsx.feedback",
-    "command.local-jsx.fork",
-    "command.local-jsx.goal",
-    "command.local-jsx.help",
-    "command.local-jsx.hooks",
-    "command.local-jsx.ide",
-    "command.local-jsx.install",
-    "command.local-jsx.install-github-app",
-    "command.local-jsx.job",
-    "command.local-jsx.lang",
-    "command.local-jsx.local-memory",
-    "command.local-jsx.local-vault",
-    "command.local-jsx.login",
-    "command.local-jsx.logout",
-    "command.local-jsx.mcp",
-    "command.local-jsx.memory",
-    "command.local-jsx.memory-stores",
-    "command.local-jsx.mobile",
-    "command.local-jsx.mode",
-    "command.local-jsx.model",
-    "command.local-jsx.monitor",
-    "command.local-jsx.onboarding",
-    "command.local-jsx.output-style",
-    "command.local-jsx.passes",
-    "command.local-jsx.permissions",
-    "command.local-jsx.plan",
-    "command.local-jsx.plugin",
-    "command.local-jsx.privacy-settings",
-    "command.local-jsx.proactive",
-    "command.local-jsx.rate-limit-options",
-    "command.local-jsx.remote-control",
-    "command.local-jsx.remote-control-server",
-    "command.local-jsx.remote-env",
-    "command.local-jsx.rename",
-    "command.local-jsx.resume",
-    "command.local-jsx.session",
-    "command.local-jsx.skill-learning",
-    "command.local-jsx.skill-search",
-    "command.local-jsx.skill-store",
-    "command.local-jsx.skills",
-    "command.local-jsx.status",
-    "command.local-jsx.tag",
-    "command.local-jsx.tasks",
-    "command.local-jsx.teleport",
-    "command.local-jsx.terminal-setup",
-    "command.local-jsx.theme",
-    "command.local-jsx.think-back",
-    "command.local-jsx.torch",
-    "command.local-jsx.triggers",
-    "command.local-jsx.tui",
-    "command.local-jsx.ultraplan",
-    "command.local-jsx.ultrareview",
-    "command.local-jsx.upgrade",
-    "command.local-jsx.usage",
-    "command.local-jsx.vault",
-    "command.local-jsx.web-setup",
-    "command.local-jsx.web-tools",
-    "command.local-jsx.workflows",
-    "command.local.advisor",
-    "command.local.attach",
-    "command.local.break-cache",
-    "command.local.bridge-kick",
-    "command.local.claim-main",
-    "command.local.clear",
-    "command.local.compact",
-    "command.local.context",
-    "command.local.debug-tool-call",
-    "command.local.detach",
-    "command.local.env",
-    "command.local.extra-usage",
-    "command.local.files",
-    "command.local.force-snip",
-    "command.local.heapdump",
-    "command.local.history",
-    "command.local.install-slack-app",
-    "command.local.issue",
-    "command.local.keybindings",
-    "command.local.peers",
-    "command.local.perf-issue",
-    "command.local.pipe-status",
-    "command.local.pipes",
-    "command.local.poor",
-    "command.local.provider",
-    "command.local.recap",
-    "command.local.release-notes",
-    "command.local.reload-plugins",
-    "command.local.rewind",
-    "command.local.send",
-    "command.local.share",
-    "command.local.stickers",
-    "command.local.subscribe-pr",
-    "command.local.summary",
-    "command.local.thinkback-play",
-    "command.local.tui",
-    "command.local.version",
-    "command.local.vim",
-    "command.local.voice",
-    "command.prompt.commit",
-    "command.prompt.commit-push-pr",
-    "command.prompt.init",
-    "command.prompt.init-verifiers",
-    "command.prompt.insights",
-    "command.prompt.pr-comments",
-    "command.prompt.review",
-    "command.prompt.security-review",
-    "command.prompt.statusline",
-    "feature.ABLATION_BASELINE",
-    "feature.ACP",
-    "feature.AGENT_MEMORY_SNAPSHOT",
-    "feature.AGENT_TRIGGERS",
-    "feature.AGENT_TRIGGERS_REMOTE",
-    "feature.ALLOW_TEST_VERSIONS",
-    "feature.AUTOFIX_PR",
-    "feature.AUTO_THEME",
-    "feature.AWAY_SUMMARY",
-    "feature.BASH_CLASSIFIER",
-    "feature.BG_SESSIONS",
-    "feature.BREAK_CACHE_COMMAND",
-    "feature.BRIDGE_MODE",
-    "feature.BUDDY",
-    "feature.BUILDING_CLAUDE_APPS",
-    "feature.BUILTIN_EXPLORE_PLAN_AGENTS",
-    "feature.CACHED_MICROCOMPACT",
-    "feature.CCR_AUTO_CONNECT",
-    "feature.CCR_MIRROR",
-    "feature.CCR_REMOTE_SETUP",
-    "feature.CHICAGO_MCP",
-    "feature.COMMIT_ATTRIBUTION",
-    "feature.COMPACTION_REMINDERS",
-    "feature.CONNECTOR_TEXT",
-    "feature.CONTEXT_COLLAPSE",
-    "feature.COORDINATOR_MODE",
-    "feature.COWORKER_TYPE_TELEMETRY",
-    "feature.DAEMON",
-    "feature.DIRECT_CONNECT",
-    "feature.DOWNLOAD_USER_SETTINGS",
-    "feature.DUMP_SYSTEM_PROMPT",
-    "feature.ENHANCED_TELEMETRY_BETA",
-    "feature.EXPERIMENTAL_SEARCH_EXTRA_TOOLS",
-    "feature.EXPERIMENTAL_SKILL_SEARCH",
-    "feature.EXTRACT_MEMORIES",
-    "feature.FILE_PERSISTENCE",
-    "feature.FORK_SUBAGENT",
-    "feature.GOAL",
-    "feature.HARD_FAIL",
-    "feature.HISTORY_PICKER",
-    "feature.HISTORY_SNIP",
-    "feature.HOOK_PROMPTS",
-    "feature.IS_LIBC_GLIBC",
-    "feature.IS_LIBC_MUSL",
-    "feature.KAIROS",
-    "feature.KAIROS_BRIEF",
-    "feature.KAIROS_CHANNELS",
-    "feature.KAIROS_GITHUB_WEBHOOKS",
-    "feature.KAIROS_PUSH_NOTIFICATION",
-    "feature.LAN_PIPES",
-    "feature.LODESTONE",
-    "feature.MCP_RICH_OUTPUT",
-    "feature.MCP_SKILLS",
-    "feature.MEMORY_SHAPE_TELEMETRY",
-    "feature.MESSAGE_ACTIONS",
-    "feature.MONITOR_TOOL",
-    "feature.NATIVE_CLIENT_ATTESTATION",
-    "feature.NATIVE_CLIPBOARD_IMAGE",
-    "feature.NEW_INIT",
-    "feature.OVERFLOW_TEST_TOOL",
-    "feature.PERFETTO_TRACING",
-    "feature.POOR",
-    "feature.POWERSHELL_AUTO_MODE",
-    "feature.PROACTIVE",
-    "feature.PROMPT_CACHE_BREAK_DETECTION",
-    "feature.QUICK_SEARCH",
-    "feature.REACTIVE_COMPACT",
-    "feature.REVIEW_ARTIFACT",
-    "feature.RUN_SKILL_GENERATOR",
-    "feature.SHOT_STATS",
-    "feature.SKILL_IMPROVEMENT",
-    "feature.SKILL_LEARNING",
-    "feature.SKIP_DETECTION_WHEN_AUTOUPDATES_DISABLED",
-    "feature.SLOW_OPERATION_LOGGING",
-    "feature.SSH_REMOTE",
-    "feature.STREAMLINED_OUTPUT",
-    "feature.TEAMMEM",
-    "feature.TEMPLATES",
-    "feature.TERMINAL_PANEL",
-    "feature.TOKEN_BUDGET",
-    "feature.TORCH",
-    "feature.TRANSCRIPT_CLASSIFIER",
-    "feature.TREE_SITTER_BASH",
-    "feature.TREE_SITTER_BASH_SHADOW",
-    "feature.UDS_INBOX",
-    "feature.ULTRAPLAN",
-    "feature.ULTRATHINK",
-    "feature.UNATTENDED_RETRY",
-    "feature.UPLOAD_USER_SETTINGS",
-    "feature.VERIFICATION_AGENT",
-    "feature.VOICE_MODE",
-    "feature.WEB_BROWSER_TOOL",
-    "feature.WORKFLOW_SCRIPTS",
-    "integration.browser",
-    "integration.hooks",
-    "integration.lsp",
-    "integration.mcp-runtime",
-    "integration.package:@ant/claude-for-chrome-mcp",
-    "integration.package:@ant/computer-use-input",
-    "integration.package:@ant/computer-use-mcp",
-    "integration.package:@ant/computer-use-swift",
-    "integration.package:@ant/ink",
-    "integration.package:@ant/model-provider",
-    "integration.package:acp-link",
-    "integration.package:agent-tools",
-    "integration.package:audio-capture-napi",
-    "integration.package:builtin-tools",
-    "integration.package:cloud-artifacts",
-    "integration.package:color-diff-napi",
-    "integration.package:image-processor-napi",
-    "integration.package:mcp-client",
-    "integration.package:modifiers-napi",
-    "integration.package:remote-control-server",
-    "integration.package:url-handler-napi",
-    "integration.package:weixin",
-    "integration.package:workflow-engine",
-    "integration.plugins",
-    "integration.scm-github",
-    "integration.skills",
-    "integration.telemetry",
-    "integration.voice",
-    "provider.bedrock",
-    "provider.firstParty",
-    "provider.foundry",
-    "provider.gemini",
-    "provider.grok",
-    "provider.openai",
-    "provider.vertex",
-    "runtime_flag.ANTHROPIC_BASE_URL",
-    "runtime_flag.CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS",
-    "runtime_flag.CLAUDE_CODE_ENABLE_TASKS",
-    "runtime_flag.CLAUDE_CODE_ENTRYPOINT",
-    "runtime_flag.CLAUDE_CODE_REPL",
-    "runtime_flag.CLAUDE_CODE_SIMPLE",
-    "runtime_flag.CLAUDE_CODE_TASK_LIST_ID",
-    "runtime_flag.CLAUDE_CODE_USE_BEDROCK",
-    "runtime_flag.CLAUDE_CODE_USE_FOUNDRY",
-    "runtime_flag.CLAUDE_CODE_USE_GEMINI",
-    "runtime_flag.CLAUDE_CODE_USE_GROK",
-    "runtime_flag.CLAUDE_CODE_USE_OPENAI",
-    "runtime_flag.CLAUDE_CODE_USE_POWERSHELL_TOOL",
-    "runtime_flag.CLAUDE_CODE_USE_VERTEX",
-    "runtime_flag.CLAUDE_CODE_VERIFY_PLAN",
-    "runtime_flag.CLAUDE_REPL_MODE",
-    "runtime_flag.ENABLE_LSP_TOOL",
-    "runtime_flag.ENABLE_SEARCH_EXTRA_TOOLS",
-    "runtime_flag.IS_SANDBOX",
-    "runtime_flag.NODE_ENV",
-    "runtime_flag.PERMISSION_DENY_RULES",
-    "runtime_flag.REPL_MODE",
-    "runtime_flag.SKILL_SEARCH_ENABLED",
-    "runtime_flag.TODO_V2",
-    "runtime_flag.USER_TYPE",
-    "runtime_flag.WORKTREE_MODE",
-    "tool.AgentTool",
-    "tool.ArtifactTool",
-    "tool.AskUserQuestionTool",
-    "tool.BashTool",
-    "tool.BriefTool",
-    "tool.ConfigTool",
-    "tool.CronCreateTool",
-    "tool.CronDeleteTool",
-    "tool.CronListTool",
-    "tool.CtxInspectTool",
-    "tool.DiscoverSkillsTool",
-    "tool.EnterPlanModeTool",
-    "tool.EnterWorktreeTool",
-    "tool.ExecuteExtraTool",
-    "tool.ExecuteTool",
-    "tool.ExitPlanModeTool",
-    "tool.ExitPlanModeV2Tool",
-    "tool.ExitWorktreeTool",
-    "tool.FileEditTool",
-    "tool.FileReadTool",
-    "tool.FileWriteTool",
-    "tool.GlobTool",
-    "tool.GoalTool",
-    "tool.GrepTool",
-    "tool.LSPTool",
-    "tool.ListMcpResourcesTool",
-    "tool.ListPeersTool",
-    "tool.LocalMemoryRecallTool",
-    "tool.MCPTool",
-    "tool.McpAuthTool",
-    "tool.MonitorTool",
-    "tool.NotebookEditTool",
-    "tool.OverflowTestTool",
-    "tool.PowerShellTool",
-    "tool.PushNotificationTool",
-    "tool.REPLTool",
-    "tool.ReadMcpResourceTool",
-    "tool.RemoteTriggerTool",
-    "tool.ReviewArtifactTool",
-    "tool.ScheduleCronTool",
-    "tool.SearchExtraToolsTool",
-    "tool.SendMessageTool",
-    "tool.SendUserFileTool",
-    "tool.SkillTool",
-    "tool.SleepTool",
-    "tool.SnipTool",
-    "tool.SubscribePRTool",
-    "tool.SuggestBackgroundPRTool",
-    "tool.SyntheticOutputTool",
-    "tool.TaskCreateTool",
-    "tool.TaskGetTool",
-    "tool.TaskListTool",
-    "tool.TaskOutputTool",
-    "tool.TaskStopTool",
-    "tool.TaskUpdateTool",
-    "tool.TeamCreateTool",
-    "tool.TeamDeleteTool",
-    "tool.TerminalCaptureTool",
-    "tool.TestingPermissionTool",
-    "tool.TodoWriteTool",
-    "tool.TungstenTool",
-    "tool.VaultHttpFetchTool",
-    "tool.VerifyPlanExecutionTool",
-    "tool.WebBrowserTool",
-    "tool.WebFetchTool",
-    "tool.WebSearchTool",
-    "tool.WorkflowTool"
-  ],
+  "generated_at": "2026-07-28T06:55:20.276Z",
+  "added": [],
   "removed": [],
-  "changed": [],
+  "changed": [
+    {
+      "id": "acp.advertised:_meta.claudeCode.promptQueueing",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "acp.setSessionMode",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "acp.unstable_setSessionModel",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "provider.bedrock",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "provider.firstParty",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "provider.foundry",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "provider.gemini",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "provider.grok",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "provider.openai",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "provider.vertex",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.AgentTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ArtifactTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.AskUserQuestionTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "ACP permission outcomes cannot return AskUserQuestion updatedInput.answers; DeepHarness continues with an audited same-turn follow-up prompt. Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput."
+        }
+      ]
+    },
+    {
+      "id": "tool.BashTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput."
+        }
+      ]
+    },
+    {
+      "id": "tool.BriefTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ConfigTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.CronCreateTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.CronDeleteTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.CronListTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.CtxInspectTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.DiscoverSkillsTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.EnterPlanModeTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput."
+        }
+      ]
+    },
+    {
+      "id": "tool.EnterWorktreeTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ExecuteExtraTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ExecuteTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ExitPlanModeTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ExitPlanModeV2Tool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ExitWorktreeTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.FileEditTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput."
+        }
+      ]
+    },
+    {
+      "id": "tool.FileReadTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput."
+        }
+      ]
+    },
+    {
+      "id": "tool.FileWriteTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput."
+        }
+      ]
+    },
+    {
+      "id": "tool.GlobTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput."
+        }
+      ]
+    },
+    {
+      "id": "tool.GoalTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.GrepTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput."
+        }
+      ]
+    },
+    {
+      "id": "tool.ListMcpResourcesTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ListPeersTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.LocalMemoryRecallTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.LSPTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.McpAuthTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.MCPTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.MonitorTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.NotebookEditTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput."
+        }
+      ]
+    },
+    {
+      "id": "tool.OverflowTestTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.PowerShellTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.PushNotificationTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ReadMcpResourceTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.RemoteTriggerTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.REPLTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ReviewArtifactTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ScheduleCronTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.SearchExtraToolsTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.SendMessageTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.SendUserFileTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.SkillTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.SleepTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.SnipTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.SubscribePRTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.SuggestBackgroundPRTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.SyntheticOutputTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.TaskCreateTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.TaskGetTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.TaskListTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.TaskOutputTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.TaskStopTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.TaskUpdateTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.TeamCreateTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.TeamDeleteTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.TerminalCaptureTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.TestingPermissionTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.TodoWriteTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.TungstenTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.VaultHttpFetchTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.VerifyPlanExecutionTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.WebBrowserTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.WebFetchTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.WebSearchTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.WorkflowTool",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    }
+  ],
   "regressions": [],
   "gate": {
     "unreviewed_additions": [],

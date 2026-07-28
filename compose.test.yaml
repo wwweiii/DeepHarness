@@ -13,6 +13,7 @@ services:
       ANTHROPIC_API_KEY: phase-1-test-key
       ANTHROPIC_AUTH_TOKEN: ""
       ANTHROPIC_BASE_URL: http://test-model:8090
+      PERMISSION_REQUEST_TIMEOUT_MS: "10000"
     depends_on:
       test-model:
         condition: service_healthy
@@ -29,5 +30,49 @@ services:
         condition: service_healthy
 
   test-model:
+    profiles: !reset []
     environment:
       TEST_MODEL_DEBUG: ${TEST_MODEL_DEBUG:-0}
+
+  test:
+    profiles: [verify]
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+      target: e2e
+    environment:
+      NODE_ENV: test
+      TEST_BASE_URL: http://gateway:8080
+      DATABASE_URL: postgres://deepharness:deepharness-local-only@postgres:5432/deepharness
+      ANTHROPIC_API_KEY: phase-2-test-key
+      ANTHROPIC_BASE_URL: http://test-model:8090
+      PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/chromium
+    depends_on:
+      gateway:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+      test-model:
+        condition: service_healthy
+    command:
+      - sh
+      - -ec
+      - |
+        bun run tests/wait-for-stack.ts
+        bun run typecheck
+        bun test tests/contract
+        bun test tests/unit
+        bun test --timeout 60000 tests/integration/phase-1-stack.test.ts
+        bun test --timeout 180000 tests/integration/phase-2-stack.test.ts
+        bunx playwright test --config playwright.config.ts
+    networks: [control]
+    volumes:
+      - ./artifacts/capabilities:/app/artifacts/capabilities
+      - ./output/playwright:/app/output/playwright
+      - ./vendor/claude-code:/app/vendor/claude-code:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+      - /home/bun:size=128m,mode=1777
+    cap_drop: [ALL]
+    init: true

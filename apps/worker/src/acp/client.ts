@@ -20,11 +20,18 @@ export interface AcpUpdate {
   update: Record<string, unknown>
 }
 
+export interface AcpClientRequest {
+  id: number | string
+  method: string
+  params: JsonObject
+}
+
 export interface AcpClientOptions {
   command: string[]
   cwd: string
   env: Record<string, string>
   onUpdate: (update: AcpUpdate) => void
+  onClientRequest: (request: AcpClientRequest) => void
   onExit: (exitCode: number, stderrTail: string[]) => void
   onProtocolError: (error: Error) => void
 }
@@ -61,8 +68,8 @@ export class AcpClient {
   async initialize(): Promise<JsonObject> {
     return this.request('initialize', {
       protocolVersion: 1,
-      clientCapabilities: {},
-      clientInfo: { name: 'deepharness-worker', version: '0.1.0' },
+      clientCapabilities: { terminal: false },
+      clientInfo: { name: 'deepharness-worker', version: '0.2.0' },
     }, 30_000)
   }
 
@@ -94,6 +101,32 @@ export class AcpClient {
       messageId,
       prompt: [{ type: 'text', text }],
     }, 10 * 60_000)
+  }
+
+  async setMode(modeId: string): Promise<JsonObject> {
+    if (!this.sessionId) throw new Error('ACP session has not been created')
+    return this.request('session/set_mode', {
+      sessionId: this.sessionId,
+      modeId,
+    }, 30_000)
+  }
+
+  async setModel(modelId: string): Promise<JsonObject> {
+    if (!this.sessionId) throw new Error('ACP session has not been created')
+    return this.request('session/set_model', {
+      sessionId: this.sessionId,
+      modelId,
+    }, 30_000)
+  }
+
+  respond(id: number | string, result: JsonObject): void {
+    if (this.exited) return
+    this.write({ jsonrpc: '2.0', id, result })
+  }
+
+  reject(id: number | string, code: number, message: string): void {
+    if (this.exited) return
+    this.write({ jsonrpc: '2.0', id, error: { code, message } })
   }
 
   cancel(): void {
@@ -212,20 +245,11 @@ export class AcpClient {
     }
 
     if (message.id !== undefined && message.method) {
-      // Phase 1 has no approval UI. Deny unexpected permission requests safely.
-      if (message.method === 'session/request_permission') {
-        this.write({
-          jsonrpc: '2.0',
-          id: message.id,
-          result: { outcome: { outcome: 'cancelled' } },
-        })
-      } else {
-        this.write({
-          jsonrpc: '2.0',
-          id: message.id,
-          error: { code: -32601, message: `Unsupported client method: ${message.method}` },
-        })
-      }
+      this.options.onClientRequest({
+        id: message.id,
+        method: message.method,
+        params: message.params ?? {},
+      })
     }
   }
 

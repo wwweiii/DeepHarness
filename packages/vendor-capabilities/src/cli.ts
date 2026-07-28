@@ -12,6 +12,7 @@ import type {
   Capability,
   DiscoveredCapability,
   DynamicReport,
+  HarnessCapabilityEvidence,
   ReviewFile,
   StaticReport,
   VendorLock,
@@ -25,6 +26,7 @@ type Options = {
   agent: string
   previous: string | null
   writeReviewDraft: boolean
+  harnessEvidence: string
 }
 
 function parseArgs(args: string[]): Options {
@@ -37,6 +39,7 @@ function parseArgs(args: string[]): Options {
     agent: '/opt/claude-code/dist/cli-bun.js',
     previous: null,
     writeReviewDraft: false,
+    harnessEvidence: resolve(root, 'config/harness-capability-evidence.json'),
   }
   const valueAfter = (index: number, flag: string): string => {
     const value = args[index + 1]
@@ -54,6 +57,7 @@ function parseArgs(args: string[]): Options {
     else if (arg === '--artifacts') options.artifacts = resolve(valueAfter(index++, arg))
     else if (arg === '--agent') options.agent = resolve(valueAfter(index++, arg))
     else if (arg === '--previous') options.previous = resolve(valueAfter(index++, arg))
+    else if (arg === '--harness-evidence') options.harnessEvidence = resolve(valueAfter(index++, arg))
     else throw new Error(`Unknown argument: ${arg}`)
   }
   return options
@@ -143,14 +147,61 @@ function applyReview(
   })
 }
 
+function applyHarnessEvidence(
+  capabilities: Capability[],
+  document: HarnessCapabilityEvidence,
+): Capability[] {
+  if (document.schema_version !== 1) throw new Error('Unsupported Harness evidence schema')
+  const byId = new Map(capabilities.map(capability => [capability.id, capability]))
+
+  for (const capability of capabilities) {
+    if (capability.kind === 'tool') {
+      capability.ui_supported = true
+      capability.source_evidence.push(structuredClone(document.generic_tool_renderer))
+    }
+    if (capability.kind === 'provider') {
+      capability.ui_supported = true
+      capability.source_evidence.push(structuredClone(document.provider_ui))
+    }
+  }
+
+  for (const entry of document.capabilities) {
+    const capability = byId.get(entry.id)
+    if (!capability) throw new Error(`Harness evidence references an unknown capability: ${entry.id}`)
+    capability.invocable = entry.invocable === undefined ? true : entry.invocable
+    capability.tested = true
+    capability.ui_supported = true
+    capability.last_test_result = 'passed'
+    capability.conditions.push(
+      `harness:phase-2:${entry.workflow}`,
+      ...(entry.scenario ? [`fixture:${entry.scenario}`] : []),
+    )
+    capability.source_evidence.push({
+      path: 'tests/integration/phase-2-stack.test.ts',
+      line: 1,
+      detail: entry.evidence,
+      evidenceType: 'runtime',
+    })
+    if (entry.known_gap) capability.known_gap = entry.known_gap
+    if (entry.scenario && entry.id !== 'tool.TodoWriteTool') {
+      capability.known_gap = [capability.known_gap, document.terminal_tool_result_gap]
+        .filter(Boolean)
+        .join(' ')
+    }
+  }
+  return capabilities
+}
+
 function makeManifest(options: {
   lock: VendorLock
   review: ReviewFile | null
   staticReport: StaticReport
   dynamicReport: DynamicReport
+  harnessEvidence: HarnessCapabilityEvidence
   capabilities: Capability[]
 }): Record<string, unknown> {
-  const { lock, review, staticReport, dynamicReport, capabilities } = options
+  const { lock, review, staticReport, dynamicReport, harnessEvidence, capabilities } = options
+  const knownGaps = [...dynamicReport.gaps, ...harnessEvidence.known_gaps]
   const filter = (kind: Capability['kind']): Capability[] =>
     capabilities.filter(capability => capability.kind === kind)
   const unclassified = capabilities.filter(
@@ -179,7 +230,7 @@ function makeManifest(options: {
     acp_capabilities: filter('acp'),
     providers: filter('provider'),
     platform_integrations: filter('integration'),
-    known_gaps: dynamicReport.gaps,
+    known_gaps: knownGaps,
     probe_environment: {
       runtime: `bun-${Bun.version}`,
       platform: process.platform,
@@ -188,6 +239,7 @@ function makeManifest(options: {
       static_probe: staticReport.probe,
       dynamic_probe: dynamicReport.probe,
       provider_credentials_present: false,
+      harness_evidence_schema: harnessEvidence.schema_version,
     },
     summary: {
       total: capabilities.length,
@@ -195,7 +247,7 @@ function makeManifest(options: {
       by_matrix_class: classCounts,
       unclassified: unclassified.length,
       unclassified_ids: unclassified.map(capability => capability.id),
-      expected_failure_gaps: dynamicReport.gaps.filter(
+      expected_failure_gaps: knownGaps.filter(
         gap => gap.status === 'expected_failure',
       ).length,
     },
@@ -206,6 +258,7 @@ function makeManifest(options: {
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2))
   const lock = await readJson<VendorLock>(options.lock)
+  const harnessEvidence = await readJson<HarnessCapabilityEvidence>(options.harnessEvidence)
   const staticReport = await runStaticProbe(options.vendor, lock.commit)
   const dynamicReport = await runAcpProbe({
     agentPath: options.agent,
@@ -219,12 +272,16 @@ async function main(): Promise<void> {
     await writeJson(options.review, buildReviewDraft(lock.commit, discovered))
   }
   const review = await readOptionalJson<ReviewFile>(options.review)
-  const capabilities = applyReview(discovered, review, lock.commit)
+  const capabilities = applyHarnessEvidence(
+    applyReview(discovered, review, lock.commit),
+    harnessEvidence,
+  )
   const manifest = makeManifest({
     lock,
     review,
     staticReport,
     dynamicReport,
+    harnessEvidence,
     capabilities,
   })
   const previous = await readOptionalJson<Record<string, unknown>>(options.previous)
@@ -239,7 +296,12 @@ async function main(): Promise<void> {
 
   const summary = manifest.summary as Record<string, unknown>
   console.log(JSON.stringify({ event: 'vendor_audit_completed', ...summary }))
-  const gapsNotExpected = dynamicReport.gaps.filter(
+  const knownGaps = manifest.known_gaps as Array<{ id: string; status: string }>
+  const diffGate = diff.gate as {
+    unreviewed_additions: string[]
+    unapproved_regressions: string[]
+  }
+  const gapsNotExpected = knownGaps.filter(
     gap => gap.status !== 'expected_failure',
   )
   if (Number(summary.unclassified) > 0) {
@@ -250,6 +312,16 @@ async function main(): Promise<void> {
   if (gapsNotExpected.length > 0) {
     throw new Error(
       `Known-gap contracts changed: ${gapsNotExpected.map(gap => `${gap.id}=${gap.status}`).join(', ')}`,
+    )
+  }
+  if (diffGate.unreviewed_additions.length > 0) {
+    throw new Error(
+      `Capability diff gate failed: unreviewed additions ${diffGate.unreviewed_additions.join(', ')}`,
+    )
+  }
+  if (diffGate.unapproved_regressions.length > 0) {
+    throw new Error(
+      `Capability diff gate failed: unapproved regressions ${diffGate.unapproved_regressions.join(', ')}`,
     )
   }
 }

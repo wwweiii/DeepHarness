@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "vendor_commit": "34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d",
-  "generated_at": "2026-07-28T03:12:31.302Z",
+  "generated_at": "2026-07-28T06:55:20.264Z",
   "probe": "ccb-bun-acp-stdio",
   "command": [
     "bun",
@@ -41,7 +41,7 @@
     }
   },
   "new_session": {
-    "sessionId": "bba39974-73b4-4ed0-a30d-581321ca3674",
+    "sessionId": "6c512ff1-c932-40ef-921f-b7f81570f0ee",
     "modes": {
       "currentModeId": "default",
       "availableModes": [

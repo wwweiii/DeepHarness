@@ -28,6 +28,7 @@ RUN bun run build
 FROM workspace-deps AS gateway
 
 COPY artifacts/capabilities/vendor-capability-manifest.json ./artifacts/capabilities/vendor-capability-manifest.json
+COPY config/provider-profiles.json ./config/provider-profiles.json
 COPY --from=web-build /app/apps/web/dist ./apps/web/dist
 
 ENV NODE_ENV=production \
@@ -57,6 +58,7 @@ WORKDIR /app
 COPY --from=workspace-deps /app/node_modules ./node_modules
 COPY package.json bun.lock ./
 COPY apps/worker ./apps/worker
+COPY config/provider-profiles.json ./config/provider-profiles.json
 COPY packages/protocol ./packages/protocol
 COPY --from=vendor-builder /opt/claude-code/dist /opt/claude-code/dist
 
@@ -75,22 +77,36 @@ ENV NODE_ENV=test
 USER bun
 CMD ["bun", "run", "apps/test-model/src/server.ts"]
 
-FROM workspace-deps AS e2e
+FROM oven/bun:1.3.13 AS browser-runtime
 
 ARG DEBIAN_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian
 ARG DEBIAN_SECURITY_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian-security
 
 USER root
-RUN sed -i \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
+    sed -i \
       -e "s|http://deb.debian.org/debian-security|${DEBIAN_SECURITY_MIRROR}|g" \
       -e "s|http://deb.debian.org/debian|${DEBIAN_MIRROR}|g" \
       /etc/apt/sources.list.d/debian.sources \
     && apt-get -o Acquire::Retries=3 update \
-    && apt-get install -y --no-install-recommends ca-certificates chromium fonts-liberation \
-    && rm -rf /var/lib/apt/lists/*
+    && for attempt in 1 2 3; do \
+         if apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
+              ca-certificates chromium fonts-liberation; then \
+           break; \
+         fi; \
+         if [ "${attempt}" -eq 3 ]; then exit 1; fi; \
+         apt-get -o Acquire::Retries=3 update; \
+       done
 
+FROM browser-runtime AS e2e
+
+WORKDIR /app
+COPY --from=workspace-deps /app ./
 COPY playwright.config.ts ./
-COPY tests/e2e ./tests/e2e
+COPY tests ./tests
+COPY config ./config
+COPY compose.yaml compose.test.yaml compose.providers.yaml .gitmodules Makefile ./
 
 ENV NODE_ENV=test \
     PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium

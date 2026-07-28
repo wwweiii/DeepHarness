@@ -1,8 +1,11 @@
 import { createDatabase, migrate } from '@deepharness/database'
 import {
   WORKSPACE_ID,
+  type CapabilityView,
   type GatewayToWorkerMessage,
   type HarnessEvent,
+  type JsonValue,
+  type ProviderProfile,
   type SessionSnapshot,
   type WorkerCommand,
   type WorkerToGatewayMessage,
@@ -18,6 +21,8 @@ const workspacePath = process.env.WORKSPACE_PATH ?? '/workspace/source'
 const webRoot = process.env.WEB_ROOT ?? '/app/apps/web/dist'
 const manifestPath = process.env.CAPABILITY_MANIFEST_PATH
   ?? '/app/artifacts/capabilities/vendor-capability-manifest.json'
+const providerProfilesPath = process.env.PROVIDER_PROFILES_PATH
+  ?? '/app/config/provider-profiles.json'
 
 const database = createDatabase(databaseUrl)
 await migrate(database)
@@ -29,24 +34,73 @@ async function persistManifest(): Promise<void> {
   const manifest = await file.json() as Record<string, unknown>
   const probeEnvironment = JSON.parse(JSON.stringify(manifest.probe_environment))
   const rawManifest = JSON.parse(JSON.stringify(manifest))
-  await database`
-    INSERT INTO capability_manifests (
-      id, vendor_commit, build_id, schema_version, probe_environment,
-      raw_manifest, status, generated_at
-    ) VALUES (
-      ${crypto.randomUUID()}, ${String(manifest.vendor_commit)},
-      ${String(manifest.build_id)}, ${Number(manifest.schema_version)},
-      ${database.json(probeEnvironment)},
-      ${database.json(rawManifest)}, 'ready', ${new Date(String(manifest.generated_at))}
-    )
-    ON CONFLICT (vendor_commit, build_id) DO UPDATE SET
-      raw_manifest = EXCLUDED.raw_manifest,
-      probe_environment = EXCLUDED.probe_environment,
-      generated_at = EXCLUDED.generated_at,
-      status = 'ready'
-  `
+  const capabilities = Array.isArray(manifest.capabilities)
+    ? manifest.capabilities as Array<Record<string, unknown>>
+    : []
+  await database.begin(async transaction => {
+    const rows = await transaction<{ id: string }[]>`
+      INSERT INTO capability_manifests (
+        id, vendor_commit, build_id, schema_version, probe_environment,
+        raw_manifest, status, generated_at
+      ) VALUES (
+        ${crypto.randomUUID()}, ${String(manifest.vendor_commit)},
+        ${String(manifest.build_id)}, ${Number(manifest.schema_version)},
+        ${transaction.json(probeEnvironment)},
+        ${transaction.json(rawManifest)}, 'ready', ${new Date(String(manifest.generated_at))}
+      )
+      ON CONFLICT (vendor_commit, build_id) DO UPDATE SET
+        raw_manifest = EXCLUDED.raw_manifest,
+        probe_environment = EXCLUDED.probe_environment,
+        generated_at = EXCLUDED.generated_at,
+        status = 'ready'
+      RETURNING id
+    `
+    const manifestId = rows[0]?.id
+    if (!manifestId) throw new Error('Capability manifest upsert returned no id')
+    await transaction`DELETE FROM capabilities WHERE manifest_id = ${manifestId}`
+    for (const capability of capabilities) {
+      await transaction`
+        INSERT INTO capabilities (
+          id, manifest_id, kind, name, matrix_class, compiled, enabled,
+          advertised_by_acp, invocable, ui_supported, tested, conditions,
+          source_evidence, known_gap, last_test_result
+        ) VALUES (
+          ${String(capability.id)}, ${manifestId}, ${String(capability.kind)},
+          ${String(capability.name)}, ${String(capability.matrix_class)},
+          ${capability.compiled === true}, ${capability.enabled === true},
+          ${capability.advertised_by_acp === true},
+          ${typeof capability.invocable === 'boolean' ? capability.invocable : null},
+          ${capability.ui_supported === true}, ${capability.tested === true},
+          ${transaction.json((capability.conditions ?? []) as JsonValue)},
+          ${transaction.json((capability.source_evidence ?? []) as JsonValue)},
+          ${typeof capability.known_gap === 'string' ? capability.known_gap : null},
+          ${String(capability.last_test_result ?? 'not_tested')}
+        )
+      `
+    }
+  })
 }
 await persistManifest()
+
+interface ProviderProfileConfig extends Omit<ProviderProfile, 'credentialStatus' | 'active'> {}
+
+async function providerProfiles(): Promise<ProviderProfile[]> {
+  const file = Bun.file(providerProfilesPath)
+  if (!await file.exists()) throw new Error(`Provider profiles missing: ${providerProfilesPath}`)
+  const document = await file.json() as { profiles?: ProviderProfileConfig[] }
+  const rows = await database<{ name: string; credential_status: string; enabled: boolean }[]>`
+    SELECT name, credential_status, enabled FROM integrations WHERE kind = 'provider'
+  `
+  const observed = new Map(rows.map(row => [row.name, row]))
+  return (document.profiles ?? []).map(profile => {
+    const state = observed.get(profile.id)
+    return {
+      ...profile,
+      active: state?.enabled === true,
+      credentialStatus: state?.credential_status === 'configured' ? 'configured' : 'missing',
+    }
+  })
+}
 
 const encoder = new TextEncoder()
 const subscribers = new Map<string, Set<ReadableStreamDefaultController<Uint8Array>>>()
@@ -121,6 +175,26 @@ app.get('/api/session', async c => {
   return c.json(snapshot)
 })
 
+app.get('/api/capabilities', async c => {
+  const rows = await database<{ raw_manifest: Record<string, unknown> }[]>`
+    SELECT raw_manifest FROM capability_manifests
+    WHERE status = 'ready' ORDER BY generated_at DESC LIMIT 1
+  `
+  const manifest = rows[0]?.raw_manifest
+  if (!manifest) return apiError('Capability manifest is unavailable', 503)
+  const view: CapabilityView = {
+    vendorCommit: String(manifest.vendor_commit),
+    generatedAt: String(manifest.generated_at),
+    summary: (manifest.summary ?? {}) as Record<string, JsonValue>,
+    capabilities: Array.isArray(manifest.capabilities)
+      ? manifest.capabilities as Array<Record<string, JsonValue>>
+      : [],
+    knownGaps: Array.isArray(manifest.known_gaps) ? manifest.known_gaps as JsonValue[] : [],
+    providers: await providerProfiles(),
+  }
+  return c.json(view)
+})
+
 app.post('/api/sessions', async c => {
   const key = idempotencyKey(c.req.raw)
   if (!key) return apiError('Idempotency-Key header is required', 400)
@@ -153,7 +227,7 @@ app.post('/api/sessions', async c => {
     return c.json({ session: result.session }, 201)
   } catch (error) {
     if ((error as Error).message === 'ACTIVE_SESSION_EXISTS') {
-      return apiError('Only one active session is supported in phase 1', 409)
+      return apiError('Only one active session is supported by this Worker', 409)
     }
     throw error
   }
@@ -191,9 +265,105 @@ app.post('/api/sessions/:sessionId/prompts', async c => {
   } catch (error) {
     const message = (error as Error).message
     if (message === 'SESSION_NOT_FOUND') return apiError('Session not found', 404)
-    if (message === 'SESSION_NOT_IDLE') return apiError('Session is not idle', 409)
+    if (message === 'SESSION_NOT_READY') return apiError('Session cannot accept prompts', 409)
     throw error
   }
+})
+
+async function controlCommand(input: {
+  request: Request
+  sessionId: string
+  type: 'resolve_permission' | 'set_mode' | 'set_model'
+  payload: Record<string, JsonValue>
+}): Promise<Response> {
+  const key = idempotencyKey(input.request)
+  if (!key) return apiError('Idempotency-Key header is required', 400)
+  try {
+    const result = await store.createControlCommand({
+      sessionId: input.sessionId,
+      commandId: crypto.randomUUID(),
+      idempotencyKey: key,
+      type: input.type,
+      payload: input.payload,
+    })
+    if (result.created && !await deliver(result.command)) return apiError('Worker is offline', 503)
+    return Response.json({ status: 'accepted' }, { status: 202 })
+  } catch (error) {
+    const message = (error as Error).message
+    if (message === 'SESSION_NOT_FOUND') return apiError('Session not found', 404)
+    if (message === 'SESSION_NOT_IDLE') return apiError('Session must be idle', 409)
+    if (message === 'PERMISSION_NOT_PENDING') {
+      return apiError('Permission request is no longer pending', 409)
+    }
+    throw error
+  }
+}
+
+app.post('/api/sessions/:sessionId/permissions/:permissionId/resolve', async c => {
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const optionId = typeof body.optionId === 'string' ? body.optionId : ''
+  if (!optionId) return apiError('Permission option is required', 400)
+  return controlCommand({
+    request: c.req.raw,
+    sessionId: c.req.param('sessionId'),
+    type: 'resolve_permission',
+    payload: {
+      permissionRequestId: c.req.param('permissionId'),
+      optionId,
+    },
+  })
+})
+
+app.post('/api/sessions/:sessionId/questions/:permissionId/answer', async c => {
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const answers = body.answers && typeof body.answers === 'object' && !Array.isArray(body.answers)
+    ? body.answers as Record<string, string>
+    : {}
+  if (Object.keys(answers).length === 0 || Object.values(answers).some(value => typeof value !== 'string')) {
+    return apiError('At least one question answer is required', 400)
+  }
+  return controlCommand({
+    request: c.req.raw,
+    sessionId: c.req.param('sessionId'),
+    type: 'resolve_permission',
+    payload: {
+      permissionRequestId: c.req.param('permissionId'),
+      optionId: 'allow',
+      answers,
+    },
+  })
+})
+
+app.post('/api/sessions/:sessionId/mode', async c => {
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const modeId = typeof body.modeId === 'string' ? body.modeId : ''
+  if (!modeId) return apiError('Mode is required', 400)
+  const session = await store.getSession(c.req.param('sessionId'))
+  if (!session) return apiError('Session not found', 404)
+  if (!session.availableModes.some(mode => mode.id === modeId)) return apiError('Mode is unavailable', 400)
+  return controlCommand({
+    request: c.req.raw,
+    sessionId: session.id,
+    type: 'set_mode',
+    payload: { modeId },
+  })
+})
+
+app.post('/api/sessions/:sessionId/model', async c => {
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const modelId = typeof body.modelId === 'string' ? body.modelId : ''
+  if (!modelId) return apiError('Model is required', 400)
+  const session = await store.getSession(c.req.param('sessionId'))
+  if (!session) return apiError('Session not found', 404)
+  if (!session.availableModels.some(model => model.modelId === modelId)) {
+    return apiError('Model is unavailable', 400)
+  }
+  return controlCommand({
+    request: c.req.raw,
+    sessionId: session.id,
+    type: 'set_model',
+    payload: { modelId },
+  })
 })
 
 app.post('/api/sessions/:sessionId/cancel', async c => {

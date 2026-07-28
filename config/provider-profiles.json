@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "profiles": [
+    {
+      "id": "anthropic",
+      "name": "Anthropic",
+      "vendorProvider": "firstParty",
+      "activationEnvironment": {},
+      "credentialEnvironment": ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"],
+      "credentialAlternatives": [["ANTHROPIC_API_KEY"], ["ANTHROPIC_AUTH_TOKEN"]],
+      "automatedTest": "fake_passed",
+      "smokeCommand": "docker compose -f compose.yaml -f compose.providers.yaml --profile smoke-anthropic run --rm provider-smoke-anthropic"
+    },
+    {
+      "id": "bedrock",
+      "name": "Amazon Bedrock",
+      "vendorProvider": "bedrock",
+      "activationEnvironment": { "CLAUDE_CODE_USE_BEDROCK": "1" },
+      "credentialEnvironment": ["AWS_BEARER_TOKEN_BEDROCK", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION", "AWS_DEFAULT_REGION"],
+      "credentialAlternatives": [["AWS_BEARER_TOKEN_BEDROCK", "AWS_REGION"], ["AWS_BEARER_TOKEN_BEDROCK", "AWS_DEFAULT_REGION"], ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION"], ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_DEFAULT_REGION"]],
+      "automatedTest": "config_validated",
+      "smokeCommand": "docker compose -f compose.yaml -f compose.providers.yaml --profile smoke-bedrock run --rm provider-smoke-bedrock"
+    },
+    {
+      "id": "vertex",
+      "name": "Google Vertex AI",
+      "vendorProvider": "vertex",
+      "activationEnvironment": { "CLAUDE_CODE_USE_VERTEX": "1" },
+      "credentialEnvironment": ["ANTHROPIC_VERTEX_PROJECT_ID", "GOOGLE_APPLICATION_CREDENTIALS"],
+      "credentialAlternatives": [["ANTHROPIC_VERTEX_PROJECT_ID", "GOOGLE_APPLICATION_CREDENTIALS"]],
+      "automatedTest": "config_validated",
+      "smokeCommand": "docker compose -f compose.yaml -f compose.providers.yaml --profile smoke-vertex run --rm provider-smoke-vertex"
+    },
+    {
+      "id": "foundry",
+      "name": "Microsoft Foundry",
+      "vendorProvider": "foundry",
+      "activationEnvironment": { "CLAUDE_CODE_USE_FOUNDRY": "1" },
+      "credentialEnvironment": ["ANTHROPIC_FOUNDRY_API_KEY", "ANTHROPIC_FOUNDRY_RESOURCE", "ANTHROPIC_FOUNDRY_BASE_URL"],
+      "credentialAlternatives": [["ANTHROPIC_FOUNDRY_API_KEY", "ANTHROPIC_FOUNDRY_RESOURCE"], ["ANTHROPIC_FOUNDRY_API_KEY", "ANTHROPIC_FOUNDRY_BASE_URL"]],
+      "automatedTest": "config_validated",
+      "smokeCommand": "docker compose -f compose.yaml -f compose.providers.yaml --profile smoke-foundry run --rm provider-smoke-foundry"
+    },
+    {
+      "id": "openai-compatible",
+      "name": "OpenAI-compatible",
+      "vendorProvider": "openai",
+      "activationEnvironment": { "CLAUDE_CODE_USE_OPENAI": "1" },
+      "credentialEnvironment": ["OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL"],
+      "credentialAlternatives": [["OPENAI_API_KEY", "OPENAI_BASE_URL", "OPENAI_MODEL"]],
+      "automatedTest": "config_validated",
+      "smokeCommand": "docker compose -f compose.yaml -f compose.providers.yaml --profile smoke-openai run --rm provider-smoke-openai"
+    },
+    {
+      "id": "gemini",
+      "name": "Google Gemini",
+      "vendorProvider": "gemini",
+      "activationEnvironment": { "CLAUDE_CODE_USE_GEMINI": "1" },
+      "credentialEnvironment": ["GEMINI_API_KEY", "GEMINI_MODEL"],
+      "credentialAlternatives": [["GEMINI_API_KEY", "GEMINI_MODEL"]],
+      "automatedTest": "config_validated",
+      "smokeCommand": "docker compose -f compose.yaml -f compose.providers.yaml --profile smoke-gemini run --rm provider-smoke-gemini"
+    },
+    {
+      "id": "grok",
+      "name": "xAI Grok",
+      "vendorProvider": "grok",
+      "activationEnvironment": { "CLAUDE_CODE_USE_GROK": "1" },
+      "credentialEnvironment": ["GROK_API_KEY", "XAI_API_KEY", "GROK_MODEL"],
+      "credentialAlternatives": [["GROK_API_KEY", "GROK_MODEL"], ["XAI_API_KEY", "GROK_MODEL"]],
+      "automatedTest": "config_validated",
+      "smokeCommand": "docker compose -f compose.yaml -f compose.providers.yaml --profile smoke-grok run --rm provider-smoke-grok"
+    }
+  ]
+}

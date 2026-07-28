@@ -1,0 +1,110 @@
+x-provider-smoke-env: &provider-smoke-env
+  WORKSPACE_PATH: /workspace/source
+  PROVIDER_SMOKE_TIMEOUT_MS: ${PROVIDER_SMOKE_TIMEOUT_MS:-120000}
+  MAX_THINKING_TOKENS: ${PROVIDER_SMOKE_MAX_THINKING_TOKENS:-1024}
+  CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+  DISABLE_TELEMETRY: "1"
+
+x-provider-smoke: &provider-smoke
+  build:
+    context: .
+    dockerfile: docker/service.Dockerfile
+    target: worker
+  entrypoint: ["bun", "run", "apps/worker/src/provider-smoke.ts"]
+  networks: [control]
+  volumes:
+    - ${HOST_WORKSPACE_PATH:-.}:/workspace/source:ro
+  read_only: true
+  tmpfs:
+    - /tmp:size=128m,mode=1777
+    - /home/agent:size=128m,uid=10001,gid=10001,mode=0700
+  cap_drop: [ALL]
+  pids_limit: 128
+  init: true
+  restart: "no"
+
+services:
+  provider-smoke-anthropic:
+    <<: *provider-smoke
+    profiles: [smoke-anthropic]
+    environment:
+      <<: *provider-smoke-env
+      PROVIDER_SMOKE_ID: anthropic
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
+
+  provider-smoke-bedrock:
+    <<: *provider-smoke
+    profiles: [smoke-bedrock]
+    environment:
+      <<: *provider-smoke-env
+      PROVIDER_SMOKE_ID: bedrock
+      CLAUDE_CODE_USE_BEDROCK: "1"
+      AWS_REGION: ${AWS_REGION:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_BEARER_TOKEN_BEDROCK: ${AWS_BEARER_TOKEN_BEDROCK:-}
+      ANTHROPIC_BEDROCK_BASE_URL: ${ANTHROPIC_BEDROCK_BASE_URL:-}
+
+  provider-smoke-vertex:
+    <<: *provider-smoke
+    profiles: [smoke-vertex]
+    environment:
+      <<: *provider-smoke-env
+      PROVIDER_SMOKE_ID: vertex
+      CLAUDE_CODE_USE_VERTEX: "1"
+      ANTHROPIC_VERTEX_PROJECT_ID: ${ANTHROPIC_VERTEX_PROJECT_ID:-}
+      CLOUD_ML_REGION: ${CLOUD_ML_REGION:-}
+      GOOGLE_APPLICATION_CREDENTIALS: /run/secrets/google-application-credentials.json
+    volumes:
+      - ${HOST_WORKSPACE_PATH:-.}:/workspace/source:ro
+      - ${GOOGLE_APPLICATION_CREDENTIALS:-/dev/null}:/run/secrets/google-application-credentials.json:ro
+
+  provider-smoke-foundry:
+    <<: *provider-smoke
+    profiles: [smoke-foundry]
+    environment:
+      <<: *provider-smoke-env
+      PROVIDER_SMOKE_ID: foundry
+      CLAUDE_CODE_USE_FOUNDRY: "1"
+      ANTHROPIC_FOUNDRY_API_KEY: ${ANTHROPIC_FOUNDRY_API_KEY:-}
+      ANTHROPIC_FOUNDRY_RESOURCE: ${ANTHROPIC_FOUNDRY_RESOURCE:-}
+      ANTHROPIC_FOUNDRY_BASE_URL: ${ANTHROPIC_FOUNDRY_BASE_URL:-}
+
+  provider-smoke-openai:
+    <<: *provider-smoke
+    profiles: [smoke-openai]
+    environment:
+      <<: *provider-smoke-env
+      PROVIDER_SMOKE_ID: openai-compatible
+      CLAUDE_CODE_USE_OPENAI: "1"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+
+  provider-smoke-gemini:
+    <<: *provider-smoke
+    profiles: [smoke-gemini]
+    environment:
+      <<: *provider-smoke-env
+      PROVIDER_SMOKE_ID: gemini
+      CLAUDE_CODE_USE_GEMINI: "1"
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_BASE_URL: ${GEMINI_BASE_URL:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-}
+
+  provider-smoke-grok:
+    <<: *provider-smoke
+    profiles: [smoke-grok]
+    environment:
+      <<: *provider-smoke-env
+      PROVIDER_SMOKE_ID: grok
+      CLAUDE_CODE_USE_GROK: "1"
+      GROK_API_KEY: ${GROK_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      GROK_BASE_URL: ${GROK_BASE_URL:-}
+      GROK_MODEL: ${GROK_MODEL:-}

@@ -12,7 +12,7 @@
     "audit:review-draft": "bun run packages/vendor-capabilities/src/cli.ts audit --write-review-draft",
     "build:web": "vite build --config apps/web/vite.config.ts",
     "test:contract": "bun test tests/contract",
-    "test:integration": "bun test ./tests/integration/phase-1-stack.test.ts",
+    "test:integration": "bun test ./tests/integration",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },

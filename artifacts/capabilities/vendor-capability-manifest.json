@@ -4,7 +4,7 @@
   "vendor_repository": "https://github.com/claude-code-best/claude-code.git",
   "vendor_tag": "v2.8.4",
   "build_id": "ccb-bun-v2.8.4-34b3dc99bf40",
-  "generated_at": "2026-07-28T03:12:31.313Z",
+  "generated_at": "2026-07-28T06:55:20.271Z",
   "reviewed_at": "2026-07-27T16:55:08.356Z",
   "build_features": [
     {
@@ -8519,7 +8519,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -8528,6 +8528,12 @@
           "line": 3,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8543,7 +8549,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -8552,6 +8558,12 @@
           "line": 65,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8566,20 +8578,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:question",
+        "fixture:[tool:question]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 81,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration reloads the persisted question, submits answers, and audits the follow-up prompt adapter.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "ACP permission outcomes cannot return AskUserQuestion updatedInput.answers; DeepHarness continues with an audited same-turn follow-up prompt. Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -8590,20 +8617,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:permission",
+        "fixture:[tool:bash]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 5,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration covers Bash approval, denial, expiration, partial output, and final output.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -8615,7 +8657,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -8624,6 +8666,12 @@
           "line": 13,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8639,7 +8687,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:USER_TYPE=ant"
@@ -8650,6 +8698,12 @@
           "line": 90,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8665,7 +8719,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS"
@@ -8676,6 +8730,12 @@
           "line": 32,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8691,7 +8751,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS"
@@ -8702,6 +8762,12 @@
           "line": 34,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8717,7 +8783,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS"
@@ -8728,6 +8794,12 @@
           "line": 36,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8743,7 +8815,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:CONTEXT_COLLAPSE"
@@ -8754,6 +8826,12 @@
           "line": 126,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8769,7 +8847,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:EXPERIMENTAL_SKILL_SEARCH",
@@ -8781,6 +8859,12 @@
           "line": 145,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8795,20 +8879,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:tool",
+        "fixture:[tool:plan]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 87,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes EnterPlanMode and preserves Plan/Todo events and renderer data.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -8820,7 +8919,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:worktree_mode"
@@ -8831,6 +8930,12 @@
           "line": 88,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8846,7 +8951,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -8855,6 +8960,12 @@
           "line": 280,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8870,7 +8981,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -8879,6 +8990,12 @@
           "line": 86,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8894,7 +9011,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -8903,6 +9020,12 @@
           "line": 64,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8918,7 +9041,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -8927,6 +9050,12 @@
           "line": 64,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8942,7 +9071,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:worktree_mode"
@@ -8953,6 +9082,12 @@
           "line": 89,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -8967,20 +9102,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:permission",
+        "fixture:[tool:edit]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 6,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes FileEdit and observes its final ACP tool result.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -8991,20 +9141,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:tool",
+        "fixture:[tool:read]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 7,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes FileRead through the real ACP process and fake Anthropic endpoint.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -9015,20 +9180,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:permission",
+        "fixture:[tool:write]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 8,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration approves FileWrite after replaying the persisted permission request.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -9039,20 +9219,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:tool",
+        "fixture:[tool:glob]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 9,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes Glob against the isolated workspace.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -9064,7 +9259,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:GOAL"
@@ -9075,6 +9270,12 @@
           "line": 91,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9089,20 +9290,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:tool",
+        "fixture:[tool:grep]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 67,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes Grep against the isolated workspace marker.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -9114,7 +9330,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:mcp_client_connected"
@@ -9125,6 +9341,12 @@
           "line": 83,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9140,7 +9362,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:UDS_INBOX"
@@ -9151,6 +9373,12 @@
           "line": 153,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9166,7 +9394,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -9175,6 +9403,12 @@
           "line": 95,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9190,7 +9424,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:ENABLE_LSP_TOOL"
@@ -9201,6 +9435,12 @@
           "line": 82,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9216,7 +9456,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:mcp_client_connected"
@@ -9227,6 +9467,12 @@
           "line": 1,
           "detail": "Exported implementation or tool directory candidate",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9242,7 +9488,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:mcp_client_connected"
@@ -9253,6 +9499,12 @@
           "line": 1,
           "detail": "Exported implementation or tool directory candidate",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9268,7 +9520,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:MONITOR_TOOL"
@@ -9279,6 +9531,12 @@
           "line": 43,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9293,20 +9551,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:permission",
+        "fixture:[tool:notebook]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 10,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes NotebookEdit after creating a notebook fixture.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -9318,7 +9591,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:OVERFLOW_TEST_TOOL"
@@ -9329,6 +9602,12 @@
           "line": 122,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9344,7 +9623,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:platform_win32_or_powershell_enabled"
@@ -9355,6 +9634,12 @@
           "line": 178,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9370,7 +9655,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS|KAIROS_PUSH_NOTIFICATION"
@@ -9381,6 +9666,12 @@
           "line": 51,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9396,7 +9687,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:mcp_client_connected"
@@ -9407,6 +9698,12 @@
           "line": 84,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9422,7 +9719,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:AGENT_TRIGGERS_REMOTE"
@@ -9433,6 +9730,12 @@
           "line": 39,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9448,7 +9751,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:USER_TYPE=ant",
@@ -9460,6 +9763,12 @@
           "line": 16,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9475,7 +9784,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:REVIEW_ARTIFACT"
@@ -9486,6 +9795,12 @@
           "line": 149,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9501,7 +9816,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS"
@@ -9512,6 +9827,12 @@
           "line": 32,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9527,7 +9848,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:ENABLE_SEARCH_EXTRA_TOOLS"
@@ -9538,6 +9859,12 @@
           "line": 85,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9553,7 +9880,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -9562,6 +9889,12 @@
           "line": 78,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9577,7 +9910,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS"
@@ -9588,6 +9921,12 @@
           "line": 47,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9603,7 +9942,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -9612,6 +9951,12 @@
           "line": 4,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9627,7 +9972,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:PROACTIVE|KAIROS"
@@ -9638,6 +9983,12 @@
           "line": 26,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9653,7 +10004,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:HISTORY_SNIP"
@@ -9664,6 +10015,12 @@
           "line": 141,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9679,7 +10036,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS_GITHUB_WEBHOOKS"
@@ -9690,6 +10047,12 @@
           "line": 56,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9705,7 +10068,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:USER_TYPE=ant"
@@ -9716,6 +10079,12 @@
           "line": 21,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9731,7 +10100,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -9740,6 +10109,12 @@
           "line": 112,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9755,7 +10130,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:todo_v2"
@@ -9766,6 +10141,12 @@
           "line": 97,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9781,7 +10162,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:todo_v2"
@@ -9792,6 +10173,12 @@
           "line": 98,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9807,7 +10194,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:todo_v2"
@@ -9818,6 +10205,12 @@
           "line": 100,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9833,7 +10226,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -9842,6 +10235,12 @@
           "line": 61,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9857,7 +10256,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -9866,6 +10265,12 @@
           "line": 12,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9881,7 +10286,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:todo_v2"
@@ -9892,6 +10297,12 @@
           "line": 99,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9907,7 +10318,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -9916,6 +10327,12 @@
           "line": 69,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9931,7 +10348,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -9940,6 +10357,12 @@
           "line": 69,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9955,7 +10378,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:TERMINAL_PANEL"
@@ -9966,6 +10389,12 @@
           "line": 130,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -9981,7 +10410,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:NODE_ENV=test"
@@ -9992,6 +10421,12 @@
           "line": 66,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -10006,20 +10441,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:tool",
+        "fixture:[tool:todo]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 63,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes TodoWrite and projects the structured todo state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -10031,7 +10481,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:USER_TYPE=ant"
@@ -10042,6 +10492,12 @@
           "line": 68,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -10057,7 +10513,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -10066,6 +10522,12 @@
           "line": 96,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -10081,7 +10543,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:CLAUDE_CODE_VERIFY_PLAN=true"
@@ -10092,6 +10554,12 @@
           "line": 106,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -10107,7 +10575,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:WEB_BROWSER_TOOL"
@@ -10118,6 +10586,12 @@
           "line": 134,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -10133,7 +10607,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -10142,6 +10616,12 @@
           "line": 11,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -10157,7 +10637,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -10166,6 +10646,12 @@
           "line": 62,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -10181,7 +10667,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:WORKFLOW_SCRIPTS"
@@ -10192,6 +10678,12 @@
           "line": 157,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -13920,14 +14412,22 @@
       "enabled": true,
       "advertised_by_acp": true,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": true,
-      "conditions": [],
+      "conditions": [
+        "harness:phase-2:queue"
+      ],
       "source_evidence": [
         {
           "path": "acp.initialize.agentCapabilities._meta.claudeCode.promptQueueing",
           "line": 1,
           "detail": "observed=true",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration queues a second prompt while a turn runs and verifies ordered completion.",
           "evidenceType": "runtime"
         }
       ],
@@ -14461,20 +14961,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:configuration"
+      ],
       "source_evidence": [
         {
           "path": "src/services/acp/agent/AcpAgent.ts",
           "line": 338,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration changes permission mode through ACP and verifies the persisted session value.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
     },
@@ -14581,20 +15089,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:configuration"
+      ],
       "source_evidence": [
         {
           "path": "src/services/acp/agent/AcpAgent.ts",
           "line": 364,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration changes the model through ACP and verifies the persisted session value.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
     }
@@ -14608,7 +15124,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "provider-selection:bedrock"
@@ -14619,6 +15135,12 @@
           "line": 8,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -14633,11 +15155,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "default-provider"
+        "default-provider",
+        "harness:phase-2:provider"
       ],
       "source_evidence": [
         {
@@ -14645,10 +15168,22 @@
           "line": 7,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "The Docker test profile runs the real vendor ACP process against the deterministic Anthropic-compatible fake provider.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "D",
       "classification_rationale": "Provider support is conditional on credentials, endpoint configuration, and a provider contract test."
     },
@@ -14660,7 +15195,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "provider-selection:foundry"
@@ -14671,6 +15206,12 @@
           "line": 10,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -14686,7 +15227,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "provider-selection:gemini"
@@ -14697,6 +15238,12 @@
           "line": 12,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -14712,7 +15259,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "provider-selection:grok"
@@ -14723,6 +15270,12 @@
           "line": 13,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -14738,7 +15291,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "provider-selection:openai"
@@ -14749,6 +15302,12 @@
           "line": 11,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -14764,7 +15323,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "provider-selection:vertex"
@@ -14775,6 +15334,12 @@
           "line": 9,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -15605,6 +16170,40 @@
         }
       ],
       "upstream_strategy": "Prefer a generic upstream ACP fix, then consume a verified vendor update; use an external protocol adapter only when it does not import vendor internals."
+    },
+    {
+      "id": "gap.acp.tool-result-terminal-update",
+      "status": "expected_failure",
+      "summary": "The vendor ACP notification converter supports terminal tool results, but the forwarding loop skips the user SDK message that carries tool_result.",
+      "evidence": [
+        {
+          "path": "src/services/acp/bridge/forwarding.ts",
+          "line": 311,
+          "detail": "The ACP forwarding switch skips SDK user messages instead of passing tool_result blocks to toAcpNotifications.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Real ACP tool execution reaches in_progress and the model receives the result, but no terminal tool_call_update is observed before prompt completion.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Track an upstream ACP fix that forwards user tool_result blocks, then remove inferred terminal events and assert native rawOutput."
+    },
+    {
+      "id": "gap.acp.ask-user-question-updated-input",
+      "status": "expected_failure",
+      "summary": "ACP session/request_permission returns only a selected option ID and cannot carry AskUserQuestion updatedInput.answers.",
+      "evidence": [
+        {
+          "path": "apps/worker/src/supervisor.ts",
+          "line": 309,
+          "detail": "Harness records answers and uses a same-turn follow-up prompt because the ACP outcome schema has no updated input field.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Track an upstream ACP fix that permits a permission response to return updated tool input, then replace the compatibility follow-up with native answers."
     }
   ],
   "probe_environment": {
@@ -15618,7 +16217,8 @@
     },
     "static_probe": "static-source-audit",
     "dynamic_probe": "ccb-bun-acp-stdio",
-    "provider_credentials_present": false
+    "provider_credentials_present": false,
+    "harness_evidence_schema": 1
   },
   "summary": {
     "total": 389,
@@ -15641,7 +16241,7 @@
     },
     "unclassified": 0,
     "unclassified_ids": [],
-    "expected_failure_gaps": 4
+    "expected_failure_gaps": 6
   },
   "capabilities": [
     {
@@ -15676,14 +16276,22 @@
       "enabled": true,
       "advertised_by_acp": true,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": true,
-      "conditions": [],
+      "conditions": [
+        "harness:phase-2:queue"
+      ],
       "source_evidence": [
         {
           "path": "acp.initialize.agentCapabilities._meta.claudeCode.promptQueueing",
           "line": 1,
           "detail": "observed=true",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration queues a second prompt while a turn runs and verifies ordered completion.",
           "evidenceType": "runtime"
         }
       ],
@@ -16217,20 +16825,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:configuration"
+      ],
       "source_evidence": [
         {
           "path": "src/services/acp/agent/AcpAgent.ts",
           "line": 338,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration changes permission mode through ACP and verifies the persisted session value.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
     },
@@ -16337,20 +16953,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:configuration"
+      ],
       "source_evidence": [
         {
           "path": "src/services/acp/agent/AcpAgent.ts",
           "line": 364,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration changes the model through ACP and verifies the persisted session value.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
     },
@@ -28519,7 +29143,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "provider-selection:bedrock"
@@ -28530,6 +29154,12 @@
           "line": 8,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -28544,11 +29174,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "default-provider"
+        "default-provider",
+        "harness:phase-2:provider"
       ],
       "source_evidence": [
         {
@@ -28556,10 +29187,22 @@
           "line": 7,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "The Docker test profile runs the real vendor ACP process against the deterministic Anthropic-compatible fake provider.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "D",
       "classification_rationale": "Provider support is conditional on credentials, endpoint configuration, and a provider contract test."
     },
@@ -28571,7 +29214,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "provider-selection:foundry"
@@ -28582,6 +29225,12 @@
           "line": 10,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -28597,7 +29246,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "provider-selection:gemini"
@@ -28608,6 +29257,12 @@
           "line": 12,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -28623,7 +29278,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "provider-selection:grok"
@@ -28634,6 +29289,12 @@
           "line": 13,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -28649,7 +29310,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "provider-selection:openai"
@@ -28660,6 +29321,12 @@
           "line": 11,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -28675,7 +29342,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "provider-selection:vertex"
@@ -28686,6 +29353,12 @@
           "line": 9,
           "detail": "APIProvider union member",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+          "line": 53,
+          "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29455,7 +30128,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -29464,6 +30137,12 @@
           "line": 3,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29479,7 +30158,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -29488,6 +30167,12 @@
           "line": 65,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29502,20 +30187,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:question",
+        "fixture:[tool:question]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 81,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration reloads the persisted question, submits answers, and audits the follow-up prompt adapter.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "ACP permission outcomes cannot return AskUserQuestion updatedInput.answers; DeepHarness continues with an audited same-turn follow-up prompt. Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -29526,20 +30226,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:permission",
+        "fixture:[tool:bash]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 5,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration covers Bash approval, denial, expiration, partial output, and final output.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -29551,7 +30266,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -29560,6 +30275,12 @@
           "line": 13,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29575,7 +30296,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:USER_TYPE=ant"
@@ -29586,6 +30307,12 @@
           "line": 90,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29601,7 +30328,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS"
@@ -29612,6 +30339,12 @@
           "line": 32,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29627,7 +30360,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS"
@@ -29638,6 +30371,12 @@
           "line": 34,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29653,7 +30392,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS"
@@ -29664,6 +30403,12 @@
           "line": 36,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29679,7 +30424,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:CONTEXT_COLLAPSE"
@@ -29690,6 +30435,12 @@
           "line": 126,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29705,7 +30456,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:EXPERIMENTAL_SKILL_SEARCH",
@@ -29717,6 +30468,12 @@
           "line": 145,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29731,20 +30488,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:tool",
+        "fixture:[tool:plan]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 87,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes EnterPlanMode and preserves Plan/Todo events and renderer data.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -29756,7 +30528,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:worktree_mode"
@@ -29767,6 +30539,12 @@
           "line": 88,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29782,7 +30560,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -29791,6 +30569,12 @@
           "line": 280,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29806,7 +30590,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -29815,6 +30599,12 @@
           "line": 86,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29830,7 +30620,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -29839,6 +30629,12 @@
           "line": 64,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29854,7 +30650,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -29863,6 +30659,12 @@
           "line": 64,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29878,7 +30680,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:worktree_mode"
@@ -29889,6 +30691,12 @@
           "line": 89,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -29903,20 +30711,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:permission",
+        "fixture:[tool:edit]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 6,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes FileEdit and observes its final ACP tool result.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -29927,20 +30750,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:tool",
+        "fixture:[tool:read]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 7,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes FileRead through the real ACP process and fake Anthropic endpoint.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -29951,20 +30789,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:permission",
+        "fixture:[tool:write]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 8,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration approves FileWrite after replaying the persisted permission request.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -29975,20 +30828,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:tool",
+        "fixture:[tool:glob]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 9,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes Glob against the isolated workspace.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -30000,7 +30868,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:GOAL"
@@ -30011,6 +30879,12 @@
           "line": 91,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30025,20 +30899,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:tool",
+        "fixture:[tool:grep]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 67,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes Grep against the isolated workspace marker.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -30050,7 +30939,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:mcp_client_connected"
@@ -30061,6 +30950,12 @@
           "line": 83,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30076,7 +30971,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:UDS_INBOX"
@@ -30087,6 +30982,12 @@
           "line": 153,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30102,7 +31003,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -30111,6 +31012,12 @@
           "line": 95,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30126,7 +31033,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:ENABLE_LSP_TOOL"
@@ -30137,6 +31044,12 @@
           "line": 82,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30152,7 +31065,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:mcp_client_connected"
@@ -30163,6 +31076,12 @@
           "line": 1,
           "detail": "Exported implementation or tool directory candidate",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30178,7 +31097,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:mcp_client_connected"
@@ -30189,6 +31108,12 @@
           "line": 1,
           "detail": "Exported implementation or tool directory candidate",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30204,7 +31129,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:MONITOR_TOOL"
@@ -30215,6 +31140,12 @@
           "line": 43,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30229,20 +31160,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:permission",
+        "fixture:[tool:notebook]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 10,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes NotebookEdit after creating a notebook fixture.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -30254,7 +31200,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:OVERFLOW_TEST_TOOL"
@@ -30265,6 +31211,12 @@
           "line": 122,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30280,7 +31232,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:platform_win32_or_powershell_enabled"
@@ -30291,6 +31243,12 @@
           "line": 178,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30306,7 +31264,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS|KAIROS_PUSH_NOTIFICATION"
@@ -30317,6 +31275,12 @@
           "line": 51,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30332,7 +31296,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:mcp_client_connected"
@@ -30343,6 +31307,12 @@
           "line": 84,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30358,7 +31328,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:AGENT_TRIGGERS_REMOTE"
@@ -30369,6 +31339,12 @@
           "line": 39,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30384,7 +31360,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:USER_TYPE=ant",
@@ -30396,6 +31372,12 @@
           "line": 16,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30411,7 +31393,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:REVIEW_ARTIFACT"
@@ -30422,6 +31404,12 @@
           "line": 149,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30437,7 +31425,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS"
@@ -30448,6 +31436,12 @@
           "line": 32,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30463,7 +31457,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:ENABLE_SEARCH_EXTRA_TOOLS"
@@ -30474,6 +31468,12 @@
           "line": 85,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30489,7 +31489,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -30498,6 +31498,12 @@
           "line": 78,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30513,7 +31519,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS"
@@ -30524,6 +31530,12 @@
           "line": 47,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30539,7 +31551,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -30548,6 +31560,12 @@
           "line": 4,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30563,7 +31581,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:PROACTIVE|KAIROS"
@@ -30574,6 +31592,12 @@
           "line": 26,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30589,7 +31613,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:HISTORY_SNIP"
@@ -30600,6 +31624,12 @@
           "line": 141,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30615,7 +31645,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:KAIROS_GITHUB_WEBHOOKS"
@@ -30626,6 +31656,12 @@
           "line": 56,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30641,7 +31677,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:USER_TYPE=ant"
@@ -30652,6 +31688,12 @@
           "line": 21,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30667,7 +31709,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -30676,6 +31718,12 @@
           "line": 112,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30691,7 +31739,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:todo_v2"
@@ -30702,6 +31750,12 @@
           "line": 97,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30717,7 +31771,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:todo_v2"
@@ -30728,6 +31782,12 @@
           "line": 98,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30743,7 +31803,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:todo_v2"
@@ -30754,6 +31814,12 @@
           "line": 100,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30769,7 +31835,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -30778,6 +31844,12 @@
           "line": 61,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30793,7 +31865,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -30802,6 +31874,12 @@
           "line": 12,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30817,7 +31895,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "runtime:todo_v2"
@@ -30828,6 +31906,12 @@
           "line": 99,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30843,7 +31927,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -30852,6 +31936,12 @@
           "line": 69,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30867,7 +31957,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -30876,6 +31966,12 @@
           "line": 69,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30891,7 +31987,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:TERMINAL_PANEL"
@@ -30902,6 +31998,12 @@
           "line": 130,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30917,7 +32019,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:NODE_ENV=test"
@@ -30928,6 +32030,12 @@
           "line": 66,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30942,20 +32050,35 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-2:tool",
+        "fixture:[tool:todo]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
           "line": 63,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 2 Docker integration invokes TodoWrite and projects the structured todo state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -30967,7 +32090,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:USER_TYPE=ant"
@@ -30978,6 +32101,12 @@
           "line": 68,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -30993,7 +32122,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -31002,6 +32131,12 @@
           "line": 96,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -31017,7 +32152,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "env:CLAUDE_CODE_VERIFY_PLAN=true"
@@ -31028,6 +32163,12 @@
           "line": 106,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -31043,7 +32184,7 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:WEB_BROWSER_TOOL"
@@ -31054,6 +32195,12 @@
           "line": 134,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -31069,7 +32216,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -31078,6 +32225,12 @@
           "line": 11,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -31093,7 +32246,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [],
       "source_evidence": [
@@ -31102,6 +32255,12 @@
           "line": 62,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
@@ -31117,7 +32276,7 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": false,
       "conditions": [
         "build_feature:WORKFLOW_SCRIPTS"
@@ -31128,6 +32287,12 @@
           "line": 157,
           "detail": "Referenced by src/tools.ts registry",
           "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 247,
+          "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,

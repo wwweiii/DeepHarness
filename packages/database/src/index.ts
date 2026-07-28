@@ -5,6 +5,10 @@ const migrations = [
     version: '0001_phase_1',
     url: new URL('../migrations/0001_phase_1.sql', import.meta.url),
   },
+  {
+    version: '0002_phase_2',
+    url: new URL('../migrations/0002_phase_2.sql', import.meta.url),
+  },
 ] as const
 
 export type Database = ReturnType<typeof postgres>

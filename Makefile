@@ -3,7 +3,10 @@
 TEST_COMPOSE = docker compose -f compose.yaml -f compose.test.yaml
 
 audit:
-	$(TEST_COMPOSE) --profile audit run --rm capability-audit
+	$(TEST_COMPOSE) --profile audit run --rm capability-audit bun run \
+		packages/vendor-capabilities/src/cli.ts audit \
+		--previous artifacts/capabilities/vendor-capability-manifest.json \
+		--artifacts /tmp/deepharness-capability-audit
 
 review-draft:
 	$(TEST_COMPOSE) --profile audit run --rm \
@@ -20,6 +23,10 @@ integration-test:
 	$(TEST_COMPOSE) --profile audit run --rm \
 		--env TEST_BASE_URL=http://gateway:8080 \
 		capability-audit bun test --timeout 60000 ./tests/integration/phase-1-stack.test.ts
+	$(TEST_COMPOSE) --profile audit run --rm \
+		--env TEST_BASE_URL=http://gateway:8080 \
+		--env DATABASE_URL=postgres://deepharness:deepharness-local-only@postgres:5432/deepharness \
+		capability-audit bun test --timeout 180000 ./tests/integration/phase-2-stack.test.ts
 
 e2e-test:
 	$(TEST_COMPOSE) --profile test up --build --detach --wait --force-recreate

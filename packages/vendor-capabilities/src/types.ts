@@ -100,3 +100,19 @@ export type DynamicReport = {
   stderr_tail: string[]
   gaps: GapResult[]
 }
+
+export type HarnessCapabilityEvidence = {
+  schema_version: 1
+  generic_tool_renderer: Evidence
+  provider_ui: Evidence
+  terminal_tool_result_gap: string
+  capabilities: Array<{
+    id: string
+    scenario?: string
+    invocable?: boolean | null
+    workflow: 'tool' | 'permission' | 'question' | 'configuration' | 'queue' | 'provider'
+    evidence: string
+    known_gap?: string
+  }>
+  known_gaps: GapResult[]
+}

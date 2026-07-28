@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "generic_tool_renderer": {
+    "path": "apps/web/src/features/chat/messages/Thread.tsx",
+    "line": 247,
+    "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
+    "evidenceType": "runtime"
+  },
+  "provider_ui": {
+    "path": "apps/web/src/features/capabilities/CapabilityPage.tsx",
+    "line": 53,
+    "detail": "Capability page renders provider activation, credential, and test status without treating missing credentials as passed.",
+    "evidenceType": "runtime"
+  },
+  "terminal_tool_result_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+  "capabilities": [
+    {
+      "id": "tool.FileReadTool",
+      "scenario": "[tool:read]",
+      "workflow": "tool",
+      "evidence": "Phase 2 Docker integration invokes FileRead through the real ACP process and fake Anthropic endpoint."
+    },
+    {
+      "id": "tool.FileWriteTool",
+      "scenario": "[tool:write]",
+      "workflow": "permission",
+      "evidence": "Phase 2 Docker integration approves FileWrite after replaying the persisted permission request."
+    },
+    {
+      "id": "tool.FileEditTool",
+      "scenario": "[tool:edit]",
+      "workflow": "permission",
+      "evidence": "Phase 2 Docker integration invokes FileEdit and observes its final ACP tool result."
+    },
+    {
+      "id": "tool.BashTool",
+      "scenario": "[tool:bash]",
+      "workflow": "permission",
+      "evidence": "Phase 2 Docker integration covers Bash approval, denial, expiration, partial output, and final output."
+    },
+    {
+      "id": "tool.GlobTool",
+      "scenario": "[tool:glob]",
+      "workflow": "tool",
+      "evidence": "Phase 2 Docker integration invokes Glob against the isolated workspace."
+    },
+    {
+      "id": "tool.GrepTool",
+      "scenario": "[tool:grep]",
+      "workflow": "tool",
+      "evidence": "Phase 2 Docker integration invokes Grep against the isolated workspace marker."
+    },
+    {
+      "id": "tool.NotebookEditTool",
+      "scenario": "[tool:notebook]",
+      "workflow": "permission",
+      "evidence": "Phase 2 Docker integration invokes NotebookEdit after creating a notebook fixture."
+    },
+    {
+      "id": "tool.TodoWriteTool",
+      "scenario": "[tool:todo]",
+      "workflow": "tool",
+      "evidence": "Phase 2 Docker integration invokes TodoWrite and projects the structured todo state."
+    },
+    {
+      "id": "tool.EnterPlanModeTool",
+      "scenario": "[tool:plan]",
+      "workflow": "tool",
+      "evidence": "Phase 2 Docker integration invokes EnterPlanMode and preserves Plan/Todo events and renderer data."
+    },
+    {
+      "id": "tool.AskUserQuestionTool",
+      "scenario": "[tool:question]",
+      "workflow": "question",
+      "evidence": "Phase 2 Docker integration reloads the persisted question, submits answers, and audits the follow-up prompt adapter.",
+      "known_gap": "ACP permission outcomes cannot return AskUserQuestion updatedInput.answers; DeepHarness continues with an audited same-turn follow-up prompt."
+    },
+    {
+      "id": "acp.setSessionMode",
+      "workflow": "configuration",
+      "evidence": "Phase 2 Docker integration changes permission mode through ACP and verifies the persisted session value."
+    },
+    {
+      "id": "acp.unstable_setSessionModel",
+      "workflow": "configuration",
+      "evidence": "Phase 2 Docker integration changes the model through ACP and verifies the persisted session value."
+    },
+    {
+      "id": "acp.advertised:_meta.claudeCode.promptQueueing",
+      "invocable": null,
+      "workflow": "queue",
+      "evidence": "Phase 2 Docker integration queues a second prompt while a turn runs and verifies ordered completion."
+    },
+    {
+      "id": "provider.firstParty",
+      "workflow": "provider",
+      "evidence": "The Docker test profile runs the real vendor ACP process against the deterministic Anthropic-compatible fake provider."
+    }
+  ],
+  "known_gaps": [
+    {
+      "id": "gap.acp.tool-result-terminal-update",
+      "status": "expected_failure",
+      "summary": "The vendor ACP notification converter supports terminal tool results, but the forwarding loop skips the user SDK message that carries tool_result.",
+      "evidence": [
+        {
+          "path": "src/services/acp/bridge/forwarding.ts",
+          "line": 311,
+          "detail": "The ACP forwarding switch skips SDK user messages instead of passing tool_result blocks to toAcpNotifications.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-2-stack.test.ts",
+          "line": 1,
+          "detail": "Real ACP tool execution reaches in_progress and the model receives the result, but no terminal tool_call_update is observed before prompt completion.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Track an upstream ACP fix that forwards user tool_result blocks, then remove inferred terminal events and assert native rawOutput."
+    },
+    {
+      "id": "gap.acp.ask-user-question-updated-input",
+      "status": "expected_failure",
+      "summary": "ACP session/request_permission returns only a selected option ID and cannot carry AskUserQuestion updatedInput.answers.",
+      "evidence": [
+        {
+          "path": "apps/worker/src/supervisor.ts",
+          "line": 309,
+          "detail": "Harness records answers and uses a same-turn follow-up prompt because the ACP outcome schema has no updated input field.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Track an upstream ACP fix that permits a permission response to return updated tool input, then replace the compatibility follow-up with native answers."
+    }
+  ]
+}
