@@ -51,7 +51,7 @@ RUN sed -i \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --gid 10001 agent \
     && useradd --uid 10001 --gid agent --create-home --shell /bin/bash agent \
-    && mkdir -p /workspace/source /workspace/runs /home/agent/.claude \
+    && mkdir -p /workspace/source /workspace/runs /workspace/non-git /home/agent/.claude \
     && chown -R agent:agent /workspace /home/agent
 
 WORKDIR /app
@@ -77,12 +77,13 @@ ENV NODE_ENV=test
 USER bun
 CMD ["bun", "run", "apps/test-model/src/server.ts"]
 
-FROM oven/bun:1.3.13 AS browser-runtime
+FROM node:24.14.0-bookworm-slim AS browser-runtime
 
 ARG DEBIAN_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian
 ARG DEBIAN_SECURITY_MIRROR=http://mirrors.tuna.tsinghua.edu.cn/debian-security
 
 USER root
+COPY --from=workspace-deps /usr/local/bin/bun /usr/local/bin/bun
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     sed -i \
@@ -98,6 +99,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
          if [ "${attempt}" -eq 3 ]; then exit 1; fi; \
          apt-get -o Acquire::Retries=3 update; \
        done
+RUN ln -s /usr/local/bin/bun /usr/local/bin/bunx
 
 FROM browser-runtime AS e2e
 
@@ -109,7 +111,8 @@ COPY config ./config
 COPY compose.yaml compose.test.yaml compose.providers.yaml .gitmodules Makefile ./
 
 ENV NODE_ENV=test \
+    HOME=/home/node \
     PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium
 
-USER bun
-CMD ["bunx", "playwright", "test", "--config", "playwright.config.ts"]
+USER node
+CMD ["node", "node_modules/@playwright/test/cli.js", "test", "--config", "playwright.config.ts"]

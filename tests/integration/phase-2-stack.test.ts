@@ -248,7 +248,7 @@ stackTest('phase 2 core tools, durable interactions, providers, and capability e
   expect(capabilityView.knownGaps).toEqual(expect.arrayContaining([
     expect.objectContaining({ id: 'gap.acp.ask-user-question-updated-input' }),
   ]))
-  for (const entry of evidence.capabilities) {
+  for (const entry of evidence.capabilities.filter(candidate => (candidate as EvidenceEntry & { phase?: number }).phase !== 3)) {
     const capability = capabilityView.capabilities.find(item => item.id === entry.id)
     expect(capability).toBeDefined()
     expect(capability?.tested).toBe(true)

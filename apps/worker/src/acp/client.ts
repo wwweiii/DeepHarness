@@ -34,6 +34,7 @@ export interface AcpClientOptions {
   onClientRequest: (request: AcpClientRequest) => void
   onExit: (exitCode: number, stderrTail: string[]) => void
   onProtocolError: (error: Error) => void
+  promptTimeoutMs?: number
 }
 
 function redact(line: string): string {
@@ -50,6 +51,10 @@ export class AcpClient {
   private nextId = 1
   private exited = false
   private sessionId: string | null = null
+
+  get pid(): number {
+    return this.process.pid
+  }
 
   constructor(private readonly options: AcpClientOptions) {
     this.process = Bun.spawn(options.command, {
@@ -69,7 +74,7 @@ export class AcpClient {
     return this.request('initialize', {
       protocolVersion: 1,
       clientCapabilities: { terminal: false },
-      clientInfo: { name: 'deepharness-worker', version: '0.2.0' },
+      clientInfo: { name: 'deepharness-worker', version: '0.3.0' },
     }, 30_000)
   }
 
@@ -94,13 +99,72 @@ export class AcpClient {
     return result
   }
 
+  async resumeSession(input: {
+    sessionId: string
+    permissionMode: string
+    modelId: string | null
+  }): Promise<JsonObject> {
+    const result = await this.request('session/resume', {
+      sessionId: input.sessionId,
+      cwd: this.options.cwd,
+      mcpServers: [],
+      _meta: { permissionMode: input.permissionMode },
+    }, 60_000)
+    this.sessionId = String(result.sessionId ?? input.sessionId)
+    await this.applyConfiguration(input.permissionMode, input.modelId)
+    return result
+  }
+
+  async loadSession(input: {
+    sessionId: string
+    permissionMode: string
+    modelId: string | null
+  }): Promise<JsonObject> {
+    const result = await this.request('session/load', {
+      sessionId: input.sessionId,
+      cwd: this.options.cwd,
+      mcpServers: [],
+      _meta: { permissionMode: input.permissionMode },
+    }, 60_000)
+    this.sessionId = String(result.sessionId ?? input.sessionId)
+    await this.applyConfiguration(input.permissionMode, input.modelId)
+    return result
+  }
+
+  async forkSession(input: {
+    sourceSessionId: string
+    permissionMode: string
+    modelId: string | null
+  }): Promise<JsonObject> {
+    const result = await this.request('session/fork', {
+      sessionId: input.sourceSessionId,
+      cwd: this.options.cwd,
+      mcpServers: [],
+      _meta: { permissionMode: input.permissionMode },
+    }, 60_000)
+    const sessionId = result.sessionId
+    if (typeof sessionId !== 'string') throw new Error('ACP session/fork returned no sessionId')
+    this.sessionId = sessionId
+    await this.applyConfiguration(input.permissionMode, input.modelId)
+    return result
+  }
+
+  async listSessions(): Promise<JsonObject> {
+    return this.request('session/list', { cwd: this.options.cwd }, 30_000)
+  }
+
+  async closeSession(): Promise<void> {
+    if (!this.sessionId || this.exited) return
+    await this.request('session/close', { sessionId: this.sessionId }, 30_000)
+  }
+
   async prompt(text: string, messageId: string): Promise<JsonObject> {
     if (!this.sessionId) throw new Error('ACP session has not been created')
     return this.request('session/prompt', {
       sessionId: this.sessionId,
       messageId,
       prompt: [{ type: 'text', text }],
-    }, 10 * 60_000)
+    }, this.options.promptTimeoutMs ?? 10 * 60_000)
   }
 
   async setMode(modeId: string): Promise<JsonObject> {
@@ -134,9 +198,18 @@ export class AcpClient {
     this.notify('session/cancel', { sessionId: this.sessionId })
   }
 
-  terminate(): void {
+  terminate(signal: 'SIGTERM' | 'SIGKILL' = 'SIGTERM'): void {
     if (this.exited) return
-    this.process.kill('SIGTERM')
+    this.process.kill(signal)
+  }
+
+  async waitForExit(): Promise<number> {
+    return this.process.exited
+  }
+
+  private async applyConfiguration(permissionMode: string, modelId: string | null): Promise<void> {
+    if (permissionMode) await this.setMode(permissionMode)
+    if (modelId) await this.setModel(modelId)
   }
 
   private request(method: string, params: JsonObject, timeoutMs: number): Promise<JsonObject> {

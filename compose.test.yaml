@@ -9,11 +9,16 @@ services:
       - "127.0.0.1:${TEST_GATEWAY_PORT:-18080}:8080"
 
   worker:
+    ports:
+      - "127.0.0.1:${TEST_WORKER_PORT:-18081}:8081"
     environment:
       ANTHROPIC_API_KEY: phase-1-test-key
       ANTHROPIC_AUTH_TOKEN: ""
       ANTHROPIC_BASE_URL: http://test-model:8090
       PERMISSION_REQUEST_TIMEOUT_MS: "10000"
+      WORKER_MAX_CONCURRENCY: "2"
+      AGENT_IDLE_TTL_MS: "120000"
+      ENABLE_TEST_CONTROL: "1"
     depends_on:
       test-model:
         condition: service_healthy
@@ -44,6 +49,8 @@ services:
       NODE_ENV: test
       TEST_BASE_URL: http://gateway:8080
       DATABASE_URL: postgres://deepharness:deepharness-local-only@postgres:5432/deepharness
+      WORKER_TEST_URL: http://worker:8081
+      WORKER_SHARED_TOKEN: phase-1-local-token
       ANTHROPIC_API_KEY: phase-2-test-key
       ANTHROPIC_BASE_URL: http://test-model:8090
       PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/chromium
@@ -64,7 +71,8 @@ services:
         bun test tests/unit
         bun test --timeout 60000 tests/integration/phase-1-stack.test.ts
         bun test --timeout 180000 tests/integration/phase-2-stack.test.ts
-        bunx playwright test --config playwright.config.ts
+        bun test --timeout 240000 tests/integration/phase-3-stack.test.ts
+        node node_modules/@playwright/test/cli.js test --config playwright.config.ts
     networks: [control]
     volumes:
       - ./artifacts/capabilities:/app/artifacts/capabilities
@@ -73,6 +81,6 @@ services:
     read_only: true
     tmpfs:
       - /tmp:size=512m,mode=1777
-      - /home/bun:size=128m,mode=1777
+      - /home/node:size=128m,mode=1777
     cap_drop: [ALL]
     init: true

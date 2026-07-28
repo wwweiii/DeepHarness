@@ -11,13 +11,17 @@ import {
   type WorkerToGatewayMessage,
 } from '@deepharness/protocol'
 import { Hono } from 'hono'
+import path from 'node:path'
 import { GatewayStore } from './store.ts'
 
 const port = Number.parseInt(process.env.PORT ?? '8080', 10)
 const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) throw new Error('DATABASE_URL is required')
 const workerToken = process.env.WORKER_SHARED_TOKEN ?? 'phase-1-local-token'
-const workspacePath = process.env.WORKSPACE_PATH ?? '/workspace/source'
+const workspaceRoots = (process.env.WORKSPACE_ROOTS ?? process.env.WORKSPACE_PATH ?? '/workspace/source')
+  .split(',')
+  .map(value => path.resolve(value.trim()))
+  .filter(Boolean)
 const webRoot = process.env.WEB_ROOT ?? '/app/apps/web/dist'
 const manifestPath = process.env.CAPABILITY_MANIFEST_PATH
   ?? '/app/artifacts/capabilities/vendor-capability-manifest.json'
@@ -103,7 +107,14 @@ async function providerProfiles(): Promise<ProviderProfile[]> {
 }
 
 const encoder = new TextEncoder()
-const subscribers = new Map<string, Set<ReadableStreamDefaultController<Uint8Array>>>()
+interface SseSubscriber {
+  controller: ReadableStreamDefaultController<Uint8Array>
+  replaying: boolean
+  buffered: HarnessEvent[]
+  delivered: Set<string>
+}
+
+const subscribers = new Map<string, Set<SseSubscriber>>()
 let workerSocket: Bun.ServerWebSocket<{ workerId: string | null }> | null = null
 let workerMessageQueue = Promise.resolve()
 
@@ -114,11 +125,16 @@ function sseFrame(event: HarnessEvent): Uint8Array {
 }
 
 function broadcast(event: HarnessEvent): void {
-  for (const controller of subscribers.get(event.sessionId) ?? []) {
+  for (const subscriber of subscribers.get(event.sessionId) ?? []) {
     try {
-      controller.enqueue(sseFrame(event))
+      if (subscriber.delivered.has(event.id)) continue
+      if (subscriber.replaying) subscriber.buffered.push(event)
+      else {
+        subscriber.controller.enqueue(sseFrame(event))
+        subscriber.delivered.add(event.id)
+      }
     } catch {
-      subscribers.get(event.sessionId)?.delete(controller)
+      subscribers.get(event.sessionId)?.delete(subscriber)
     }
   }
 }
@@ -140,8 +156,18 @@ function idempotencyKey(request: Request): string | null {
   return value && value.length <= 200 ? value : null
 }
 
-function apiError(message: string, status: 400 | 404 | 409 | 503) {
+function apiError(message: string, status: 400 | 404 | 409 | 422 | 503) {
   return Response.json({ error: message }, { status })
+}
+
+function validWorkspacePath(value: string): string | null {
+  if (!path.isAbsolute(value)) return null
+  const resolved = path.resolve(value)
+  const allowed = workspaceRoots.some(root => {
+    const relative = path.relative(root, resolved)
+    return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+  })
+  return allowed ? resolved : null
 }
 
 const app = new Hono()
@@ -165,7 +191,10 @@ app.get('/health/ready', async c => {
 })
 
 app.get('/api/session', async c => {
-  const session = await store.getActiveSession()
+  const requestedSessionId = c.req.query('sessionId')
+  const session = requestedSessionId
+    ? await store.getSession(requestedSessionId)
+    : await store.getActiveSession()
   const events = session ? await store.listEvents(session.id) : []
   const snapshot: SessionSnapshot = {
     session,
@@ -173,6 +202,42 @@ app.get('/api/session', async c => {
     workerOnline: workerSocket?.readyState === WebSocket.OPEN,
   }
   return c.json(snapshot)
+})
+
+app.get('/api/sessions', async c => c.json({ sessions: await store.listSessions() }))
+
+app.get('/api/sessions/:sessionId', async c => {
+  const session = await store.getSession(c.req.param('sessionId'))
+  if (!session) return apiError('Session not found', 404)
+  return c.json({
+    session,
+    events: await store.listEvents(session.id),
+    workerOnline: workerSocket?.readyState === WebSocket.OPEN,
+  } satisfies SessionSnapshot)
+})
+
+app.get('/api/workspaces', async c => c.json({ workspaces: await store.listWorkspaces() }))
+
+app.post('/api/workspaces', async c => {
+  const key = idempotencyKey(c.req.raw)
+  if (!key) return apiError('Idempotency-Key header is required', 400)
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const name = typeof body.name === 'string' ? body.name.trim() : ''
+  const containerPath = typeof body.containerPath === 'string'
+    ? validWorkspacePath(body.containerPath)
+    : null
+  const mode = body.mode === 'worktree' ? 'worktree' : 'shared'
+  if (!name) return apiError('Workspace name is required', 400)
+  if (!containerPath) return apiError('Workspace path is outside the configured roots', 422)
+  const workspace = await store.createWorkspace({
+    id: crypto.randomUUID(),
+    name,
+    containerPath,
+    mode,
+    readOnly: body.readOnly === true,
+    metadata: { idempotencyKey: key },
+  })
+  return c.json({ workspace }, 201)
 })
 
 app.get('/api/capabilities', async c => {
@@ -203,18 +268,18 @@ app.post('/api/sessions', async c => {
     ? body.permissionMode
     : 'acceptEdits'
   const modelId = typeof body.modelId === 'string' ? body.modelId : null
+  const workspaceId = typeof body.workspaceId === 'string' ? body.workspaceId : WORKSPACE_ID
   try {
     const result = await store.createSession({
       sessionId: crypto.randomUUID(),
       commandId: crypto.randomUUID(),
       idempotencyKey: key,
-      workspaceId: WORKSPACE_ID,
+      workspaceId,
       permissionMode,
       modelId,
-      workspacePath,
     })
     if (!result.created) return c.json({ session: result.session }, 200)
-    const event = await store.appendEvent({
+    const { event } = await store.appendEvent({
       id: crypto.randomUUID(),
       sessionId: result.session.id,
       turnId: null,
@@ -226,9 +291,47 @@ app.post('/api/sessions', async c => {
     await deliver(result.command)
     return c.json({ session: result.session }, 201)
   } catch (error) {
-    if ((error as Error).message === 'ACTIVE_SESSION_EXISTS') {
-      return apiError('Only one active session is supported by this Worker', 409)
+    if ((error as Error).message === 'WORKSPACE_NOT_FOUND') return apiError('Workspace not found', 404)
+    if ((error as Error).message === 'WORKSPACE_BUSY') return apiError('Workspace is locked by another write session', 409)
+    throw error
+  }
+})
+
+app.post('/api/sessions/:sessionId/fork', async c => {
+  const key = idempotencyKey(c.req.raw)
+  if (!key) return apiError('Idempotency-Key header is required', 400)
+  const parent = await store.getSession(c.req.param('sessionId'))
+  if (!parent) return apiError('Session not found', 404)
+  if (!parent.agentSessionId) return apiError('Session has no Agent transcript to fork', 409)
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  try {
+    const result = await store.createSession({
+      sessionId: crypto.randomUUID(),
+      commandId: crypto.randomUUID(),
+      idempotencyKey: key,
+      workspaceId: typeof body.workspaceId === 'string' ? body.workspaceId : parent.workspaceId,
+      permissionMode: parent.permissionMode,
+      modelId: parent.modelId,
+      recoveryStrategy: 'fork',
+      sourceAgentSessionId: parent.agentSessionId,
+      parentSessionId: parent.id,
+    })
+    if (result.created) {
+      const { event } = await store.appendEvent({
+        id: crypto.randomUUID(),
+        sessionId: result.session.id,
+        turnId: null,
+        type: 'session.created',
+        payload: { status: 'queued', parentSessionId: parent.id, recoveryStrategy: 'fork' },
+        source: 'gateway',
+      })
+      broadcast(event)
+      await deliver(result.command)
     }
+    return c.json({ session: result.session }, result.created ? 201 : 200)
+  } catch (error) {
+    if ((error as Error).message === 'WORKSPACE_NOT_FOUND') return apiError('Workspace not found', 404)
+    if ((error as Error).message === 'WORKSPACE_BUSY') return apiError('Workspace is locked by another write session', 409)
     throw error
   }
 })
@@ -246,12 +349,13 @@ app.post('/api/sessions/:sessionId/prompts', async c => {
       sessionId,
       turnId,
       commandId: crypto.randomUUID(),
+      recoveryCommandId: crypto.randomUUID(),
       idempotencyKey: key,
       text,
     })
-    const command = result.command
+    const command = result.prompt
     if (!result.created) return c.json({ turnId: command.payload.turnId }, 202)
-    const event = await store.appendEvent({
+    const { event } = await store.appendEvent({
       id: crypto.randomUUID(),
       sessionId,
       turnId: command.payload.turnId,
@@ -260,12 +364,73 @@ app.post('/api/sessions/:sessionId/prompts', async c => {
       source: 'browser',
     })
     broadcast(event)
-    if (!await deliver(command)) return apiError('Worker is offline', 503)
+    for (const pending of result.commands) {
+      if (!await deliver(pending)) return apiError('Worker is offline; commands remain queued', 503)
+    }
     return c.json({ turnId: command.payload.turnId }, 202)
   } catch (error) {
     const message = (error as Error).message
     if (message === 'SESSION_NOT_FOUND') return apiError('Session not found', 404)
     if (message === 'SESSION_NOT_READY') return apiError('Session cannot accept prompts', 409)
+    if (message === 'SESSION_HAS_NO_AGENT_TRANSCRIPT') return apiError('Session has no resumable transcript', 409)
+    if (message === 'WORKSPACE_BUSY') return apiError('Workspace is locked by another write session', 409)
+    throw error
+  }
+})
+
+app.post('/api/sessions/:sessionId/recover', async c => {
+  const key = idempotencyKey(c.req.raw)
+  if (!key) return apiError('Idempotency-Key header is required', 400)
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const strategy = body.strategy === 'load' ? 'load' : 'resume'
+  try {
+    const result = await store.createRecovery({
+      sessionId: c.req.param('sessionId'),
+      commandId: crypto.randomUUID(),
+      idempotencyKey: key,
+      strategy,
+    })
+    if (result.created && !await deliver(result.command)) {
+      return apiError('Worker is offline; recovery remains queued', 503)
+    }
+    return c.json({ status: 'queued', strategy }, 202)
+  } catch (error) {
+    const message = (error as Error).message
+    if (message === 'SESSION_NOT_FOUND') return apiError('Session not found', 404)
+    if (message === 'SESSION_HAS_NO_AGENT_TRANSCRIPT') return apiError('Session has no resumable transcript', 409)
+    if (message === 'SESSION_PROCESS_RUNNING') return apiError('Session process is already running', 409)
+    if (message === 'WORKSPACE_BUSY') return apiError('Workspace is locked by another write session', 409)
+    throw error
+  }
+})
+
+app.post('/api/sessions/:sessionId/close', async c => {
+  const key = idempotencyKey(c.req.raw)
+  if (!key) return apiError('Idempotency-Key header is required', 400)
+  try {
+    const result = await store.createClose({
+      sessionId: c.req.param('sessionId'),
+      commandId: crypto.randomUUID(),
+      idempotencyKey: key,
+      removeCleanWorktree: true,
+    })
+    if (result.command && result.created && !await deliver(result.command)) {
+      return apiError('Worker is offline; close remains queued', 503)
+    }
+    if (!result.command && result.created) {
+      const { event } = await store.appendEvent({
+        id: crypto.randomUUID(),
+        sessionId: c.req.param('sessionId'),
+        turnId: null,
+        type: 'session.closed',
+        payload: { status: 'closed', processState: 'stopped' },
+        source: 'gateway',
+      })
+      broadcast(event)
+    }
+    return c.json({ status: 'closing' }, 202)
+  } catch (error) {
+    if ((error as Error).message === 'SESSION_NOT_FOUND') return apiError('Session not found', 404)
     throw error
   }
 })
@@ -295,6 +460,7 @@ async function controlCommand(input: {
     if (message === 'PERMISSION_NOT_PENDING') {
       return apiError('Permission request is no longer pending', 409)
     }
+    if (message === 'SESSION_PROCESS_STOPPED') return apiError('Session process is stopped', 409)
     throw error
   }
 }
@@ -392,28 +558,44 @@ app.get('/api/sessions/:sessionId/events', async c => {
   if (!session) return apiError('Session not found', 404)
   const afterSeq = Number.parseInt(c.req.header('last-event-id') ?? '0', 10) || 0
   let heartbeat: ReturnType<typeof setInterval> | undefined
-  let controllerRef: ReadableStreamDefaultController<Uint8Array> | undefined
+  let subscriberRef: SseSubscriber | undefined
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      controllerRef = controller
-      for (const event of await store.listEvents(sessionId, afterSeq)) {
-        controller.enqueue(sseFrame(event))
+      const subscriber: SseSubscriber = {
+        controller,
+        replaying: true,
+        buffered: [],
+        delivered: new Set(),
       }
+      subscriberRef = subscriber
       const sessionSubscribers = subscribers.get(sessionId) ?? new Set()
-      sessionSubscribers.add(controller)
+      sessionSubscribers.add(subscriber)
       subscribers.set(sessionId, sessionSubscribers)
+      for (const event of await store.listEvents(sessionId, afterSeq)) {
+        if (!subscriber.delivered.has(event.id)) {
+          controller.enqueue(sseFrame(event))
+          subscriber.delivered.add(event.id)
+        }
+      }
+      subscriber.replaying = false
+      for (const event of subscriber.buffered.sort((left, right) => left.seq - right.seq)) {
+        if (subscriber.delivered.has(event.id)) continue
+        controller.enqueue(sseFrame(event))
+        subscriber.delivered.add(event.id)
+      }
+      subscriber.buffered.length = 0
       heartbeat = setInterval(() => {
         try {
           controller.enqueue(encoder.encode(': heartbeat\n\n'))
         } catch {
           clearInterval(heartbeat)
-          sessionSubscribers.delete(controller)
+          sessionSubscribers.delete(subscriber)
         }
       }, 15_000)
     },
     cancel() {
       if (heartbeat) clearInterval(heartbeat)
-      if (controllerRef) subscribers.get(sessionId)?.delete(controllerRef)
+      if (subscriberRef) subscribers.get(sessionId)?.delete(subscriberRef)
     },
   })
   return new Response(stream, {
@@ -424,6 +606,19 @@ app.get('/api/sessions/:sessionId/events', async c => {
       'x-accel-buffering': 'no',
     },
   })
+})
+
+app.get('/api/sessions/:sessionId/history', async c => {
+  const sessionId = c.req.param('sessionId')
+  if (!await store.getSession(sessionId)) return apiError('Session not found', 404)
+  const beforeValue = c.req.query('beforeSeq')
+  const beforeSeq = beforeValue ? Number.parseInt(beforeValue, 10) : null
+  const limit = Number.parseInt(c.req.query('limit') ?? '100', 10)
+  return c.json(await store.listHistory(
+    sessionId,
+    beforeSeq !== null && Number.isFinite(beforeSeq) ? beforeSeq : null,
+    Number.isFinite(limit) ? limit : 100,
+  ))
 })
 
 app.get('*', async c => {
@@ -468,21 +663,24 @@ const server = Bun.serve<{ workerId: string | null }>({
         if (message.kind === 'register') {
           socket.data.workerId = message.worker.id
           await store.registerWorker(message.worker)
+          await store.requeueUnackedCommands()
           socket.send(JSON.stringify({ kind: 'registered', workerId: message.worker.id } satisfies GatewayToWorkerMessage))
           for (const command of await store.pendingCommands()) await deliver(command)
           return
         }
         if (message.kind === 'command_result') {
-          await store.markCommandResult(message.commandId, message.ok)
+          await store.markCommandResult(message.commandId, message.ok, message.error)
           return
         }
         if (message.kind === 'event') {
-          const event = await store.appendEvent({
+          const result = await store.appendEvent({
             ...message.event,
             source: 'worker',
           })
-          await store.applyWorkerEvent(event)
-          broadcast(event)
+          if (result.inserted) {
+            await store.applyWorkerEvent(result.event)
+            broadcast(result.event)
+          }
         }
       }).catch(error => {
         console.error(JSON.stringify({
@@ -494,9 +692,33 @@ const server = Bun.serve<{ workerId: string | null }>({
     },
     async close(socket) {
       if (workerSocket === socket) workerSocket = null
-      if (socket.data.workerId) await store.workerOffline(socket.data.workerId)
+      if (socket.data.workerId) {
+        const affected = await store.workerOffline(socket.data.workerId)
+        for (const sessionId of affected) {
+          const result = await store.appendEvent({
+            id: crypto.randomUUID(),
+            sessionId,
+            turnId: null,
+            type: 'worker.disconnected',
+            payload: { workerId: socket.data.workerId, processState: 'stopped' },
+            source: 'gateway',
+          })
+          if (result.inserted) broadcast(result.event)
+        }
+      }
     },
   },
 })
+
+setInterval(() => {
+  if (!workerSocket || workerSocket.readyState !== WebSocket.OPEN) return
+  void store.retryTimedOutCommands(5_000)
+    .then(commands => Promise.all(commands.map(deliver)))
+    .catch(error => console.error(JSON.stringify({
+      service: 'gateway',
+      event: 'command_retry_failed',
+      error: error instanceof Error ? error.message : String(error),
+    })))
+}, 1_000)
 
 console.log(JSON.stringify({ service: 'gateway', event: 'started', port: server.port }))

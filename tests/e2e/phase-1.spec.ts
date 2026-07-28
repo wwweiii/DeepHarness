@@ -1,11 +1,16 @@
 import { expect, test } from '@playwright/test'
+import { closeOpenSessions } from './support.ts'
 
-test('creates, streams, cancels, refreshes, and stays responsive', async ({ page }) => {
+test('creates, streams, cancels, refreshes, and stays responsive', async ({ page, request }) => {
+  const pageErrors: string[] = []
+  page.on('pageerror', error => pageErrors.push(error.message))
+  await closeOpenSessions(request)
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/')
 
   const create = page.getByRole('button', { name: 'Create session' })
-  if (await create.isVisible()) await create.click()
+  await expect(create).toBeEnabled({ timeout: 30_000 })
+  await create.click()
 
   await expect(page.getByText('Connected', { exact: true })).toBeVisible({ timeout: 30_000 })
   const composer = page.getByRole('textbox', { name: 'Message' })
@@ -16,6 +21,7 @@ test('creates, streams, cancels, refreshes, and stays responsive', async ({ page
   await page.getByRole('button', { name: 'Send message' }).click()
   await expect(page.getByText(`DeepHarness test model received: ${prompt}`, { exact: true }))
     .toBeVisible({ timeout: 30_000 })
+  expect(pageErrors).toEqual([])
 
   await page.reload()
   await expect(page.getByText(prompt, { exact: true })).toBeVisible()
@@ -49,4 +55,5 @@ test('creates, streams, cancels, refreshes, and stays responsive', async ({ page
     path: 'output/playwright/phase-1-mobile.png',
     fullPage: true,
   })
+  expect(pageErrors).toEqual([])
 })

@@ -8,6 +8,7 @@ import { projectHarnessEvents } from './reducer.ts'
 export function useSessionEvents(sessionId: string, initialEvents: HarnessEvent[]) {
   const [events, setEvents] = useState(initialEvents)
   const [connected, setConnected] = useState(false)
+  const projection = useMemo(() => projectHarnessEvents(events), [events])
 
   useEffect(() => {
     setEvents(initialEvents)
@@ -36,9 +37,9 @@ export function useSessionEvents(sessionId: string, initialEvents: HarnessEvent[
     }
   }, [sessionId])
 
-  return {
+  return useMemo(() => ({
     events,
     connected,
-    projection: useMemo(() => projectHarnessEvents(events), [events]),
-  }
+    projection,
+  }), [connected, events, projection])
 }

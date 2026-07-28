@@ -52,8 +52,8 @@ export function HarnessRuntimeProvider({
   const runtime = useExternalStoreRuntime({
     messages: store.projection.messages,
     isRunning: store.projection.status === 'running' || store.projection.status === 'cancelling',
-    isDisabled: !store.connected || ['queued', 'starting', 'error', 'closed'].includes(store.projection.status),
-    isSendDisabled: store.projection.status === 'cancelling' || store.projection.status === 'interrupted',
+    isDisabled: !store.connected || ['queued', 'starting', 'error', 'recovery_required', 'closed'].includes(store.projection.status),
+    isSendDisabled: store.projection.status === 'cancelling',
     convertMessage: message => message,
     onNew: async message => {
       const text = messageText(message)

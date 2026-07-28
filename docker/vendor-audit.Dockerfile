@@ -20,6 +20,7 @@ RUN bun install --frozen-lockfile --ignore-scripts --registry "${NPM_REGISTRY}"
 COPY --chown=bun:bun tests ./tests
 COPY --chown=bun:bun config ./config
 COPY --chown=bun:bun compose.yaml compose.test.yaml compose.providers.yaml ./
+COPY --chown=bun:bun Makefile ./
 COPY --chown=bun:bun .gitmodules ./
 COPY --chown=root:root vendor/claude-code ./vendor/claude-code
 COPY --from=vendor-builder --chown=root:root /opt/claude-code/dist /opt/claude-code/dist

@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test'
+import { closeOpenSessions } from './support.ts'
 
-test('renders tools, resumes interactions, queues prompts, and inspects capabilities', async ({ page }) => {
+test('renders tools, resumes interactions, queues prompts, and inspects capabilities', async ({ page, request }) => {
+  test.setTimeout(120_000)
+  const pageErrors: string[] = []
+  page.on('pageerror', error => pageErrors.push(error.message))
+  await closeOpenSessions(request)
   const runId = crypto.randomUUID()
   const send = async (text = '', action = 'Send message') => {
     const composer = page.getByRole('textbox', { name: 'Message' })
@@ -19,7 +24,8 @@ test('renders tools, resumes interactions, queues prompts, and inspects capabili
   await page.setViewportSize({ width: 1440, height: 900 })
   await page.goto('/')
   const create = page.getByRole('button', { name: 'Create session' })
-  if (await create.isVisible()) await create.click()
+  await expect(create).toBeEnabled({ timeout: 30_000 })
+  await create.click()
   await expect(page.getByText('Connected', { exact: true })).toBeVisible({ timeout: 30_000 })
   await expect(page.getByRole('textbox', { name: 'Message' })).toBeEnabled()
 
@@ -32,6 +38,7 @@ test('renders tools, resumes interactions, queues prompts, and inspects capabili
   await expect(bash.locator('.approval-allow').first()).toBeVisible()
   await bash.locator('.approval-allow').first().click()
   await expect(page.getByText(/Tool completed through ACP:/).last()).toBeVisible({ timeout: 30_000 })
+  expect(pageErrors).toEqual([])
 
   await send('[tool:question] browser durable question')
   await openLatestTool('Questions')
@@ -102,4 +109,5 @@ test('renders tools, resumes interactions, queues prompts, and inspects capabili
     expect(box.width).toBeGreaterThan(0)
   }
   await page.screenshot({ path: 'output/playwright/phase-2-mobile.png', fullPage: true })
+  expect(pageErrors).toEqual([])
 })

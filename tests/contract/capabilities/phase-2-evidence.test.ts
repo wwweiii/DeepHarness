@@ -28,7 +28,7 @@ describe('phase 2 Harness capability evidence', () => {
       json('artifacts/capabilities/vendor-capability-manifest.json'),
       json('config/harness-capability-evidence.json'),
     ])
-    for (const entry of evidence.capabilities) {
+    for (const entry of evidence.capabilities.filter((item: any) => (item.phase ?? 2) === 2)) {
       const capability = manifest.capabilities.find((item: any) => item.id === entry.id)
       expect(capability).toBeDefined()
       expect(capability.tested).toBe(true)
@@ -44,6 +44,7 @@ describe('phase 2 Harness capability evidence', () => {
     }
 
     const coreTools = evidence.capabilities
+      .filter((entry: any) => (entry.phase ?? 2) === 2)
       .filter((entry: any) => entry.scenario)
       .map((entry: any) => manifest.capabilities.find((item: any) => item.id === entry.id))
     expect(coreTools.length).toBeGreaterThanOrEqual(10)
@@ -112,14 +113,15 @@ describe('phase 2 Harness capability evidence', () => {
     }
   })
 
-  test('publishes a gated Phase 1 to Phase 2 capability diff', async () => {
+  test('publishes a gated Phase 2 to Phase 3 capability diff', async () => {
     const diff = await json('artifacts/capabilities/vendor-capability-diff.json')
     expect(diff.status).toBe('compared')
     expect(diff.previous_vendor_commit).toBe(diff.current_vendor_commit)
-    expect(diff.changed.length).toBeGreaterThan(50)
+    expect(diff.changed).toHaveLength(6)
     expect(diff.changed).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: 'tool.FileReadTool' }),
-      expect.objectContaining({ id: 'provider.firstParty' }),
+      expect.objectContaining({ id: 'acp.loadSession' }),
+      expect.objectContaining({ id: 'acp.unstable_resumeSession' }),
+      expect.objectContaining({ id: 'acp.unstable_forkSession' }),
     ]))
     expect(diff.regressions).toEqual([])
     expect(diff.gate).toEqual({

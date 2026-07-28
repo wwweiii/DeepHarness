@@ -9,12 +9,17 @@ const port = Number.parseInt(process.env.PORT ?? '8081', 10)
 const gatewayUrl = process.env.GATEWAY_URL ?? 'http://gateway:8080'
 const workerToken = process.env.WORKER_SHARED_TOKEN ?? 'phase-1-local-token'
 const workerId = process.env.WORKER_ID ?? 'phase-1-worker'
-const workspacePath = process.env.WORKSPACE_PATH ?? '/workspace/source'
+const workspaceRoots = (process.env.WORKSPACE_ROOTS ?? process.env.WORKSPACE_PATH ?? '/workspace/source')
+  .split(',')
+  .map(value => value.trim())
+  .filter(Boolean)
 const vendorCommit = process.env.VENDOR_COMMIT ?? 'unknown'
 const outbound: WorkerToGatewayMessage[] = []
 let socket: WebSocket | null = null
 let registered = false
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let commandQueue = Promise.resolve()
+let shuttingDown = false
 
 function send(message: WorkerToGatewayMessage): void {
   if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message))
@@ -34,10 +39,10 @@ function connect(): void {
       kind: 'register',
       worker: {
         id: workerId,
-        name: 'DeepHarness phase 2 worker',
-        maxConcurrency: 1,
-        workspacePath,
-        version: '0.2.0',
+        name: 'DeepHarness phase 3 worker',
+        maxConcurrency: supervisor.concurrency,
+        workspaceRoots,
+        version: '0.3.0',
         vendorCommit,
         providerId: provider.providerId,
         credentialStatus: provider.credentialStatus,
@@ -55,7 +60,13 @@ function connect(): void {
         registered = true
         return
       }
-      void supervisor.handle(message.command)
+      commandQueue = commandQueue
+        .then(() => supervisor.handle(message.command))
+        .catch(error => console.error(JSON.stringify({
+          service: 'worker',
+          event: 'command_failed',
+          error: error instanceof Error ? error.message : String(error),
+        })))
     } catch (error) {
       console.error(JSON.stringify({
         service: 'worker',
@@ -82,8 +93,9 @@ connect()
 const server = Bun.serve({
   hostname: '0.0.0.0',
   port,
-  fetch(request) {
-    const path = new URL(request.url).pathname
+  async fetch(request) {
+    const url = new URL(request.url)
+    const path = url.pathname
     if (path === '/healthz' || path === '/health/live') {
       return Response.json({ service: 'worker', status: 'ok' })
     }
@@ -94,8 +106,39 @@ const server = Bun.serve({
         gateway: registered ? 'connected' : 'disconnected',
         agentBoundary: 'acp-stdio',
         processIsolation: 'one-active-session-per-process',
+        maxConcurrency: supervisor.concurrency,
+        activeProcesses: supervisor.activeProcessCount,
+        queuedProcesses: supervisor.queuedProcessCount,
         dockerSocketMounted: false,
       }, { status: registered ? 200 : 503 })
+    }
+    if (path.startsWith('/internal/test/crash/') && process.env.ENABLE_TEST_CONTROL === '1') {
+      if (request.headers.get('x-worker-token') !== workerToken) {
+        return new Response('Unauthorized', { status: 401 })
+      }
+      const sessionId = decodeURIComponent(path.slice('/internal/test/crash/'.length))
+      return Response.json({ crashed: supervisor.crashSessionForTest(sessionId) })
+    }
+    if (path.startsWith('/internal/test/stop/') && process.env.ENABLE_TEST_CONTROL === '1') {
+      if (request.headers.get('x-worker-token') !== workerToken) {
+        return new Response('Unauthorized', { status: 401 })
+      }
+      const sessionId = decodeURIComponent(path.slice('/internal/test/stop/'.length))
+      return Response.json({ stopped: supervisor.stopSessionForTest(sessionId) })
+    }
+    if (path.startsWith('/internal/test/transcript/') && process.env.ENABLE_TEST_CONTROL === '1') {
+      if (request.headers.get('x-worker-token') !== workerToken) {
+        return new Response('Unauthorized', { status: 401 })
+      }
+      const parts = path.slice('/internal/test/transcript/'.length).split('/')
+      const action = parts[0]
+      const sessionId = decodeURIComponent(parts.slice(1).join('/'))
+      if ((action !== 'delete' && action !== 'corrupt') || !sessionId) {
+        return new Response('Invalid transcript action', { status: 400 })
+      }
+      return Response.json({
+        damaged: await supervisor.damageTranscriptForTest(sessionId, action),
+      })
     }
     return new Response('DeepHarness Worker\n', {
       headers: { 'content-type': 'text/plain; charset=utf-8' },
@@ -103,14 +146,16 @@ const server = Bun.serve({
   },
 })
 
-function shutdown(): void {
+async function shutdown(): Promise<void> {
+  if (shuttingDown) return
+  shuttingDown = true
   if (reconnectTimer) clearTimeout(reconnectTimer)
-  supervisor.shutdown()
   socket?.close(1001, 'Worker shutting down')
   server.stop(true)
+  await supervisor.shutdown()
 }
 
-process.on('SIGTERM', shutdown)
-process.on('SIGINT', shutdown)
+process.on('SIGTERM', () => void shutdown())
+process.on('SIGINT', () => void shutdown())
 
 console.log(JSON.stringify({ service: 'worker', event: 'started', port: server.port }))

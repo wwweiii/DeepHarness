@@ -87,7 +87,10 @@ function ApprovalActions({ part }: { part: ToolCallMessagePartProps }) {
         <button
           key={option.id}
           className={option.kind.startsWith('allow') ? 'approval-allow' : 'approval-deny'}
-          onClick={() => part.respondToApproval({ optionId: option.id })}
+          onClick={() => part.respondToApproval({
+            approved: option.kind.startsWith('allow'),
+            optionId: option.id,
+          })}
         >
           {option.label ?? option.id}
         </button>
@@ -237,7 +240,11 @@ function QuestionTool({ sessionId, part }: { sessionId: string; part: ToolCallMe
       {pending && (
         <div className="approval-actions">
           <button className="approval-allow" disabled={submitting} onClick={() => void submit()}>Submit answers</button>
-          <button className="approval-deny" disabled={submitting} onClick={() => part.respondToApproval({ optionId: 'reject' })}>Decline</button>
+          <button
+            className="approval-deny"
+            disabled={submitting}
+            onClick={() => part.respondToApproval({ approved: false, optionId: 'reject' })}
+          >Decline</button>
         </div>
       )}
     </ToolFrame>

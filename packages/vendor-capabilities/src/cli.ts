@@ -172,12 +172,13 @@ function applyHarnessEvidence(
     capability.tested = true
     capability.ui_supported = true
     capability.last_test_result = 'passed'
+    const phase = entry.phase ?? 2
     capability.conditions.push(
-      `harness:phase-2:${entry.workflow}`,
+      `harness:phase-${phase}:${entry.workflow}`,
       ...(entry.scenario ? [`fixture:${entry.scenario}`] : []),
     )
     capability.source_evidence.push({
-      path: 'tests/integration/phase-2-stack.test.ts',
+      path: entry.evidence_path ?? `tests/integration/phase-${phase}-stack.test.ts`,
       line: 1,
       detail: entry.evidence,
       evidenceType: 'runtime',

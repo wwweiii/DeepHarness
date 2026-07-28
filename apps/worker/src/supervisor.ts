@@ -2,6 +2,7 @@ import type {
   HarnessEvent,
   JsonValue,
   PermissionOption,
+  SessionRecoveryStrategy,
   WorkerCommand,
   WorkerToGatewayMessage,
 } from '@deepharness/protocol'
@@ -11,6 +12,14 @@ import {
   type AcpUpdate,
 } from './acp/client.ts'
 import { activeProviderStatus, agentEnvironment } from './provider.ts'
+import {
+  cleanupAbandonedWorktreeStaging,
+  cleanupWorkspace,
+  prepareWorkspace,
+  type PreparedWorkspace,
+} from './workspace.ts'
+import { unlink, writeFile } from 'node:fs/promises'
+import { findTranscript, inspectTranscript } from './transcript.ts'
 
 type SendMessage = (message: WorkerToGatewayMessage) => void
 type PromptCommand = Extract<WorkerCommand, { type: 'prompt' }>
@@ -59,7 +68,7 @@ function questionContinuation(answers: Record<string, string>): string {
   ].join('\n')
 }
 
-export class WorkerSupervisor {
+class AgentSessionRuntime {
   private client: AcpClient | null = null
   private harnessSessionId: string | null = null
   private activeTurnId: string | null = null
@@ -72,8 +81,36 @@ export class WorkerSupervisor {
   private readonly questionContinuations: string[] = []
   private readonly openToolCalls = new Map<string, OpenToolCall>()
   private readonly deniedToolCalls = new Set<string>()
+  private ready = false
+  private vendorSessionId: string | null = null
 
-  constructor(private readonly send: SendMessage) {}
+  constructor(
+    private readonly send: SendMessage,
+    private readonly prepared: PreparedWorkspace,
+    private readonly onStopped: (runtime: AgentSessionRuntime) => void,
+    private readonly onIdle: (runtime: AgentSessionRuntime) => void,
+    private readonly onActivity: (runtime: AgentSessionRuntime) => void,
+  ) {}
+
+  get sessionId(): string | null {
+    return this.harnessSessionId
+  }
+
+  get workspace(): PreparedWorkspace {
+    return this.prepared
+  }
+
+  get pid(): number | null {
+    return this.client?.pid ?? null
+  }
+
+  get isReady(): boolean {
+    return this.ready
+  }
+
+  get agentSessionId(): string | null {
+    return this.vendorSessionId
+  }
 
   async handle(command: WorkerCommand): Promise<void> {
     try {
@@ -82,12 +119,33 @@ export class WorkerSupervisor {
       else if (command.type === 'cancel') this.cancel(command)
       else if (command.type === 'resolve_permission') this.resolvePermission(command)
       else if (command.type === 'set_mode') await this.setMode(command)
-      else await this.setModel(command)
+      else if (command.type === 'set_model') await this.setModel(command)
+      else await this.close(command)
       this.commandResult(command, true)
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      if (command.type === 'start_session') {
+      let message = error instanceof Error ? error.message : String(error)
+      if (command.type === 'start_session'
+        && command.payload.recoveryStrategy !== 'new'
+        && !message.startsWith('RECOVERY_REQUIRED:')) {
+        this.event('session.recovery_changed', {
+          status: 'recovery_required',
+          strategy: command.payload.recoveryStrategy,
+          attempted: [command.payload.recoveryStrategy],
+          message,
+        }, null)
+        this.event('session.status_changed', {
+          status: 'recovery_required',
+          processState: 'stopped',
+          message,
+        }, null)
+        this.terminating = true
+        this.client?.terminate()
+        message = `RECOVERY_REQUIRED:${message}`
+      }
+      if (command.type === 'start_session' && !message.startsWith('RECOVERY_REQUIRED:')) {
         this.event('session.status_changed', { status: 'error', message }, null)
+        this.terminating = true
+        this.client?.terminate()
       }
       this.commandResult(command, false, message)
     }
@@ -100,6 +158,25 @@ export class WorkerSupervisor {
     this.client?.terminate()
   }
 
+  stopIdle(): void {
+    if (!this.client || this.activeTurnId || this.pendingPermissions.size > 0) return
+    this.terminating = true
+    this.event('session.process_changed', {
+      processState: 'stopped',
+      reason: 'idle_ttl',
+      pid: this.client.pid,
+    }, null)
+    this.client.terminate()
+  }
+
+  crashForTest(): void {
+    this.client?.terminate('SIGKILL')
+  }
+
+  async waitForExit(): Promise<number | null> {
+    return this.client ? this.client.waitForExit() : null
+  }
+
   private async startSession(command: Extract<WorkerCommand, { type: 'start_session' }>): Promise<void> {
     if (this.client) throw new Error('Only one active Agent process is supported by this Worker')
     this.harnessSessionId = command.sessionId
@@ -108,8 +185,12 @@ export class WorkerSupervisor {
     const entrypoint = process.env.AGENT_ENTRYPOINT ?? '/opt/claude-code/dist/cli-bun.js'
     const client = new AcpClient({
       command: [runtime, entrypoint, '--acp'],
-      cwd: command.payload.workspacePath,
+      cwd: this.prepared.cwd,
       env: agentEnvironment(),
+      promptTimeoutMs: Math.max(1_000, Number.parseInt(
+        process.env.AGENT_PROMPT_TIMEOUT_MS ?? '600000',
+        10,
+      )),
       onUpdate: update => this.handleUpdate(update),
       onClientRequest: request => this.handleClientRequest(request),
       onProtocolError: error => {
@@ -119,6 +200,7 @@ export class WorkerSupervisor {
         }, this.activeTurnId)
       },
       onExit: (exitCode, stderrTail) => {
+        this.ready = false
         this.client = null
         for (const pending of [...this.pendingPermissions.values()]) {
           this.finishPermission(pending, 'expired', 'agent_process_exit')
@@ -130,16 +212,58 @@ export class WorkerSupervisor {
             stderrTail,
           }, this.activeTurnId)
         }
+        this.event('session.process_changed', {
+          processState: this.terminating ? 'stopped' : 'exited',
+          exitCode,
+          stderrTail,
+        }, this.activeTurnId)
+        this.onStopped(this)
       },
     })
     this.client = client
     const initialize = await client.initialize()
-    const session = await client.newSession(command.payload)
+    let recoveryStrategy = command.payload.recoveryStrategy
+    let session: Record<string, unknown>
+    try {
+      session = await this.openSession(client, command.payload)
+    } catch (resumeError) {
+      if (recoveryStrategy !== 'resume' || !command.payload.agentSessionId) throw resumeError
+      try {
+        await inspectTranscript(command.payload.agentSessionId)
+        session = await client.loadSession({
+          sessionId: command.payload.agentSessionId,
+          permissionMode: command.payload.permissionMode,
+          modelId: command.payload.modelId,
+        })
+        recoveryStrategy = 'load'
+      } catch (loadError) {
+        const resumeMessage = resumeError instanceof Error ? resumeError.message : String(resumeError)
+        const loadMessage = loadError instanceof Error ? loadError.message : String(loadError)
+        this.event('session.recovery_changed', {
+          status: 'recovery_required',
+          attempted: ['resume', 'load'],
+          resumeError: resumeMessage,
+          loadError: loadMessage,
+        }, null)
+        this.event('session.status_changed', {
+          status: 'recovery_required',
+          processState: 'stopped',
+          message: loadMessage,
+        }, null)
+        this.terminating = true
+        client.terminate()
+        throw new Error(`RECOVERY_REQUIRED:${loadMessage}`)
+      }
+    }
     const models = objectValue(session.models)
     const modes = objectValue(session.modes)
+    const agentSessionId = String(session.sessionId)
+    this.vendorSessionId = agentSessionId
+    this.ready = true
     this.event('session.status_changed', {
       status: 'idle',
-      agentSessionId: String(session.sessionId),
+      processState: 'running',
+      agentSessionId,
       providerId: activeProviderStatus().providerId,
       modelId: command.payload.modelId
         ?? (typeof models.currentModelId === 'string' ? models.currentModelId : null),
@@ -150,13 +274,72 @@ export class WorkerSupervisor {
       availableModes: jsonValue(modes.availableModes ?? []),
       configOptions: jsonValue(session.configOptions ?? []),
       agentCapabilities: jsonValue(initialize.agentCapabilities ?? {}),
+      recoveryStrategy,
+      worktreePath: this.prepared.worktreePath,
     }, null)
+    this.event('session.process_changed', {
+      processState: 'running',
+      pid: client.pid,
+      recoveryStrategy,
+      cwd: this.prepared.cwd,
+    }, null)
+    this.event('session.recovery_changed', {
+      status: 'ready',
+      strategy: recoveryStrategy,
+      agentSessionId,
+    }, null)
+    this.event('context.updated', {
+      agentSessionId,
+      recoveryStrategy,
+      snapshotAt: new Date().toISOString(),
+      capabilities: {
+        load: Boolean(objectValue(initialize.agentCapabilities).loadSession),
+        resume: true,
+        fork: true,
+        compact: {
+          state: 'vendor_managed',
+          acpMethod: null,
+        },
+      },
+    }, null)
+    this.onIdle(this)
+  }
+
+  private async openSession(
+    client: AcpClient,
+    payload: Extract<WorkerCommand, { type: 'start_session' }>['payload'],
+  ): Promise<Record<string, unknown>> {
+    if (payload.recoveryStrategy === 'new') return client.newSession(payload)
+    if (payload.recoveryStrategy === 'fork') {
+      if (!payload.sourceAgentSessionId) throw new Error('Fork requires a source Agent session id')
+      await inspectTranscript(payload.sourceAgentSessionId)
+      return client.forkSession({
+        sourceSessionId: payload.sourceAgentSessionId,
+        permissionMode: payload.permissionMode,
+        modelId: payload.modelId,
+      })
+    }
+    if (!payload.agentSessionId) throw new Error('Recovery requires an Agent session id')
+    await inspectTranscript(payload.agentSessionId)
+    if (payload.recoveryStrategy === 'load') {
+      return client.loadSession({
+        sessionId: payload.agentSessionId,
+        permissionMode: payload.permissionMode,
+        modelId: payload.modelId,
+      })
+    }
+    return client.resumeSession({
+      sessionId: payload.agentSessionId,
+      permissionMode: payload.permissionMode,
+      modelId: payload.modelId,
+    })
   }
 
   private enqueuePrompt(command: PromptCommand): void {
     if (!this.client || this.harnessSessionId !== command.sessionId) {
       throw new Error('Agent session is not active')
     }
+    this.onActivity(this)
     this.promptQueue.push(command)
     this.emitQueue()
     void this.drainPromptQueue()
@@ -214,6 +397,7 @@ export class WorkerSupervisor {
       this.event('session.interrupted', { reason: 'user_cancelled' }, this.activeTurnId)
     }
     this.event('turn.completed', { stopReason }, this.activeTurnId)
+    this.onIdle(this)
   }
 
   private cancel(command: Extract<WorkerCommand, { type: 'cancel' }>): void {
@@ -241,6 +425,18 @@ export class WorkerSupervisor {
     this.event('session.configuration_changed', {
       modelId: command.payload.modelId,
     }, null)
+  }
+
+  private async close(command: Extract<WorkerCommand, { type: 'close_session' }>): Promise<void> {
+    if (this.harnessSessionId !== command.sessionId) throw new Error('Agent session is not active')
+    this.terminating = true
+    try {
+      await this.client?.closeSession()
+    } finally {
+      this.event('session.closed', { status: 'closed' }, null)
+      this.event('session.process_changed', { processState: 'stopped', reason: 'closed' }, null)
+      this.client?.terminate()
+    }
   }
 
   private resolvePermission(
@@ -489,5 +685,356 @@ export class WorkerSupervisor {
       ok,
       ...(error ? { error } : {}),
     })
+  }
+}
+
+interface QueuedStart {
+  command: Extract<WorkerCommand, { type: 'start_session' }>
+  enqueuedAt: number
+}
+
+export class WorkerSupervisor {
+  private readonly maxConcurrency = Math.max(1, Number.parseInt(
+    process.env.WORKER_MAX_CONCURRENCY ?? '2',
+    10,
+  ))
+  private readonly idleTtlMs = Math.max(0, Number.parseInt(
+    process.env.AGENT_IDLE_TTL_MS ?? '900000',
+    10,
+  ))
+  private readonly runtimes = new Map<string, AgentSessionRuntime>()
+  private readonly pendingStarts: QueuedStart[] = []
+  private readonly buffered = new Map<string, WorkerCommand[]>()
+  private readonly commandState = new Map<string, 'running' | 'complete'>()
+  private readonly idleTimers = new Map<string, ReturnType<typeof setTimeout>>()
+  private readonly sharedLocks = new Map<string, string>()
+  private readonly agentSessionIds = new Map<string, string>()
+  private stopping = false
+
+  constructor(private readonly send: SendMessage) {
+    void cleanupAbandonedWorktreeStaging().then(removed => {
+      if (removed > 0) console.log(JSON.stringify({
+        service: 'worker',
+        event: 'abandoned_worktree_staging_removed',
+        removed,
+      }))
+    })
+  }
+
+  get concurrency(): number {
+    return this.maxConcurrency
+  }
+
+  get activeProcessCount(): number {
+    return this.runtimes.size
+  }
+
+  get queuedProcessCount(): number {
+    return this.pendingStarts.length
+  }
+
+  async handle(command: WorkerCommand): Promise<void> {
+    const prior = this.commandState.get(command.id)
+    if (prior === 'complete') {
+      this.commandResult(command, true)
+      return
+    }
+    if (prior === 'running') return
+    this.commandState.set(command.id, 'running')
+
+    if (command.type === 'start_session') {
+      await this.acceptStart(command)
+      return
+    }
+    if (command.type === 'close_session') {
+      const queuedIndex = this.pendingStarts.findIndex(item => item.command.sessionId === command.sessionId)
+      if (queuedIndex >= 0) {
+        const [queued] = this.pendingStarts.splice(queuedIndex, 1)
+        const buffered = this.buffered.get(command.sessionId) ?? []
+        this.buffered.delete(command.sessionId)
+        if (queued) {
+          this.commandState.set(queued.command.id, 'complete')
+          this.commandResult(queued.command, false, 'Session closed before the Agent process started')
+        }
+        for (const pending of buffered) {
+          this.commandState.set(pending.id, 'complete')
+          this.commandResult(pending, false, 'Session closed before the Agent process started')
+        }
+        this.emit(command.sessionId, 'session.closed', { status: 'closed' })
+        this.emit(command.sessionId, 'session.process_changed', {
+          processState: 'stopped',
+          reason: 'closed_while_queued',
+        })
+        this.commandState.set(command.id, 'complete')
+        this.commandResult(command, true)
+        this.releaseSharedLock(command.sessionId)
+        await this.drainStarts()
+        return
+      }
+    }
+    const runtime = this.runtimes.get(command.sessionId)
+    if (runtime) {
+      if (command.type === 'close_session') {
+        await runtime.handle(command)
+        await runtime.waitForExit()
+        const result = await cleanupWorkspace(runtime.workspace, command.payload.removeCleanWorktree)
+        this.emit(command.sessionId, 'workspace.lock_changed', {
+          locked: false,
+          worktreeRemoved: result.removed,
+          dirtyWorktreeRetained: result.dirty,
+        })
+        return
+      }
+      if (!runtime.isReady) {
+        this.commandState.set(command.id, 'complete')
+        this.commandResult(command, false, 'Agent process did not reach a recoverable ready state')
+        return
+      }
+      await runtime.handle(command)
+      return
+    }
+    if (this.pendingStarts.some(item => item.command.sessionId === command.sessionId)) {
+      const commands = this.buffered.get(command.sessionId) ?? []
+      commands.push(command)
+      this.buffered.set(command.sessionId, commands)
+      return
+    }
+    if (command.type === 'close_session') {
+      this.commandState.set(command.id, 'complete')
+      this.commandResult(command, true)
+      return
+    }
+    this.commandState.set(command.id, 'complete')
+    this.commandResult(command, false, 'Agent process is stopped; a recovery start command is required')
+  }
+
+  private async acceptStart(command: Extract<WorkerCommand, { type: 'start_session' }>): Promise<void> {
+    if (this.runtimes.has(command.sessionId)) {
+      this.commandState.set(command.id, 'complete')
+      this.commandResult(command, true)
+      return
+    }
+    const sameQueued = this.pendingStarts.find(item => item.command.sessionId === command.sessionId)
+    if (sameQueued) return
+    this.pendingStarts.push({ command, enqueuedAt: Date.now() })
+    this.emit(command.sessionId, 'session.process_changed', {
+      processState: 'queued',
+      queuePosition: this.pendingStarts.length,
+      maxConcurrency: this.maxConcurrency,
+    })
+    await this.drainStarts()
+  }
+
+  private async drainStarts(): Promise<void> {
+    while (!this.stopping && this.runtimes.size < this.maxConcurrency && this.pendingStarts.length > 0) {
+      const index = this.pendingStarts.findIndex(item => this.canAcquire(item.command))
+      if (index < 0) return
+      const [queued] = this.pendingStarts.splice(index, 1)
+      if (!queued) return
+      await this.launch(queued)
+    }
+    this.emitQueuePositions()
+  }
+
+  private canAcquire(command: Extract<WorkerCommand, { type: 'start_session' }>): boolean {
+    if (command.payload.workspaceMode !== 'shared') return true
+    const owner = this.sharedLocks.get(command.payload.workspaceId)
+    return !owner || owner === command.sessionId
+  }
+
+  private async launch(queued: QueuedStart): Promise<void> {
+    const command = queued.command
+    try {
+      if (command.payload.workspaceMode === 'shared') {
+        this.sharedLocks.set(command.payload.workspaceId, command.sessionId)
+      }
+      const prepared = await prepareWorkspace({
+        sessionId: command.sessionId,
+        workspacePath: command.payload.workspacePath,
+        workspaceMode: command.payload.workspaceMode,
+      })
+      const runtime = new AgentSessionRuntime(
+        message => this.fromRuntime(message),
+        prepared,
+        stopped => this.runtimeStopped(stopped),
+        idle => this.runtimeIdle(idle),
+        active => this.runtimeActive(active),
+      )
+      this.runtimes.set(command.sessionId, runtime)
+      await runtime.handle(command)
+      const buffered = this.buffered.get(command.sessionId) ?? []
+      this.buffered.delete(command.sessionId)
+      if (!runtime.isReady) {
+        for (const next of buffered) {
+          this.commandState.set(next.id, 'complete')
+          this.commandResult(next, false, 'Session recovery did not produce an active Agent process')
+        }
+        return
+      }
+      for (const next of buffered) await runtime.handle(next)
+    } catch (error) {
+      this.releaseSharedLock(command.sessionId)
+      const message = error instanceof Error ? error.message : String(error)
+      const recovery = command.payload.recoveryStrategy !== 'new'
+      if (recovery) {
+        this.emit(command.sessionId, 'session.recovery_changed', {
+          status: 'recovery_required',
+          strategy: command.payload.recoveryStrategy,
+          attempted: [command.payload.recoveryStrategy],
+          message,
+        })
+      }
+      this.emit(command.sessionId, 'session.status_changed', {
+        status: recovery ? 'recovery_required' : 'error',
+        processState: 'stopped',
+        message,
+      })
+      this.emit(command.sessionId, 'session.process_changed', {
+        processState: 'stopped',
+        reason: 'workspace_prepare_failed',
+      })
+      this.commandState.set(command.id, 'complete')
+      this.commandResult(command, false, message)
+    }
+  }
+
+  private fromRuntime(message: WorkerToGatewayMessage): void {
+    if (message.kind === 'command_result') {
+      this.commandState.set(message.commandId, 'complete')
+      if (this.commandState.size > 2_000) {
+        const first = this.commandState.keys().next().value
+        if (first) this.commandState.delete(first)
+      }
+    }
+    this.send(message)
+  }
+
+  private runtimeActive(runtime: AgentSessionRuntime): void {
+    const sessionId = runtime.sessionId
+    if (!sessionId) return
+    const timer = this.idleTimers.get(sessionId)
+    if (timer) clearTimeout(timer)
+    this.idleTimers.delete(sessionId)
+  }
+
+  private runtimeIdle(runtime: AgentSessionRuntime): void {
+    const sessionId = runtime.sessionId
+    if (!sessionId || this.idleTtlMs === 0) return
+    this.runtimeActive(runtime)
+    this.idleTimers.set(sessionId, setTimeout(() => runtime.stopIdle(), this.idleTtlMs))
+  }
+
+  private runtimeStopped(runtime: AgentSessionRuntime): void {
+    const sessionId = runtime.sessionId
+    if (!sessionId) return
+    const current = this.runtimes.get(sessionId)
+    if (current !== runtime) return
+    this.runtimes.delete(sessionId)
+    if (runtime.agentSessionId) this.agentSessionIds.set(sessionId, runtime.agentSessionId)
+    this.runtimeActive(runtime)
+    this.releaseSharedLock(sessionId)
+    void this.drainStarts()
+  }
+
+  private releaseSharedLock(sessionId: string): void {
+    for (const [workspaceId, owner] of this.sharedLocks) {
+      if (owner === sessionId) this.sharedLocks.delete(workspaceId)
+    }
+  }
+
+  private emitQueuePositions(): void {
+    this.pendingStarts.forEach((item, index) => this.emit(
+      item.command.sessionId,
+      'session.process_changed',
+      { processState: 'queued', queuePosition: index + 1, maxConcurrency: this.maxConcurrency },
+    ))
+  }
+
+  private emit(
+    sessionId: string,
+    type: HarnessEvent['type'],
+    payload: Record<string, JsonValue>,
+  ): void {
+    this.send({
+      kind: 'event',
+      event: {
+        id: crypto.randomUUID(),
+        sessionId,
+        turnId: null,
+        type,
+        payload,
+        timestamp: new Date().toISOString(),
+      },
+    })
+  }
+
+  private commandResult(command: WorkerCommand, ok: boolean, error?: string): void {
+    this.send({
+      kind: 'command_result',
+      commandId: command.id,
+      sessionId: command.sessionId,
+      ok,
+      ...(error ? { error } : {}),
+    })
+  }
+
+  async closeSession(sessionId: string, removeCleanWorktree = true): Promise<void> {
+    const runtime = this.runtimes.get(sessionId)
+    if (!runtime) return
+    await runtime.handle({
+      id: crypto.randomUUID(),
+      type: 'close_session',
+      sessionId,
+      payload: { removeCleanWorktree },
+    })
+    await runtime.waitForExit()
+    const result = await cleanupWorkspace(runtime.workspace, removeCleanWorktree)
+    this.emit(sessionId, 'workspace.lock_changed', {
+      locked: false,
+      worktreeRemoved: result.removed,
+      dirtyWorktreeRetained: result.dirty,
+    })
+  }
+
+  crashSessionForTest(sessionId: string): boolean {
+    const runtime = this.runtimes.get(sessionId)
+    if (!runtime) return false
+    runtime.crashForTest()
+    return true
+  }
+
+  stopSessionForTest(sessionId: string): boolean {
+    const runtime = this.runtimes.get(sessionId)
+    if (!runtime) return false
+    runtime.stopIdle()
+    return true
+  }
+
+  async damageTranscriptForTest(
+    sessionId: string,
+    action: 'delete' | 'corrupt',
+  ): Promise<boolean> {
+    const agentSessionId = this.runtimes.get(sessionId)?.agentSessionId
+      ?? this.agentSessionIds.get(sessionId)
+    if (!agentSessionId) return false
+    const transcript = await findTranscript(agentSessionId)
+    if (!transcript) return false
+    if (action === 'delete') await unlink(transcript)
+    else await writeFile(transcript, '{"type":"corrupted"\n', 'utf8')
+    return true
+  }
+
+  async shutdown(): Promise<void> {
+    this.stopping = true
+    for (const timer of this.idleTimers.values()) clearTimeout(timer)
+    this.idleTimers.clear()
+    const runtimes = [...this.runtimes.values()]
+    for (const runtime of runtimes) runtime.shutdown()
+    const graceMs = Math.max(250, Number.parseInt(process.env.AGENT_SHUTDOWN_GRACE_MS ?? '5000', 10))
+    await Promise.race([
+      Promise.all(runtimes.map(runtime => runtime.waitForExit())),
+      Bun.sleep(graceMs),
+    ])
+    for (const runtime of runtimes) runtime.crashForTest()
   }
 }

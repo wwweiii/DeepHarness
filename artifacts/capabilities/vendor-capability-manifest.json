@@ -4,7 +4,7 @@
   "vendor_repository": "https://github.com/claude-code-best/claude-code.git",
   "vendor_tag": "v2.8.4",
   "build_id": "ccb-bun-v2.8.4-34b3dc99bf40",
-  "generated_at": "2026-07-28T06:55:20.271Z",
+  "generated_at": "2026-07-28T08:47:22.432Z",
   "reviewed_at": "2026-07-27T16:55:08.356Z",
   "build_features": [
     {
@@ -14388,14 +14388,22 @@
       "enabled": true,
       "advertised_by_acp": true,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": true,
-      "conditions": [],
+      "conditions": [
+        "harness:phase-3:recovery"
+      ],
       "source_evidence": [
         {
           "path": "acp.initialize.agentCapabilities._meta.claudeCode.forkSession",
           "line": 1,
           "detail": "observed=true",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-3-stack.test.ts",
+          "line": 1,
+          "detail": "The vendor extension capability advertises forkSession and the Phase 3 worktree contract invokes it successfully.",
           "evidenceType": "runtime"
         }
       ],
@@ -14444,14 +14452,22 @@
       "enabled": true,
       "advertised_by_acp": true,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": true,
-      "conditions": [],
+      "conditions": [
+        "harness:phase-3:recovery"
+      ],
       "source_evidence": [
         {
           "path": "acp.initialize.agentCapabilities.loadSession",
           "line": 1,
           "detail": "observed=true",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-3-stack.test.ts",
+          "line": 1,
+          "detail": "The runtime initialize response advertises loadSession and the Phase 3 recovery contract invokes it successfully.",
           "evidenceType": "runtime"
         }
       ],
@@ -14636,14 +14652,22 @@
       "enabled": true,
       "advertised_by_acp": true,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": true,
-      "conditions": [],
+      "conditions": [
+        "harness:phase-3:recovery"
+      ],
       "source_evidence": [
         {
           "path": "acp.initialize.agentCapabilities.sessionCapabilities.resume",
           "line": 1,
           "detail": "observed=true",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-3-stack.test.ts",
+          "line": 1,
+          "detail": "The runtime initialize response advertises session resume and the Phase 3 recovery contract invokes it successfully.",
           "evidenceType": "runtime"
         }
       ],
@@ -14791,20 +14815,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-3:recovery"
+      ],
       "source_evidence": [
         {
           "path": "src/services/acp/agent/AcpAgent.ts",
           "line": 176,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-3-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 3 Docker integration stops an Agent process, loads its persisted transcript through ACP session/load, and preserves the Agent session id.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The operation is a native ACP session capability."
     },
@@ -15041,20 +15073,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-3:recovery"
+      ],
       "source_evidence": [
         {
           "path": "src/services/acp/agent/AcpAgent.ts",
           "line": 237,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-3-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 3 Docker integration forks a real ACP transcript into an isolated Git worktree and verifies a distinct Agent session id with parent linkage.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
     },
@@ -15065,20 +15105,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-3:recovery"
+      ],
       "source_evidence": [
         {
           "path": "src/services/acp/agent/AcpAgent.ts",
           "line": 162,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-3-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 3 Docker integration kills an isolated Agent process and resumes the same transcript through ACP session/resume without replaying duplicate UI history.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The operation is a native ACP session capability."
     },
@@ -16252,14 +16300,22 @@
       "enabled": true,
       "advertised_by_acp": true,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": true,
-      "conditions": [],
+      "conditions": [
+        "harness:phase-3:recovery"
+      ],
       "source_evidence": [
         {
           "path": "acp.initialize.agentCapabilities._meta.claudeCode.forkSession",
           "line": 1,
           "detail": "observed=true",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-3-stack.test.ts",
+          "line": 1,
+          "detail": "The vendor extension capability advertises forkSession and the Phase 3 worktree contract invokes it successfully.",
           "evidenceType": "runtime"
         }
       ],
@@ -16308,14 +16364,22 @@
       "enabled": true,
       "advertised_by_acp": true,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": true,
-      "conditions": [],
+      "conditions": [
+        "harness:phase-3:recovery"
+      ],
       "source_evidence": [
         {
           "path": "acp.initialize.agentCapabilities.loadSession",
           "line": 1,
           "detail": "observed=true",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-3-stack.test.ts",
+          "line": 1,
+          "detail": "The runtime initialize response advertises loadSession and the Phase 3 recovery contract invokes it successfully.",
           "evidenceType": "runtime"
         }
       ],
@@ -16500,14 +16564,22 @@
       "enabled": true,
       "advertised_by_acp": true,
       "invocable": null,
-      "ui_supported": false,
+      "ui_supported": true,
       "tested": true,
-      "conditions": [],
+      "conditions": [
+        "harness:phase-3:recovery"
+      ],
       "source_evidence": [
         {
           "path": "acp.initialize.agentCapabilities.sessionCapabilities.resume",
           "line": 1,
           "detail": "observed=true",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-3-stack.test.ts",
+          "line": 1,
+          "detail": "The runtime initialize response advertises session resume and the Phase 3 recovery contract invokes it successfully.",
           "evidenceType": "runtime"
         }
       ],
@@ -16655,20 +16727,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-3:recovery"
+      ],
       "source_evidence": [
         {
           "path": "src/services/acp/agent/AcpAgent.ts",
           "line": 176,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-3-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 3 Docker integration stops an Agent process, loads its persisted transcript through ACP session/load, and preserves the Agent session id.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The operation is a native ACP session capability."
     },
@@ -16905,20 +16985,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-3:recovery"
+      ],
       "source_evidence": [
         {
           "path": "src/services/acp/agent/AcpAgent.ts",
           "line": 237,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-3-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 3 Docker integration forks a real ACP transcript into an isolated Git worktree and verifies a distinct Agent session id with parent linkage.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
     },
@@ -16929,20 +17017,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-3:recovery"
+      ],
       "source_evidence": [
         {
           "path": "src/services/acp/agent/AcpAgent.ts",
           "line": 162,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-3-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 3 Docker integration kills an isolated Agent process and resumes the same transcript through ACP session/resume without replaying duplicate UI history.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The operation is a native ACP session capability."
     },

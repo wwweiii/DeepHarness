@@ -29,7 +29,7 @@ services:
       PORT: "8080"
       DATABASE_URL: postgres://deepharness:${POSTGRES_PASSWORD:-deepharness-local-only}@postgres:5432/deepharness
       WORKER_SHARED_TOKEN: ${WORKER_SHARED_TOKEN:-phase-1-local-token}
-      WORKSPACE_PATH: /workspace/source
+      WORKSPACE_ROOTS: /workspace/source,/workspace/non-git
     depends_on:
       postgres:
         condition: service_healthy
@@ -59,6 +59,12 @@ services:
       WORKER_SHARED_TOKEN: ${WORKER_SHARED_TOKEN:-phase-1-local-token}
       WORKER_ID: phase-1-worker
       WORKSPACE_PATH: /workspace/source
+      WORKSPACE_ROOTS: /workspace/source,/workspace/non-git
+      WORKTREE_RUNS_ROOT: /workspace/runs
+      WORKER_MAX_CONCURRENCY: ${WORKER_MAX_CONCURRENCY:-2}
+      AGENT_IDLE_TTL_MS: ${AGENT_IDLE_TTL_MS:-900000}
+      AGENT_PROMPT_TIMEOUT_MS: ${AGENT_PROMPT_TIMEOUT_MS:-600000}
+      AGENT_SHUTDOWN_GRACE_MS: ${AGENT_SHUTDOWN_GRACE_MS:-5000}
       VENDOR_COMMIT: 34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
@@ -107,12 +113,16 @@ services:
       - ${HOST_WORKSPACE_PATH:-.}:/workspace/source
       - agent-state:/home/agent
       - agent-runs:/workspace/runs
+      - non-git-workspaces:/workspace/non-git
     read_only: true
     tmpfs:
       - /tmp:size=256m,mode=1777
     cap_drop: [ALL]
+    mem_limit: ${WORKER_MEMORY_LIMIT:-2g}
+    cpus: ${WORKER_CPU_LIMIT:-2.0}
     pids_limit: 256
     init: true
+    stop_grace_period: 10s
     restart: unless-stopped
 
   test-model:
@@ -161,6 +171,8 @@ services:
       target: e2e
     environment:
       TEST_BASE_URL: http://gateway:8080
+      WORKER_TEST_URL: http://worker:8081
+      WORKER_SHARED_TOKEN: ${WORKER_SHARED_TOKEN:-phase-1-local-token}
       PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/chromium
     depends_on:
       gateway:
@@ -173,7 +185,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp:size=512m,mode=1777
-      - /home/bun:size=128m,mode=1777
+      - /home/node:size=128m,mode=1777
     cap_drop: [ALL]
     init: true
 
@@ -185,3 +197,4 @@ volumes:
   postgres-data:
   agent-state:
   agent-runs:
+  non-git-workspaces:

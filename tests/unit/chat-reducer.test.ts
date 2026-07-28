@@ -206,4 +206,24 @@ describe('Harness event projection', () => {
     expect(projection.availableModes).toEqual([{ id: 'default', name: 'Default' }])
     expect(projection.messages[0]?.content).toHaveLength(2)
   })
+
+  test('preserves explicit recovery diagnostics from worker events', () => {
+    const projection = projectHarnessEvents([
+      event(1, 'session.recovery_changed', {
+        status: 'recovery_required',
+        strategy: 'load',
+        message: 'TRANSCRIPT_CORRUPT:agent-session:line:1',
+      }),
+      event(2, 'session.status_changed', {
+        status: 'recovery_required',
+        message: 'TRANSCRIPT_CORRUPT:agent-session:line:1',
+        processState: 'stopped',
+      }),
+    ])
+
+    expect(projection.status).toBe('recovery_required')
+    expect(projection.processState).toBe('stopped')
+    expect(projection.recoveryStrategy).toBe('load')
+    expect(projection.recoveryError).toBe('TRANSCRIPT_CORRUPT:agent-session:line:1')
+  })
 })

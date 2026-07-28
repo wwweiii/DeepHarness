@@ -95,6 +95,45 @@
       "id": "provider.firstParty",
       "workflow": "provider",
       "evidence": "The Docker test profile runs the real vendor ACP process against the deterministic Anthropic-compatible fake provider."
+    },
+    {
+      "id": "acp.loadSession",
+      "phase": 3,
+      "workflow": "recovery",
+      "evidence": "Phase 3 Docker integration stops an Agent process, loads its persisted transcript through ACP session/load, and preserves the Agent session id."
+    },
+    {
+      "id": "acp.unstable_resumeSession",
+      "phase": 3,
+      "workflow": "recovery",
+      "evidence": "Phase 3 Docker integration kills an isolated Agent process and resumes the same transcript through ACP session/resume without replaying duplicate UI history."
+    },
+    {
+      "id": "acp.unstable_forkSession",
+      "phase": 3,
+      "workflow": "recovery",
+      "evidence": "Phase 3 Docker integration forks a real ACP transcript into an isolated Git worktree and verifies a distinct Agent session id with parent linkage."
+    },
+    {
+      "id": "acp.advertised:loadSession",
+      "phase": 3,
+      "invocable": null,
+      "workflow": "recovery",
+      "evidence": "The runtime initialize response advertises loadSession and the Phase 3 recovery contract invokes it successfully."
+    },
+    {
+      "id": "acp.advertised:sessionCapabilities.resume",
+      "phase": 3,
+      "invocable": null,
+      "workflow": "recovery",
+      "evidence": "The runtime initialize response advertises session resume and the Phase 3 recovery contract invokes it successfully."
+    },
+    {
+      "id": "acp.advertised:_meta.claudeCode.forkSession",
+      "phase": 3,
+      "invocable": null,
+      "workflow": "recovery",
+      "evidence": "The vendor extension capability advertises forkSession and the Phase 3 worktree contract invokes it successfully."
     }
   ],
   "known_gaps": [

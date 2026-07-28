@@ -108,9 +108,11 @@ export type HarnessCapabilityEvidence = {
   terminal_tool_result_gap: string
   capabilities: Array<{
     id: string
+    phase?: number
+    evidence_path?: string
     scenario?: string
     invocable?: boolean | null
-    workflow: 'tool' | 'permission' | 'question' | 'configuration' | 'queue' | 'provider'
+    workflow: 'tool' | 'permission' | 'question' | 'configuration' | 'queue' | 'provider' | 'recovery'
     evidence: string
     known_gap?: string
   }>

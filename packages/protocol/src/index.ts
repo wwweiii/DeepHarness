@@ -13,12 +13,20 @@ export type SessionStatus =
   | 'running'
   | 'cancelling'
   | 'interrupted'
+  | 'recovery_required'
   | 'error'
   | 'closed'
+
+export type SessionProcessState = 'queued' | 'starting' | 'running' | 'stopped' | 'exited'
+export type SessionRecoveryStrategy = 'new' | 'resume' | 'load' | 'fork'
+export type WorkspaceMode = 'shared' | 'worktree'
 
 export type HarnessEventType =
   | 'session.created'
   | 'session.status_changed'
+  | 'session.process_changed'
+  | 'session.recovery_changed'
+  | 'session.closed'
   | 'turn.started'
   | 'user.message_created'
   | 'assistant.message_started'
@@ -40,10 +48,16 @@ export type HarnessEventType =
   | 'turn.completed'
   | 'turn.failed'
   | 'session.interrupted'
+  | 'worker.disconnected'
+  | 'context.updated'
+  | 'workspace.lock_changed'
 
 export const HARNESS_EVENT_TYPES: HarnessEventType[] = [
   'session.created',
   'session.status_changed',
+  'session.process_changed',
+  'session.recovery_changed',
+  'session.closed',
   'turn.started',
   'user.message_created',
   'assistant.message_started',
@@ -65,6 +79,9 @@ export const HARNESS_EVENT_TYPES: HarnessEventType[] = [
   'turn.completed',
   'turn.failed',
   'session.interrupted',
+  'worker.disconnected',
+  'context.updated',
+  'workspace.lock_changed',
 ]
 
 export interface HarnessEvent {
@@ -83,9 +100,15 @@ export type WorkerCommand =
       type: 'start_session'
       sessionId: string
       payload: {
+        workspaceId: string
         workspacePath: string
+        workspaceMode: WorkspaceMode
+        readOnly: boolean
         permissionMode: string
         modelId: string | null
+        recoveryStrategy: SessionRecoveryStrategy
+        agentSessionId: string | null
+        sourceAgentSessionId: string | null
       }
     }
   | {
@@ -122,6 +145,12 @@ export type WorkerCommand =
       sessionId: string
       payload: { modelId: string }
     }
+  | {
+      id: string
+      type: 'close_session'
+      sessionId: string
+      payload: { removeCleanWorktree: boolean }
+    }
 
 export type GatewayToWorkerMessage =
   | { kind: 'registered'; workerId: string }
@@ -133,8 +162,8 @@ export type WorkerToGatewayMessage =
       worker: {
         id: string
         name: string
-        maxConcurrency: 1
-        workspacePath: string
+        maxConcurrency: number
+        workspaceRoots: string[]
         version: string
         vendorCommit: string
         providerId: string
@@ -168,9 +197,34 @@ export interface SessionRecord {
   configOptions: SessionConfigOption[]
   promptQueueDepth: number
   activeTurnId: string | null
+  processState: SessionProcessState
+  recoveryStrategy: SessionRecoveryStrategy | null
+  recoveryError: string | null
+  contextState: Record<string, JsonValue>
+  parentSessionId: string | null
+  forkPointEventId: string | null
+  worktreePath: string | null
   lastEventSeq: number
   createdAt: string
   updatedAt: string
+}
+
+export interface WorkspaceRecord {
+  id: string
+  name: string
+  workerId: string | null
+  containerPath: string
+  mode: WorkspaceMode
+  readOnly: boolean
+  metadata: Record<string, JsonValue>
+  lockedBySessionId: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface EventPage {
+  events: HarnessEvent[]
+  nextBeforeSeq: number | null
 }
 
 export interface SessionMode {

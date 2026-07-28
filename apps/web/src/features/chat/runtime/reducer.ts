@@ -3,6 +3,8 @@ import type {
   PermissionOption,
   SessionMode,
   SessionModel,
+  SessionProcessState,
+  SessionRecoveryStrategy,
   SessionStatus,
 } from '@deepharness/protocol'
 import type { ThreadMessageLike } from '@assistant-ui/react'
@@ -34,6 +36,10 @@ export interface HarnessProjection {
   permissionMode: string | null
   modelId: string | null
   promptQueueDepth: number
+  processState: SessionProcessState
+  recoveryStrategy: SessionRecoveryStrategy | null
+  recoveryError: string | null
+  contextState: Record<string, unknown> | null
   eventCount: number
   availableModes: SessionMode[]
   availableModels: SessionModel[]
@@ -129,6 +135,10 @@ export function projectHarnessEvents(events: HarnessEvent[]): HarnessProjection 
   let permissionMode: string | null = null
   let modelId: string | null = null
   let promptQueueDepth = 0
+  let processState: SessionProcessState = 'stopped'
+  let recoveryStrategy: SessionRecoveryStrategy | null = null
+  let recoveryError: string | null = null
+  let contextState: Record<string, unknown> | null = null
   let availableModes: SessionMode[] = []
   let availableModels: SessionModel[] = []
 
@@ -141,10 +151,32 @@ export function projectHarnessEvents(events: HarnessEvent[]): HarnessProjection 
     if (event.type === 'session.status_changed' && typeof event.payload.status === 'string') {
       status = event.payload.status as SessionStatus
       if (status === 'error' && typeof event.payload.message === 'string') error = event.payload.message
+      if (status === 'recovery_required' && typeof event.payload.message === 'string') {
+        recoveryError = event.payload.message
+      }
       if (typeof event.payload.permissionMode === 'string') permissionMode = event.payload.permissionMode
       if (typeof event.payload.modelId === 'string') modelId = event.payload.modelId
       if (Array.isArray(event.payload.availableModes)) availableModes = event.payload.availableModes as unknown as SessionMode[]
       if (Array.isArray(event.payload.availableModels)) availableModels = event.payload.availableModels as unknown as SessionModel[]
+      if (typeof event.payload.processState === 'string') processState = event.payload.processState as SessionProcessState
+      if (typeof event.payload.recoveryStrategy === 'string') {
+        recoveryStrategy = event.payload.recoveryStrategy as SessionRecoveryStrategy
+      }
+    }
+    if (event.type === 'session.process_changed' && typeof event.payload.processState === 'string') {
+      processState = event.payload.processState as SessionProcessState
+    }
+    if (event.type === 'session.recovery_changed') {
+      if (typeof event.payload.strategy === 'string') recoveryStrategy = event.payload.strategy as SessionRecoveryStrategy
+      recoveryError = event.payload.status === 'recovery_required'
+        ? String(event.payload.loadError ?? event.payload.resumeError ?? event.payload.message ?? 'Recovery failed')
+        : null
+    }
+    if (event.type === 'context.updated') contextState = event.payload
+    if (event.type === 'worker.disconnected') processState = 'stopped'
+    if (event.type === 'session.closed') {
+      status = 'closed'
+      processState = 'stopped'
     }
     if (event.type === 'session.configuration_changed') {
       if (typeof event.payload.permissionMode === 'string') permissionMode = event.payload.permissionMode
@@ -260,6 +292,10 @@ export function projectHarnessEvents(events: HarnessEvent[]): HarnessProjection 
     permissionMode,
     modelId,
     promptQueueDepth,
+    processState,
+    recoveryStrategy,
+    recoveryError,
+    contextState,
     eventCount: seen.size,
     availableModes,
     availableModels,
