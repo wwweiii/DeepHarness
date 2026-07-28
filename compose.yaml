@@ -15,21 +15,26 @@ services:
     networks: [control]
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    cap_drop: [ALL]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER, SETGID, SETUID]
+    init: true
     restart: unless-stopped
 
   gateway:
     build:
       context: .
       dockerfile: docker/service.Dockerfile
-    command: ["bun", "run", "apps/gateway/src/server.ts"]
+      target: gateway
     environment:
       PORT: "8080"
       DATABASE_URL: postgres://deepharness:${POSTGRES_PASSWORD:-deepharness-local-only}@postgres:5432/deepharness
+      WORKER_SHARED_TOKEN: ${WORKER_SHARED_TOKEN:-phase-1-local-token}
+      WORKSPACE_PATH: /workspace/source
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:8080/readyz');process.exit(r.ok?0:1)"]
+      test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:8080/health/ready');process.exit(r.ok?0:1)"]
       interval: 2s
       timeout: 3s
       retries: 20
@@ -39,6 +44,7 @@ services:
     read_only: true
     tmpfs:
       - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
     init: true
     restart: unless-stopped
 
@@ -46,24 +52,58 @@ services:
     build:
       context: .
       dockerfile: docker/service.Dockerfile
-    command: ["bun", "run", "apps/worker/src/main.ts"]
+      target: worker
     environment:
       PORT: "8081"
       GATEWAY_URL: http://gateway:8080
+      WORKER_SHARED_TOKEN: ${WORKER_SHARED_TOKEN:-phase-1-local-token}
+      WORKER_ID: phase-1-worker
+      WORKSPACE_PATH: /workspace/source
+      VENDOR_COMMIT: 34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_AUTH_TOKEN: ${ANTHROPIC_AUTH_TOKEN:-}
+      ANTHROPIC_BASE_URL: ${ANTHROPIC_BASE_URL:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
     depends_on:
       gateway:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:8081/readyz');process.exit(r.ok?0:1)"]
+      test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:8081/health/ready');process.exit(r.ok?0:1)"]
       interval: 2s
       timeout: 3s
+      retries: 30
+    networks: [control]
+    volumes:
+      - ${HOST_WORKSPACE_PATH:-.}:/workspace/source
+      - agent-state:/home/agent
+      - agent-runs:/workspace/runs
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop: [ALL]
+    pids_limit: 256
+    init: true
+    restart: unless-stopped
+
+  test-model:
+    profiles: [test, audit]
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+      target: test-model
+    environment:
+      PORT: "8090"
+    healthcheck:
+      test: ["CMD", "bun", "-e", "const r=await fetch('http://127.0.0.1:8090/healthz');process.exit(r.ok?0:1)"]
+      interval: 1s
+      timeout: 2s
       retries: 20
     networks: [control]
     read_only: true
     tmpfs:
-      - /tmp:size=128m,mode=1777
+      - /tmp:size=32m,mode=1777
+    cap_drop: [ALL]
     init: true
-    restart: unless-stopped
 
   capability-audit:
     profiles: [audit]
@@ -80,6 +120,31 @@ services:
     read_only: true
     tmpfs:
       - /tmp:size=512m,mode=1777
+    cap_drop: [ALL]
+    init: true
+
+  e2e:
+    profiles: [e2e]
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+      target: e2e
+    environment:
+      TEST_BASE_URL: http://gateway:8080
+      PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/chromium
+    depends_on:
+      gateway:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+    networks: [control]
+    volumes:
+      - ./output/playwright:/app/output/playwright
+    read_only: true
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+      - /home/bun:size=128m,mode=1777
+    cap_drop: [ALL]
     init: true
 
 networks:
@@ -88,3 +153,5 @@ networks:
 
 volumes:
   postgres-data:
+  agent-state:
+  agent-runs:

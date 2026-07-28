@@ -94,6 +94,7 @@ function mergeDiscovered(
       prior.source_evidence.push(...capability.source_evidence)
       prior.enabled ||= capability.enabled
       prior.advertised_by_acp ||= capability.advertised_by_acp
+      prior.ui_supported ||= capability.ui_supported
       prior.tested ||= capability.tested
       if (capability.invocable !== null) prior.invocable = capability.invocable
       if (capability.known_gap) prior.known_gap = capability.known_gap

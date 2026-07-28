@@ -85,6 +85,16 @@ export type DynamicReport = {
   command: string[]
   initialize: Record<string, unknown>
   new_session: Record<string, unknown>
+  prompt: {
+    response: Record<string, unknown>
+    text: string
+    text_updates: number
+  }
+  cancel: {
+    response: Record<string, unknown>
+    observed_stream_update: boolean
+  }
+  stdout_protocol_errors: string[]
   available_commands: Array<Record<string, unknown>>
   notifications_observed: number
   stderr_tail: string[]

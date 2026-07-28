@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "vendor_commit": "34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d",
-  "generated_at": "2026-07-27T17:08:48.003Z",
+  "generated_at": "2026-07-28T03:12:31.302Z",
   "probe": "ccb-bun-acp-stdio",
   "command": [
     "bun",
@@ -41,7 +41,7 @@
     }
   },
   "new_session": {
-    "sessionId": "5934c0b7-75ae-48d2-81ff-0b1395686802",
+    "sessionId": "bba39974-73b4-4ed0-a30d-581321ca3674",
     "modes": {
       "currentModeId": "default",
       "availableModes": [
@@ -85,9 +85,14 @@
           "description": "Use the default model (currently Sonnet 4.6) · $3/$15 per Mtok"
         },
         {
+          "modelId": "opus",
+          "name": "Opus 4.7",
+          "description": "Opus 4.7 · Most capable for complex work · $5/$25 per Mtok"
+        },
+        {
           "modelId": "opus[1m]",
           "name": "Opus 4.7 (1M context)",
-          "description": "Opus 4.7 with 1M context · Most capable for complex work"
+          "description": "Opus 4.7 with 1M context · $5/$25 per Mtok"
         },
         {
           "modelId": "claude-opus-4-6[1m]",
@@ -162,9 +167,14 @@
             "description": "Use the default model (currently Sonnet 4.6) · $3/$15 per Mtok"
           },
           {
+            "value": "opus",
+            "name": "Opus 4.7",
+            "description": "Opus 4.7 · Most capable for complex work · $5/$25 per Mtok"
+          },
+          {
             "value": "opus[1m]",
             "name": "Opus 4.7 (1M context)",
-            "description": "Opus 4.7 with 1M context · Most capable for complex work"
+            "description": "Opus 4.7 with 1M context · $5/$25 per Mtok"
           },
           {
             "value": "claude-opus-4-6[1m]",
@@ -185,6 +195,40 @@
       }
     ]
   },
+  "prompt": {
+    "response": {
+      "stopReason": "end_turn",
+      "usage": {
+        "inputTokens": 17,
+        "outputTokens": 18,
+        "cachedReadTokens": 0,
+        "cachedWriteTokens": 0,
+        "thoughtTokens": 0,
+        "totalTokens": 35
+      },
+      "_meta": {
+        "claudeCode": {
+          "usage": {
+            "inputTokens": 17,
+            "outputTokens": 18,
+            "cachedReadTokens": 0,
+            "cachedWriteTokens": 0,
+            "thoughtTokens": 0,
+            "totalTokens": 35
+          }
+        }
+      }
+    },
+    "text": "DeepHarness test model received: Reply with the exact words STREAM OK.",
+    "text_updates": 7
+  },
+  "cancel": {
+    "response": {
+      "stopReason": "cancelled"
+    },
+    "observed_stream_update": true
+  },
+  "stdout_protocol_errors": [],
   "available_commands": [
     {
       "name": "init",
@@ -223,7 +267,7 @@
       "description": "Create verifier skill(s) for automated verification of code changes"
     }
   ],
-  "notifications_observed": 1,
+  "notifications_observed": 11,
   "stderr_tail": [],
   "gaps": [
     {

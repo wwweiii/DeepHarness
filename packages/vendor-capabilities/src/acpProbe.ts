@@ -56,6 +56,12 @@ export async function runAcpProbe(options: {
       DISABLE_TELEMETRY: '1',
       NODE_ENV: 'production',
       USER_TYPE: 'external',
+      ...(process.env.ANTHROPIC_API_KEY
+        ? { ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY }
+        : {}),
+      ...(process.env.ANTHROPIC_BASE_URL
+        ? { ANTHROPIC_BASE_URL: process.env.ANTHROPIC_BASE_URL }
+        : {}),
     },
   })
 
@@ -98,6 +104,10 @@ export async function runAcpProbe(options: {
     child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', id, method, params })}\n`)
   }
 
+  function notify(method: string, params: Record<string, unknown>): void {
+    child.stdin.write(`${JSON.stringify({ jsonrpc: '2.0', method, params })}\n`)
+  }
+
   async function response(id: number, timeoutMs = 30_000): Promise<Record<string, unknown>> {
     const started = Date.now()
     while (Date.now() - started < timeoutMs) {
@@ -120,6 +130,11 @@ export async function runAcpProbe(options: {
 
   let initialize: Record<string, unknown> = {}
   let newSession: Record<string, unknown> = {}
+  let promptResponse: Record<string, unknown> = {}
+  let promptText = ''
+  let promptTextUpdates = 0
+  let cancelResponse: Record<string, unknown> = {}
+  let observedCancelStreamUpdate = false
   try {
     send(1, 'initialize', {
       protocolVersion: 1,
@@ -130,6 +145,59 @@ export async function runAcpProbe(options: {
     send(2, 'session/new', { cwd: workspace, mcpServers: [] })
     newSession = await response(2)
     await wait(1_000)
+    const sessionId = newSession.sessionId
+    if (typeof sessionId !== 'string') throw new Error('ACP session/new returned no sessionId')
+
+    const promptStart = notifications.length
+    send(3, 'session/prompt', {
+      sessionId,
+      prompt: [{ type: 'text', text: 'Reply with the exact words STREAM OK.' }],
+    })
+    promptResponse = await response(3, 60_000)
+    const promptNotifications = notifications.slice(promptStart)
+    const textUpdates = promptNotifications
+      .filter(message => message.method === 'session/update')
+      .map(message => message.params?.update)
+      .filter(
+        (update): update is Record<string, unknown> =>
+          typeof update === 'object' &&
+          update !== null &&
+          'sessionUpdate' in update &&
+          update.sessionUpdate === 'agent_message_chunk',
+      )
+      .map(update => update.content)
+      .filter(
+        (content): content is Record<string, unknown> =>
+          typeof content === 'object' &&
+          content !== null &&
+          'type' in content &&
+          content.type === 'text',
+      )
+    promptText = textUpdates.map(content => String(content.text ?? '')).join('')
+    promptTextUpdates = textUpdates.length
+    if (!promptText.includes('STREAM OK')) {
+      throw new Error(`ACP prompt did not stream expected text: ${promptText.slice(0, 500)}`)
+    }
+
+    const cancelStart = notifications.length
+    send(4, 'session/prompt', {
+      sessionId,
+      prompt: [{ type: 'text', text: '[slow] continue until cancelled' }],
+    })
+    const updateDeadline = Date.now() + 10_000
+    while (Date.now() < updateDeadline) {
+      observedCancelStreamUpdate = notifications.slice(cancelStart).some(message => {
+        const update = message.params?.update as Record<string, unknown> | undefined
+        return message.method === 'session/update' && update?.sessionUpdate === 'agent_message_chunk'
+      })
+      if (observedCancelStreamUpdate) break
+      await wait(25)
+    }
+    notify('session/cancel', { sessionId })
+    cancelResponse = await response(4, 30_000)
+    if (cancelResponse.stopReason !== 'cancelled') {
+      throw new Error(`ACP cancel returned ${String(cancelResponse.stopReason)}`)
+    }
   } finally {
     child.stdin.end()
     if (child.exitCode === null) child.kill('SIGTERM')
@@ -173,6 +241,18 @@ export async function runAcpProbe(options: {
     command,
     initialize,
     new_session: newSession,
+    prompt: {
+      response: promptResponse,
+      text: promptText,
+      text_updates: promptTextUpdates,
+    },
+    cancel: {
+      response: cancelResponse,
+      observed_stream_update: observedCancelStreamUpdate,
+    },
+    stdout_protocol_errors: notifications
+      .filter(message => message.method === 'probe/non-json-stdout')
+      .map(message => String(message.params?.line ?? 'unknown')),
     available_commands: availableCommands,
     notifications_observed: notifications.length,
     stderr_tail: stderr.slice(-50),
@@ -384,9 +464,11 @@ export function dynamicAcpCapabilities(
     known_gap: versionGap?.status === 'expected_failure' ? versionGap.summary : null,
     last_test_result: versionGap?.status === 'expected_failure' ? 'expected_failure' : 'passed',
   })
-  for (const [name, path] of [
-    ['initialize', 'acp.initialize'],
-    ['newSession', 'acp.session.new'],
+  for (const [name, path, uiSupported] of [
+    ['initialize', 'acp.initialize', false],
+    ['newSession', 'acp.session.new', false],
+    ['prompt', 'acp.session.prompt', true],
+    ['cancel', 'acp.session.cancel', true],
   ] as const) {
     capabilities.push({
       id: `acp.${name}`,
@@ -396,7 +478,7 @@ export function dynamicAcpCapabilities(
       enabled: true,
       advertised_by_acp: true,
       invocable: true,
-      ui_supported: false,
+      ui_supported: uiSupported,
       tested: true,
       conditions: [],
       source_evidence: [runtimeEvidence(path, 'Real ccb-bun ACP request completed successfully')],
@@ -404,6 +486,26 @@ export function dynamicAcpCapabilities(
       last_test_result: 'passed',
     })
   }
+  capabilities.push({
+    id: 'acp.sessionUpdate.text',
+    kind: 'acp',
+    name: 'sessionUpdate.text',
+    compiled: true,
+    enabled: true,
+    advertised_by_acp: true,
+    invocable: true,
+    ui_supported: true,
+    tested: report.prompt.text_updates > 0,
+    conditions: ['content_block:text'],
+    source_evidence: [
+      runtimeEvidence(
+        'acp.session.update.agent_message_chunk',
+        `Observed ${report.prompt.text_updates} streaming text updates from real ccb-bun ACP`,
+      ),
+    ],
+    known_gap: null,
+    last_test_result: report.prompt.text_updates > 0 ? 'passed' : 'not_tested',
+  })
   return capabilities.sort((a, b) => a.id.localeCompare(b.id))
 }
 

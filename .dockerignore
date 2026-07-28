@@ -6,3 +6,4 @@
 **/dist
 vendor/claude-code/.git
 artifacts/capabilities/*.json
+!artifacts/capabilities/vendor-capability-manifest.json

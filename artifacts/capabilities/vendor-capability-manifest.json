@@ -4,7 +4,7 @@
   "vendor_repository": "https://github.com/claude-code-best/claude-code.git",
   "vendor_tag": "v2.8.4",
   "build_id": "ccb-bun-v2.8.4-34b3dc99bf40",
-  "generated_at": "2026-07-27T17:08:48.009Z",
+  "generated_at": "2026-07-28T03:12:31.313Z",
   "reviewed_at": "2026-07-27T16:55:08.356Z",
   "build_features": [
     {
@@ -14207,9 +14207,9 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [],
       "source_evidence": [
         {
@@ -14217,10 +14217,16 @@
           "line": 316,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "acp.session.cancel",
+          "line": 1,
+          "detail": "Real ccb-bun ACP request completed successfully",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The operation is a native ACP session capability."
     },
@@ -14339,9 +14345,9 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [],
       "source_evidence": [
         {
@@ -14355,10 +14361,16 @@
           "line": 37,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "acp.session.prompt",
+          "line": 1,
+          "detail": "Real ccb-bun ACP request completed successfully",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The operation is a native ACP session capability."
     },
@@ -14385,6 +14397,32 @@
       "last_test_result": "expected_failure",
       "matrix_class": "C",
       "classification_rationale": "Runtime and source probes confirm an ACP contract gap."
+    },
+    {
+      "id": "acp.sessionUpdate.text",
+      "kind": "acp",
+      "name": "sessionUpdate.text",
+      "compiled": true,
+      "enabled": true,
+      "advertised_by_acp": true,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "content_block:text"
+      ],
+      "source_evidence": [
+        {
+          "path": "acp.session.update.agent_message_chunk",
+          "line": 1,
+          "detail": "Observed 7 streaming text updates from real ccb-bun ACP",
+          "evidenceType": "runtime"
+        }
+      ],
+      "known_gap": null,
+      "last_test_result": "passed",
+      "matrix_class": "A",
+      "classification_rationale": "Streaming text updates are a native ACP session capability exercised through the Harness vertical path."
     },
     {
       "id": "acp.setSessionConfigOption",
@@ -15583,9 +15621,9 @@
     "provider_credentials_present": false
   },
   "summary": {
-    "total": 388,
+    "total": 389,
     "by_kind": {
-      "acp": 27,
+      "acp": 28,
       "agent": 7,
       "command": 133,
       "feature": 93,
@@ -15596,7 +15634,7 @@
     },
     "by_matrix_class": {
       "B": 79,
-      "A": 50,
+      "A": 51,
       "C": 156,
       "E": 35,
       "D": 68
@@ -15925,9 +15963,9 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [],
       "source_evidence": [
         {
@@ -15935,10 +15973,16 @@
           "line": 316,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "acp.session.cancel",
+          "line": 1,
+          "detail": "Real ccb-bun ACP request completed successfully",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The operation is a native ACP session capability."
     },
@@ -16057,9 +16101,9 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [],
       "source_evidence": [
         {
@@ -16073,10 +16117,16 @@
           "line": 37,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "acp.session.prompt",
+          "line": 1,
+          "detail": "Real ccb-bun ACP request completed successfully",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The operation is a native ACP session capability."
     },
@@ -16103,6 +16153,32 @@
       "last_test_result": "expected_failure",
       "matrix_class": "C",
       "classification_rationale": "Runtime and source probes confirm an ACP contract gap."
+    },
+    {
+      "id": "acp.sessionUpdate.text",
+      "kind": "acp",
+      "name": "sessionUpdate.text",
+      "compiled": true,
+      "enabled": true,
+      "advertised_by_acp": true,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "content_block:text"
+      ],
+      "source_evidence": [
+        {
+          "path": "acp.session.update.agent_message_chunk",
+          "line": 1,
+          "detail": "Observed 7 streaming text updates from real ccb-bun ACP",
+          "evidenceType": "runtime"
+        }
+      ],
+      "known_gap": null,
+      "last_test_result": "passed",
+      "matrix_class": "A",
+      "classification_rationale": "Streaming text updates are a native ACP session capability exercised through the Harness vertical path."
     },
     {
       "id": "acp.setSessionConfigOption",

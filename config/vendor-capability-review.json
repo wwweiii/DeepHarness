@@ -83,6 +83,10 @@
       "matrix_class": "C",
       "rationale": "Runtime and source probes confirm an ACP contract gap."
     },
+    "acp.sessionUpdate.text": {
+      "matrix_class": "A",
+      "rationale": "Streaming text updates are a native ACP session capability exercised through the Harness vertical path."
+    },
     "acp.setSessionConfigOption": {
       "matrix_class": "B",
       "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."

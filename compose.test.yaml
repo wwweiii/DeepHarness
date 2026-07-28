@@ -2,11 +2,32 @@ services:
   postgres:
     tmpfs:
       - /var/lib/postgresql/data:size=256m
-    volumes: []
+    volumes: !reset []
 
   gateway:
-    ports: []
+    ports: !override
+      - "127.0.0.1:${TEST_GATEWAY_PORT:-18080}:8080"
+
+  worker:
+    environment:
+      ANTHROPIC_API_KEY: phase-1-test-key
+      ANTHROPIC_AUTH_TOKEN: ""
+      ANTHROPIC_BASE_URL: http://test-model:8090
+    depends_on:
+      test-model:
+        condition: service_healthy
+      gateway:
+        condition: service_healthy
 
   capability-audit:
     environment:
       NODE_ENV: test
+      ANTHROPIC_API_KEY: phase-1-test-key
+      ANTHROPIC_BASE_URL: http://test-model:8090
+    depends_on:
+      test-model:
+        condition: service_healthy
+
+  test-model:
+    environment:
+      TEST_MODEL_DEBUG: ${TEST_MODEL_DEBUG:-0}

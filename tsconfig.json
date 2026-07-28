@@ -3,6 +3,7 @@
     "allowImportingTsExtensions": true,
     "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
     "module": "Preserve",
     "moduleDetection": "force",
     "moduleResolution": "Bundler",
@@ -15,5 +16,5 @@
     "target": "ES2024",
     "types": ["bun"]
   },
-  "include": ["apps/**/*.ts", "packages/**/*.ts", "tests/**/*.ts"]
+  "include": ["apps/**/*.ts", "apps/**/*.tsx", "packages/**/*.ts", "tests/**/*.ts", "tests/**/*.tsx"]
 }

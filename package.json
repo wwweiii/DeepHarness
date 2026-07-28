@@ -10,12 +10,28 @@
   "scripts": {
     "audit:vendor": "bun run packages/vendor-capabilities/src/cli.ts audit",
     "audit:review-draft": "bun run packages/vendor-capabilities/src/cli.ts audit --write-review-draft",
+    "build:web": "vite build --config apps/web/vite.config.ts",
     "test:contract": "bun test tests/contract",
+    "test:integration": "bun test ./tests/integration/phase-1-stack.test.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
+  "dependencies": {
+    "@assistant-ui/react": "0.14.28",
+    "@deepharness/protocol": "workspace:*",
+    "hono": "4.12.32",
+    "lucide-react": "1.27.0",
+    "postgres": "3.4.9",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
   "devDependencies": {
+    "@playwright/test": "1.62.0",
     "@types/bun": "1.3.12",
-    "typescript": "6.0.3"
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.4",
+    "typescript": "6.0.3",
+    "vite": "8.1.5"
   }
 }

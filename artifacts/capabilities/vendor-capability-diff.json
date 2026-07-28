@@ -3,7 +3,7 @@
   "status": "baseline_created",
   "previous_vendor_commit": null,
   "current_vendor_commit": "34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d",
-  "generated_at": "2026-07-27T17:08:48.011Z",
+  "generated_at": "2026-07-28T03:12:31.315Z",
   "added": [
     "acp.advertised:_meta.claudeCode.forkSession",
     "acp.advertised:_meta.claudeCode.promptQueueing",
@@ -25,6 +25,7 @@
     "acp.newSession",
     "acp.prompt",
     "acp.prompt.image",
+    "acp.sessionUpdate.text",
     "acp.setSessionConfigOption",
     "acp.setSessionMode",
     "acp.unstable_closeSession",

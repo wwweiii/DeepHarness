@@ -18,6 +18,9 @@ coverage/
 playwright-report/
 test-results/
 .nyc_output/
+output/playwright/*
+!output/playwright/.gitkeep
+.playwright-cli/
 
 # Local tools and editors
 .codegraph/

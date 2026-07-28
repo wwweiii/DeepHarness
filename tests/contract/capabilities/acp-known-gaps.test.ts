@@ -15,6 +15,16 @@ describe('ACP runtime and expected-failure contracts', () => {
     expect(Array.isArray(report.new_session.models.availableModels)).toBe(true)
   })
 
+  test('streams text and cancels a running real ACP prompt', async () => {
+    const report = JSON.parse(await readFile(reportPath, 'utf8'))
+    expect(report.prompt.text).toContain('STREAM OK')
+    expect(report.prompt.text_updates).toBeGreaterThan(0)
+    expect(report.prompt.response.stopReason).toBe('end_turn')
+    expect(report.cancel.observed_stream_update).toBe(true)
+    expect(report.cancel.response.stopReason).toBe('cancelled')
+    expect(report.stdout_protocol_errors).toEqual([])
+  })
+
   test('keeps every known ACP gap as a reproducible expected failure', async () => {
     const report = JSON.parse(await readFile(reportPath, 'utf8'))
     expect(report.gaps.map((gap: any) => gap.id).sort()).toEqual([

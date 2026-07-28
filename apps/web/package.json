@@ -1,0 +1,9 @@
+{
+  "name": "@deepharness/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@deepharness/protocol": "workspace:*"
+  }
+}

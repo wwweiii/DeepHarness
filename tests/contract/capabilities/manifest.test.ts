@@ -80,14 +80,23 @@ describe('vendor capability manifest gate', () => {
     }
   })
 
-  test('projects successful initialize and new-session runtime checks', async () => {
+  test('projects successful phase-1 ACP runtime checks', async () => {
     const manifest = await json('artifacts/capabilities/vendor-capability-manifest.json')
-    for (const id of ['acp.initialize', 'acp.newSession']) {
+    for (const id of [
+      'acp.initialize',
+      'acp.newSession',
+      'acp.prompt',
+      'acp.cancel',
+      'acp.sessionUpdate.text',
+    ]) {
       const capability = manifest.capabilities.find((item: any) => item.id === id)
       expect(capability.invocable).toBe(true)
       expect(capability.tested).toBe(true)
       expect(capability.last_test_result).toBe('passed')
       expect(capability.source_evidence.some((item: any) => item.evidenceType === 'runtime')).toBe(true)
+    }
+    for (const id of ['acp.prompt', 'acp.cancel', 'acp.sessionUpdate.text']) {
+      expect(manifest.capabilities.find((item: any) => item.id === id).ui_supported).toBe(true)
     }
   })
 })
