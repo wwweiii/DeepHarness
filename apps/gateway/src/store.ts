@@ -1,12 +1,20 @@
 import type { Database } from '@deepharness/database'
 import type postgres from 'postgres'
 import type {
+  ActivityLimits,
+  AgentActivityRecord,
+  AgentDefinitionSummary,
   EventPage,
   HarnessEvent,
   HarnessEventType,
   JsonValue,
   SessionRecord,
   SessionRecoveryStrategy,
+  SessionActivitySnapshot,
+  TaskActivityRecord,
+  TeamActivityRecord,
+  TeamMessageRecord,
+  TeamPeerRecord,
   WorkerCommand,
   WorkspaceRecord,
 } from '@deepharness/protocol'
@@ -112,6 +120,111 @@ function eventFromRow(row: Record<string, unknown>): HarnessEvent {
     type: row.type as HarnessEventType,
     timestamp: new Date(String(row.created_at)).toISOString(),
     payload: row.payload as Record<string, JsonValue>,
+  }
+}
+
+function iso(value: unknown): string {
+  return new Date(String(value)).toISOString()
+}
+
+function agentActivityFromRow(row: Record<string, unknown>): AgentActivityRecord {
+  return {
+    id: String(row.id),
+    sessionId: String(row.session_id),
+    turnId: row.turn_id === null ? null : String(row.turn_id),
+    vendorAgentId: row.vendor_agent_id === null ? null : String(row.vendor_agent_id),
+    toolCallId: String(row.tool_call_id),
+    parentAgentId: row.parent_agent_id === null ? null : String(row.parent_agent_id),
+    parentToolCallId: row.parent_tool_call_id === null ? null : String(row.parent_tool_call_id),
+    agentType: String(row.agent_type),
+    name: row.name === null ? null : String(row.name),
+    description: String(row.description),
+    status: row.status as AgentActivityRecord['status'],
+    runInBackground: row.run_in_background === true,
+    permissionMode: String(row.permission_mode),
+    workspacePath: row.workspace_path === null ? null : String(row.workspace_path),
+    totalTokens: row.total_tokens === null ? null : Number(row.total_tokens),
+    totalDurationMs: row.total_duration_ms === null ? null : Number(row.total_duration_ms),
+    totalToolUseCount: row.total_tool_use_count === null ? null : Number(row.total_tool_use_count),
+    output: (row.output ?? null) as JsonValue,
+    metadata: (row.metadata ?? {}) as Record<string, JsonValue>,
+    startedAt: iso(row.started_at),
+    updatedAt: iso(row.updated_at),
+    completedAt: row.completed_at === null ? null : iso(row.completed_at),
+  }
+}
+
+function taskActivityFromRow(row: Record<string, unknown>): TaskActivityRecord {
+  return {
+    id: String(row.id),
+    sessionId: String(row.session_id),
+    turnId: row.turn_id === null ? null : String(row.turn_id),
+    vendorTaskId: String(row.vendor_task_id),
+    parentAgentId: row.parent_agent_id === null ? null : String(row.parent_agent_id),
+    subject: String(row.subject),
+    description: String(row.description),
+    status: row.status as TaskActivityRecord['status'],
+    owner: row.owner === null ? null : String(row.owner),
+    blockedBy: Array.isArray(row.blocked_by) ? row.blocked_by.map(String) : [],
+    blocks: Array.isArray(row.blocks) ? row.blocks.map(String) : [],
+    taskType: row.task_type === null ? null : String(row.task_type),
+    output: (row.output ?? null) as JsonValue,
+    metadata: (row.metadata ?? {}) as Record<string, JsonValue>,
+    createdAt: iso(row.created_at),
+    updatedAt: iso(row.updated_at),
+    completedAt: row.completed_at === null ? null : iso(row.completed_at),
+  }
+}
+
+function teamPeerFromRow(row: Record<string, unknown>): TeamPeerRecord {
+  return {
+    id: String(row.id),
+    sessionId: String(row.session_id),
+    teamId: String(row.team_id),
+    agentId: row.agent_id === null ? null : String(row.agent_id),
+    name: String(row.name),
+    role: String(row.role),
+    status: String(row.status),
+    address: row.address === null ? null : String(row.address),
+    cwd: row.cwd === null ? null : String(row.cwd),
+    pid: row.pid === null ? null : Number(row.pid),
+    metadata: (row.metadata ?? {}) as Record<string, JsonValue>,
+    updatedAt: iso(row.updated_at),
+  }
+}
+
+function teamActivityFromRow(
+  row: Record<string, unknown>,
+  peers: TeamPeerRecord[],
+): TeamActivityRecord {
+  return {
+    id: String(row.id),
+    sessionId: String(row.session_id),
+    name: String(row.name),
+    description: String(row.description),
+    status: row.status as TeamActivityRecord['status'],
+    leadAgentId: row.lead_agent_id === null ? null : String(row.lead_agent_id),
+    metadata: (row.metadata ?? {}) as Record<string, JsonValue>,
+    peers,
+    createdAt: iso(row.created_at),
+    updatedAt: iso(row.updated_at),
+    deletedAt: row.deleted_at === null ? null : iso(row.deleted_at),
+  }
+}
+
+function teamMessageFromRow(row: Record<string, unknown>): TeamMessageRecord {
+  return {
+    id: String(row.id),
+    sessionId: String(row.session_id),
+    teamId: row.team_id === null ? null : String(row.team_id),
+    sender: String(row.sender),
+    recipient: String(row.recipient),
+    messageType: String(row.message_type),
+    content: (row.content ?? null) as JsonValue,
+    summary: row.summary === null ? null : String(row.summary),
+    deliveryStatus: String(row.delivery_status),
+    metadata: (row.metadata ?? {}) as Record<string, JsonValue>,
+    createdAt: iso(row.created_at),
   }
 }
 
@@ -239,6 +352,81 @@ export class GatewayStore {
     return {
       events,
       nextBeforeSeq: hasMore && events[0] ? events[0].seq : null,
+    }
+  }
+
+  async getActivity(sessionId: string): Promise<SessionActivitySnapshot> {
+    const [agentRows, taskRows, teamRows, peerRows, messageRows, definitionRows, sessionRows] =
+      await Promise.all([
+        this.database<Record<string, unknown>[]>`
+          SELECT * FROM agent_activities WHERE session_id = ${sessionId}
+          ORDER BY started_at ASC, id ASC
+        `,
+        this.database<Record<string, unknown>[]>`
+          SELECT * FROM task_activities WHERE session_id = ${sessionId}
+          ORDER BY created_at ASC, id ASC
+        `,
+        this.database<Record<string, unknown>[]>`
+          SELECT * FROM team_activities WHERE session_id = ${sessionId}
+          ORDER BY created_at ASC, id ASC
+        `,
+        this.database<Record<string, unknown>[]>`
+          SELECT * FROM team_peers WHERE session_id = ${sessionId}
+          ORDER BY team_id ASC, name ASC
+        `,
+        this.database<Record<string, unknown>[]>`
+          SELECT * FROM team_messages WHERE session_id = ${sessionId}
+          ORDER BY created_at ASC, id ASC
+        `,
+        this.database<Array<{
+          id: string
+          name: string
+          enabled: boolean
+          invocable: boolean | null
+          tested: boolean
+          matrix_class: string
+          conditions: JsonValue[]
+          known_gap: string | null
+        }>>`
+          SELECT capability.id, capability.name, capability.enabled, capability.invocable,
+            capability.tested, capability.matrix_class, capability.conditions, capability.known_gap
+          FROM capabilities capability
+          JOIN capability_manifests manifest ON manifest.id = capability.manifest_id
+          WHERE capability.kind = 'agent' AND manifest.status = 'ready'
+            AND manifest.generated_at = (
+              SELECT max(generated_at) FROM capability_manifests WHERE status = 'ready'
+            )
+          ORDER BY capability.name ASC
+        `,
+        this.database<{ context_state: Record<string, JsonValue> }[]>`
+          SELECT context_state FROM sessions WHERE id = ${sessionId}
+        `,
+      ])
+    const peers = peerRows.map(teamPeerFromRow)
+    const definitions: AgentDefinitionSummary[] = definitionRows.map(row => ({
+      id: row.id,
+      name: row.name,
+      enabled: row.enabled,
+      invocable: row.invocable,
+      tested: row.tested,
+      matrixClass: row.matrix_class,
+      conditions: row.conditions ?? [],
+      knownGap: row.known_gap,
+    }))
+    const limitsValue = sessionRows[0]?.context_state?.activityLimits
+    const limits = limitsValue && typeof limitsValue === 'object' && !Array.isArray(limitsValue)
+      ? limitsValue as unknown as ActivityLimits
+      : null
+    return {
+      agents: agentRows.map(agentActivityFromRow),
+      tasks: taskRows.map(taskActivityFromRow),
+      teams: teamRows.map(row => teamActivityFromRow(
+        row,
+        peers.filter(peer => peer.teamId === String(row.id)),
+      )),
+      messages: messageRows.map(teamMessageFromRow),
+      definitions,
+      limits,
     }
   }
 
@@ -630,6 +818,109 @@ export class GatewayStore {
     })
   }
 
+  async createActivityControl(input: {
+    sessionId: string
+    commandId: string
+    idempotencyKey: string
+    type: 'stop_agent' | 'stop_task'
+    activityId: string
+    vendorActivityId: string
+    reason: string
+  }): Promise<{ command: WorkerCommand; created: boolean }> {
+    return this.database.begin(async transaction => {
+      const existing = await transaction<{
+        id: string
+        session_id: string
+        type: WorkerCommand['type']
+        payload: WorkerCommand['payload']
+      }[]>`
+        SELECT id, session_id, type, payload FROM session_commands
+        WHERE idempotency_key = ${input.idempotencyKey}
+      `
+      if (existing[0]) return { command: commandFromRow(existing[0]), created: false }
+      const sessions = await transaction<{ process_state: string; status: string }[]>`
+        SELECT process_state, status FROM sessions WHERE id = ${input.sessionId} FOR UPDATE
+      `
+      if (!sessions[0]) throw new Error('SESSION_NOT_FOUND')
+      if (sessions[0].process_state !== 'running') throw new Error('SESSION_PROCESS_STOPPED')
+
+      let payload: Extract<WorkerCommand, { type: 'stop_agent' | 'stop_task' }>['payload']
+      if (input.type === 'stop_agent') {
+        const rows = await transaction<{ vendor_agent_id: string | null; status: string }[]>`
+          SELECT vendor_agent_id, status FROM agent_activities
+          WHERE session_id = ${input.sessionId} AND id = ${input.activityId} FOR UPDATE
+        `
+        if (!rows[0]) throw new Error('ACTIVITY_NOT_FOUND')
+        if (!['starting', 'running', 'stopping'].includes(rows[0].status)) {
+          throw new Error('ACTIVITY_NOT_RUNNING')
+        }
+        if (!rows[0].vendor_agent_id || rows[0].vendor_agent_id !== input.vendorActivityId) {
+          throw new Error('ACTIVITY_VENDOR_ID_MISMATCH')
+        }
+        payload = {
+          agentId: input.activityId,
+          vendorAgentId: input.vendorActivityId,
+          reason: input.reason,
+        }
+        await transaction`
+          UPDATE agent_activities SET status = 'stopping', updated_at = now()
+          WHERE session_id = ${input.sessionId} AND id = ${input.activityId}
+        `
+      } else {
+        const rows = await transaction<{ vendor_task_id: string; status: string; task_type: string | null }[]>`
+          SELECT vendor_task_id, status, task_type FROM task_activities
+          WHERE session_id = ${input.sessionId} AND id = ${input.activityId} FOR UPDATE
+        `
+        if (!rows[0]) throw new Error('ACTIVITY_NOT_FOUND')
+        if (!['pending', 'in_progress', 'stopping'].includes(rows[0].status)) {
+          throw new Error('ACTIVITY_NOT_RUNNING')
+        }
+        if (!rows[0].task_type || rows[0].vendor_task_id !== input.vendorActivityId) {
+          throw new Error('ACTIVITY_NOT_STOPPABLE')
+        }
+        payload = {
+          taskId: input.activityId,
+          vendorTaskId: input.vendorActivityId,
+          reason: input.reason,
+        }
+        await transaction`
+          UPDATE task_activities SET status = 'stopping', updated_at = now()
+          WHERE session_id = ${input.sessionId} AND id = ${input.activityId}
+        `
+      }
+      await this.insertCommand(transaction, {
+        id: input.commandId,
+        idempotencyKey: input.idempotencyKey,
+        sessionId: input.sessionId,
+        type: input.type,
+        payload,
+      })
+      await transaction`
+        INSERT INTO audit_logs (id, action, resource_type, resource_id, metadata)
+        VALUES (
+          ${crypto.randomUUID()}, ${`${input.type}.requested`},
+          ${input.type === 'stop_agent' ? 'agent_activity' : 'task_activity'},
+          ${input.activityId},
+          ${transaction.json({
+            sessionId: input.sessionId,
+            vendorActivityId: input.vendorActivityId,
+            reason: input.reason,
+            commandId: input.commandId,
+          })}
+        )
+      `
+      return {
+        command: {
+          id: input.commandId,
+          sessionId: input.sessionId,
+          type: input.type,
+          payload,
+        } as WorkerCommand,
+        created: true,
+      }
+    })
+  }
+
   async createClose(input: {
     sessionId: string
     commandId: string
@@ -890,6 +1181,23 @@ export class GatewayStore {
           UPDATE sessions SET status = 'closed', process_state = 'stopped', closed_at = now(),
             active_turn_id = NULL, updated_at = now() WHERE id = ${event.sessionId}
         `
+        await transaction`
+          UPDATE agent_activities SET status = 'stopped', completed_at = COALESCE(completed_at, now()),
+            updated_at = now(), metadata = metadata || '{"stopReason":"session_closed"}'::jsonb
+          WHERE session_id = ${event.sessionId} AND status IN ('starting', 'running', 'stopping')
+        `
+        await transaction`
+          UPDATE task_activities SET status = 'stopped', completed_at = COALESCE(completed_at, now()),
+            updated_at = now(), metadata = metadata || '{"stopReason":"session_closed"}'::jsonb
+          WHERE session_id = ${event.sessionId} AND task_type IS NOT NULL
+            AND status IN ('pending', 'in_progress', 'stopping')
+        `
+        await transaction`
+          UPDATE team_peers SET status = 'stopped', updated_at = now(),
+            metadata = metadata || '{"stopReason":"session_closed"}'::jsonb
+          WHERE session_id = ${event.sessionId}
+            AND status IN ('active', 'online', 'starting', 'running', 'stopping')
+        `
         await transaction`DELETE FROM workspace_locks WHERE session_id = ${event.sessionId}`
       })
     }
@@ -1007,6 +1315,215 @@ export class GatewayStore {
           ${this.database.json(event.payload)}
         )
       `
+    }
+    if (event.type === 'agent.started' || event.type === 'agent.updated' || event.type === 'agent.completed') {
+      const id = String(event.payload.id ?? event.payload.toolCallId ?? event.id)
+      const completed = event.type === 'agent.completed'
+        || ['completed', 'failed', 'stopped', 'interrupted', 'quota_exceeded'].includes(String(event.payload.status))
+      await this.database.begin(async transaction => {
+        await transaction`
+          INSERT INTO agent_activities (
+            id, session_id, turn_id, vendor_agent_id, tool_call_id, parent_agent_id,
+            parent_tool_call_id, agent_type, name, description, status,
+            run_in_background, permission_mode, workspace_path, total_tokens,
+            total_duration_ms, total_tool_use_count, output, metadata, started_at,
+            updated_at, completed_at
+          ) VALUES (
+            ${id}, ${event.sessionId}, ${event.turnId},
+            ${typeof event.payload.vendorAgentId === 'string' ? event.payload.vendorAgentId : null},
+            ${String(event.payload.toolCallId ?? id)},
+            ${typeof event.payload.parentAgentId === 'string' ? event.payload.parentAgentId : null},
+            ${typeof event.payload.parentToolCallId === 'string' ? event.payload.parentToolCallId : null},
+            ${String(event.payload.agentType ?? 'unknown')},
+            ${typeof event.payload.name === 'string' ? event.payload.name : null},
+            ${String(event.payload.description ?? '')}, ${String(event.payload.status ?? 'running')},
+            ${event.payload.runInBackground === true},
+            ${String(event.payload.permissionMode ?? 'default')},
+            ${typeof event.payload.workspacePath === 'string' ? event.payload.workspacePath : null},
+            ${typeof event.payload.totalTokens === 'number' ? event.payload.totalTokens : null},
+            ${typeof event.payload.totalDurationMs === 'number' ? event.payload.totalDurationMs : null},
+            ${typeof event.payload.totalToolUseCount === 'number' ? event.payload.totalToolUseCount : null},
+            COALESCE(${transaction.json(event.payload.output ?? null)}, 'null'::jsonb),
+            ${transaction.json(event.payload.metadata ?? {})},
+            ${new Date(String(event.payload.startedAt ?? event.timestamp))}, now(),
+            ${completed ? new Date(event.timestamp) : null}
+          )
+          ON CONFLICT (session_id, id) DO UPDATE SET
+            turn_id = COALESCE(EXCLUDED.turn_id, agent_activities.turn_id),
+            vendor_agent_id = COALESCE(EXCLUDED.vendor_agent_id, agent_activities.vendor_agent_id),
+            parent_agent_id = COALESCE(EXCLUDED.parent_agent_id, agent_activities.parent_agent_id),
+            parent_tool_call_id = COALESCE(EXCLUDED.parent_tool_call_id, agent_activities.parent_tool_call_id),
+            agent_type = CASE WHEN EXCLUDED.agent_type = 'unknown' THEN agent_activities.agent_type ELSE EXCLUDED.agent_type END,
+            name = COALESCE(EXCLUDED.name, agent_activities.name),
+            description = CASE WHEN EXCLUDED.description = '' THEN agent_activities.description ELSE EXCLUDED.description END,
+            status = EXCLUDED.status,
+            run_in_background = EXCLUDED.run_in_background,
+            permission_mode = EXCLUDED.permission_mode,
+            workspace_path = COALESCE(EXCLUDED.workspace_path, agent_activities.workspace_path),
+            total_tokens = COALESCE(EXCLUDED.total_tokens, agent_activities.total_tokens),
+            total_duration_ms = COALESCE(EXCLUDED.total_duration_ms, agent_activities.total_duration_ms),
+            total_tool_use_count = COALESCE(EXCLUDED.total_tool_use_count, agent_activities.total_tool_use_count),
+            output = CASE WHEN EXCLUDED.output = 'null'::jsonb THEN agent_activities.output ELSE EXCLUDED.output END,
+            metadata = agent_activities.metadata || EXCLUDED.metadata,
+            updated_at = now(),
+            completed_at = COALESCE(EXCLUDED.completed_at, agent_activities.completed_at)
+        `
+        const metadata = event.payload.metadata
+        const activityLimits = metadata && typeof metadata === 'object' && !Array.isArray(metadata)
+          ? (metadata as Record<string, JsonValue>).activityLimits
+          : null
+        if (activityLimits && typeof activityLimits === 'object' && !Array.isArray(activityLimits)) {
+          await transaction`
+            UPDATE sessions SET
+              context_state = jsonb_set(context_state, '{activityLimits}', ${transaction.json(activityLimits)}),
+              updated_at = now()
+            WHERE id = ${event.sessionId}
+          `
+        }
+      })
+    }
+    if (event.type === 'task.created' || event.type === 'task.updated' || event.type === 'task.output_delta') {
+      const id = String(event.payload.id ?? event.payload.taskId ?? event.payload.vendorTaskId ?? event.id)
+      const vendorTaskId = String(event.payload.vendorTaskId ?? event.payload.taskId ?? id)
+      const status = String(event.payload.status ?? 'unknown')
+      const completed = ['completed', 'failed', 'stopped', 'deleted'].includes(status)
+      await this.database.begin(async transaction => {
+        await transaction`
+          INSERT INTO task_activities (
+            id, session_id, turn_id, vendor_task_id, parent_agent_id, subject,
+            description, status, owner, blocked_by, blocks, task_type, output,
+            metadata, created_at, updated_at, completed_at
+          ) VALUES (
+            ${id}, ${event.sessionId}, ${event.turnId}, ${vendorTaskId},
+            ${typeof event.payload.parentAgentId === 'string' ? event.payload.parentAgentId : null},
+            ${String(event.payload.subject ?? '')}, ${String(event.payload.description ?? '')},
+            ${status}, ${typeof event.payload.owner === 'string' ? event.payload.owner : null},
+            ${transaction.json(event.payload.blockedBy ?? [])},
+            ${transaction.json(event.payload.blocks ?? [])},
+            ${typeof event.payload.taskType === 'string' ? event.payload.taskType : null},
+            COALESCE(${transaction.json(event.payload.output ?? null)}, 'null'::jsonb),
+            ${transaction.json(event.payload.metadata ?? {})},
+            ${new Date(String(event.payload.createdAt ?? event.timestamp))}, now(),
+            ${completed ? new Date(event.timestamp) : null}
+          )
+          ON CONFLICT (session_id, id) DO UPDATE SET
+            turn_id = COALESCE(EXCLUDED.turn_id, task_activities.turn_id),
+            parent_agent_id = COALESCE(EXCLUDED.parent_agent_id, task_activities.parent_agent_id),
+            subject = CASE WHEN EXCLUDED.subject = '' THEN task_activities.subject ELSE EXCLUDED.subject END,
+            description = CASE WHEN EXCLUDED.description = '' THEN task_activities.description ELSE EXCLUDED.description END,
+            status = CASE WHEN EXCLUDED.status = 'unknown' THEN task_activities.status ELSE EXCLUDED.status END,
+            owner = COALESCE(EXCLUDED.owner, task_activities.owner),
+            blocked_by = CASE WHEN EXCLUDED.blocked_by = '[]'::jsonb THEN task_activities.blocked_by ELSE EXCLUDED.blocked_by END,
+            blocks = CASE WHEN EXCLUDED.blocks = '[]'::jsonb THEN task_activities.blocks ELSE EXCLUDED.blocks END,
+            task_type = COALESCE(EXCLUDED.task_type, task_activities.task_type),
+            output = CASE WHEN EXCLUDED.output = 'null'::jsonb THEN task_activities.output ELSE EXCLUDED.output END,
+            metadata = task_activities.metadata || EXCLUDED.metadata,
+            updated_at = now(),
+            completed_at = COALESCE(EXCLUDED.completed_at, task_activities.completed_at)
+        `
+        if (event.type === 'task.output_delta' && event.payload.output !== undefined) {
+          await transaction`
+            INSERT INTO task_output_chunks (event_id, session_id, task_id, content, created_at)
+            VALUES (
+              ${event.id}, ${event.sessionId}, ${id},
+              COALESCE(${transaction.json(event.payload.output)}, 'null'::jsonb), ${new Date(event.timestamp)}
+            ) ON CONFLICT (event_id) DO NOTHING
+          `
+        }
+      })
+    }
+    if (event.type === 'team.updated') {
+      const id = String(event.payload.id ?? event.payload.teamId ?? event.payload.name ?? event.id)
+      const status = String(event.payload.status ?? 'active')
+      const peers = Array.isArray(event.payload.peers) ? event.payload.peers : []
+      await this.database.begin(async transaction => {
+        await transaction`
+          INSERT INTO team_activities (
+            id, session_id, name, description, status, lead_agent_id, metadata,
+            created_at, updated_at, deleted_at
+          ) VALUES (
+            ${id}, ${event.sessionId}, ${String(event.payload.name ?? id)},
+            ${String(event.payload.description ?? '')}, ${status},
+            ${typeof event.payload.leadAgentId === 'string' ? event.payload.leadAgentId : null},
+            ${transaction.json(event.payload.metadata ?? {})},
+            ${new Date(String(event.payload.createdAt ?? event.timestamp))}, now(),
+            ${status === 'deleted' ? new Date(event.timestamp) : null}
+          )
+          ON CONFLICT (session_id, id) DO UPDATE SET
+            name = EXCLUDED.name,
+            description = CASE WHEN EXCLUDED.description = '' THEN team_activities.description ELSE EXCLUDED.description END,
+            status = EXCLUDED.status,
+            lead_agent_id = COALESCE(EXCLUDED.lead_agent_id, team_activities.lead_agent_id),
+            metadata = team_activities.metadata || EXCLUDED.metadata,
+            updated_at = now(),
+            deleted_at = CASE
+              WHEN EXCLUDED.status = 'deleted'
+                THEN COALESCE(EXCLUDED.deleted_at, team_activities.deleted_at)
+              ELSE NULL
+            END
+        `
+        for (const value of peers) {
+          if (!value || typeof value !== 'object' || Array.isArray(value)) continue
+          const peer = value as Record<string, JsonValue>
+          const peerId = String(peer.id ?? peer.agentId ?? peer.address ?? peer.name ?? crypto.randomUUID())
+          await transaction`
+            INSERT INTO team_peers (
+              id, session_id, team_id, agent_id, name, role, status, address,
+              cwd, pid, metadata, updated_at
+            ) VALUES (
+              ${peerId}, ${event.sessionId}, ${id},
+              ${typeof peer.agentId === 'string' ? peer.agentId : null},
+              ${String(peer.name ?? peerId)}, ${String(peer.role ?? 'peer')},
+              ${String(peer.status ?? 'unknown')},
+              ${typeof peer.address === 'string' ? peer.address : null},
+              ${typeof peer.cwd === 'string' ? peer.cwd : null},
+              ${typeof peer.pid === 'number' ? peer.pid : null},
+              ${transaction.json(peer.metadata ?? {})}, now()
+            )
+            ON CONFLICT (session_id, team_id, id) DO UPDATE SET
+              agent_id = COALESCE(EXCLUDED.agent_id, team_peers.agent_id),
+              name = EXCLUDED.name, role = EXCLUDED.role, status = EXCLUDED.status,
+              address = COALESCE(EXCLUDED.address, team_peers.address),
+              cwd = COALESCE(EXCLUDED.cwd, team_peers.cwd),
+              pid = COALESCE(EXCLUDED.pid, team_peers.pid),
+              metadata = team_peers.metadata || EXCLUDED.metadata,
+              updated_at = now()
+          `
+        }
+      })
+    }
+    if (event.type === 'team.message') {
+      const teamId = typeof event.payload.teamId === 'string' ? event.payload.teamId : null
+      await this.database.begin(async transaction => {
+        await transaction`
+          INSERT INTO team_messages (
+            id, session_id, team_id, sender, recipient, message_type, content,
+            summary, delivery_status, metadata, created_at
+          ) VALUES (
+            ${event.id}, ${event.sessionId}, ${teamId},
+            ${String(event.payload.sender ?? 'unknown')},
+            ${String(event.payload.recipient ?? 'unknown')},
+            ${String(event.payload.messageType ?? 'message')},
+            COALESCE(${transaction.json(event.payload.content ?? null)}, 'null'::jsonb),
+            ${typeof event.payload.summary === 'string' ? event.payload.summary : null},
+            ${String(event.payload.deliveryStatus ?? 'unknown')},
+            ${transaction.json(event.payload.metadata ?? {})}, ${new Date(event.timestamp)}
+          ) ON CONFLICT (id) DO NOTHING
+        `
+        await transaction`
+          INSERT INTO audit_logs (id, action, resource_type, resource_id, metadata)
+          VALUES (
+            ${crypto.randomUUID()}, 'team.message', 'session', ${event.sessionId},
+            ${transaction.json({
+              sender: event.payload.sender ?? 'unknown',
+              recipient: event.payload.recipient ?? 'unknown',
+              teamId,
+              deliveryStatus: event.payload.deliveryStatus ?? 'unknown',
+              eventId: event.id,
+            })}
+          )
+        `
+      })
     }
   }
 

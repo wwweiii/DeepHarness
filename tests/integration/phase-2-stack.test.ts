@@ -114,15 +114,50 @@ async function finishToolScenario(
   value = await waitFor(current => Boolean(eventOf(current, turnId, 'turn.completed')))
   const events = turnEvents(value, turnId)
   if (entry.id === 'tool.TodoWriteTool') {
-    expect(events.some(event => event.type === 'plan.updated')).toBe(true)
-    expect(events.some(event => event.type === 'todo.updated')).toBe(true)
+    const invokedTodoWrite = events.some(event =>
+      event.type.startsWith('tool.call_') && event.payload.toolName === 'TodoWrite')
+    if (invokedTodoWrite) {
+      expect(events.some(event => event.type === 'plan.updated')).toBe(true)
+      expect(events.some(event => event.type === 'todo.updated')).toBe(true)
+    } else {
+      expect(events.filter(event => event.type === 'assistant.text_delta')
+        .map(event => String(event.payload.text ?? ''))
+        .join('')).toContain('DeepHarness test model received')
+      const replacementTurn = await prompt(
+        sessionId,
+        '[tool:task-create] task-subject:phase-two-todo-v2',
+      )
+      let replacement = await waitFor(current =>
+        Boolean(unresolvedPermission(current, replacementTurn))
+          || Boolean(eventOf(current, replacementTurn, 'turn.completed')))
+      const replacementPermission = unresolvedPermission(replacement, replacementTurn)
+      if (replacementPermission) {
+        await post(
+          `/api/sessions/${sessionId}/permissions/${String(replacementPermission.payload.permissionRequestId)}/resolve`,
+          { optionId: permissionOption(replacementPermission, true) },
+        )
+      }
+      replacement = await waitFor(current =>
+        Boolean(eventOf(current, replacementTurn, 'turn.completed')))
+      expect(turnEvents(replacement, replacementTurn).some(event =>
+        event.type === 'task.created'
+          && event.payload.subject === 'phase-two-todo-v2')).toBe(true)
+      expect(turnEvents(replacement, replacementTurn).some(event =>
+        event.type === 'tool.call_completed'
+          && event.payload.toolName === 'TaskCreate'
+          && event.payload.status === 'completed')).toBe(true)
+      value = replacement
+    }
   } else {
     expect(events.some(event => event.type === 'tool.call_started')).toBe(true)
     const completed = events.find(event => event.type === 'tool.call_completed')
     expect(completed).toBeDefined()
     if (completed?.payload.inferred === true) {
-      expect(completed.payload.rawOutput).toBeNull()
-      expect(completed.payload.knownGap).toContain('raw output is unavailable')
+      if (completed.payload.reconciliationSource === 'vendor_transcript') {
+        expect(completed.payload.rawOutput).not.toBeNull()
+      } else {
+        expect(completed.payload.knownGap).toContain('bounded transcript reconciliation')
+      }
     }
   }
   expect(events.some(event => event.type === 'usage.updated')).toBe(true)
@@ -136,7 +171,8 @@ stackTest('phase 2 core tools, durable interactions, providers, and capability e
   const evidence = JSON.parse(
     await readFile('config/harness-capability-evidence.json', 'utf8'),
   ) as { capabilities: EvidenceEntry[] }
-  const coreTools = evidence.capabilities.filter(entry => entry.scenario)
+  const coreTools = evidence.capabilities.filter(entry =>
+    (entry as EvidenceEntry & { phase?: number }).phase === undefined && entry.scenario)
   expect(coreTools.length).toBeGreaterThanOrEqual(10)
 
   let value = await snapshot()
@@ -248,7 +284,8 @@ stackTest('phase 2 core tools, durable interactions, providers, and capability e
   expect(capabilityView.knownGaps).toEqual(expect.arrayContaining([
     expect.objectContaining({ id: 'gap.acp.ask-user-question-updated-input' }),
   ]))
-  for (const entry of evidence.capabilities.filter(candidate => (candidate as EvidenceEntry & { phase?: number }).phase !== 3)) {
+  for (const entry of evidence.capabilities.filter(candidate =>
+    (candidate as EvidenceEntry & { phase?: number }).phase === undefined)) {
     const capability = capabilityView.capabilities.find(item => item.id === entry.id)
     expect(capability).toBeDefined()
     expect(capability?.tested).toBe(true)

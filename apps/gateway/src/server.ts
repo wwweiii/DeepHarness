@@ -216,6 +216,12 @@ app.get('/api/sessions/:sessionId', async c => {
   } satisfies SessionSnapshot)
 })
 
+app.get('/api/sessions/:sessionId/activity', async c => {
+  const sessionId = c.req.param('sessionId')
+  if (!await store.getSession(sessionId)) return apiError('Session not found', 404)
+  return c.json(await store.getActivity(sessionId))
+})
+
 app.get('/api/workspaces', async c => c.json({ workspaces: await store.listWorkspaces() }))
 
 app.post('/api/workspaces', async c => {
@@ -551,6 +557,78 @@ app.post('/api/sessions/:sessionId/cancel', async c => {
     throw error
   }
 })
+
+async function stopActivity(input: {
+  request: Request
+  sessionId: string
+  activityId: string
+  type: 'stop_agent' | 'stop_task'
+}): Promise<Response> {
+  const key = idempotencyKey(input.request)
+  if (!key) return apiError('Idempotency-Key header is required', 400)
+  const activity = await store.getActivity(input.sessionId)
+  const agent = input.type === 'stop_agent'
+    ? activity.agents.find(candidate => candidate.id === input.activityId)
+    : null
+  if (agent && (!agent.runInBackground || !agent.vendorAgentId)) {
+    try {
+      const result = await store.createCancel({
+        sessionId: input.sessionId,
+        commandId: crypto.randomUUID(),
+        idempotencyKey: key,
+      })
+      if (result.created && !await deliver(result.command)) return apiError('Worker is offline', 503)
+      return Response.json({ status: 'cancelling', propagation: 'parent_turn' }, { status: 202 })
+    } catch (error) {
+      if ((error as Error).message === 'SESSION_NOT_RUNNING') {
+        return apiError('Synchronous Agent parent turn is no longer running', 409)
+      }
+      throw error
+    }
+  }
+  const task = input.type === 'stop_task'
+    ? activity.tasks.find(candidate => candidate.id === input.activityId)
+    : null
+  const vendorActivityId = agent?.vendorAgentId ?? task?.vendorTaskId
+  if (!vendorActivityId) return apiError('Activity not found', 404)
+  try {
+    const result = await store.createActivityControl({
+      sessionId: input.sessionId,
+      commandId: crypto.randomUUID(),
+      idempotencyKey: key,
+      type: input.type,
+      activityId: input.activityId,
+      vendorActivityId,
+      reason: 'user_requested',
+    })
+    if (result.created && !await deliver(result.command)) return apiError('Worker is offline', 503)
+    return Response.json({ status: 'stopping', propagation: 'task_stop' }, { status: 202 })
+  } catch (error) {
+    const message = (error as Error).message
+    if (message === 'SESSION_NOT_FOUND' || message === 'ACTIVITY_NOT_FOUND') {
+      return apiError('Activity not found', 404)
+    }
+    if (message === 'SESSION_PROCESS_STOPPED') return apiError('Session process is stopped', 409)
+    if (message === 'ACTIVITY_NOT_RUNNING') return apiError('Activity is not running', 409)
+    if (message === 'ACTIVITY_NOT_STOPPABLE') return apiError('Task is not a stoppable background task', 409)
+    if (message === 'ACTIVITY_VENDOR_ID_MISMATCH') return apiError('Activity identity changed; refresh and retry', 409)
+    throw error
+  }
+}
+
+app.post('/api/sessions/:sessionId/agents/:agentId/stop', c => stopActivity({
+  request: c.req.raw,
+  sessionId: c.req.param('sessionId'),
+  activityId: c.req.param('agentId'),
+  type: 'stop_agent',
+}))
+
+app.post('/api/sessions/:sessionId/tasks/:taskId/stop', c => stopActivity({
+  request: c.req.raw,
+  sessionId: c.req.param('sessionId'),
+  activityId: c.req.param('taskId'),
+  type: 'stop_task',
+}))
 
 app.get('/api/sessions/:sessionId/events', async c => {
   const sessionId = c.req.param('sessionId')

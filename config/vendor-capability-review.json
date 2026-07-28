@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "vendor_commit": "34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d",
-  "reviewed_at": "2026-07-27T16:55:08.356Z",
+  "vendor_commit": "987e55034c38497e1081367fdbe2056a6603ebc7",
+  "reviewed_at": "2026-07-28T15:57:06.000Z",
   "entries": {
     "acp.advertised:_meta.claudeCode.forkSession": {
       "matrix_class": "B",

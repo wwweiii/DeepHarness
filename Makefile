@@ -33,6 +33,12 @@ integration-test:
 		--env WORKER_SHARED_TOKEN=phase-1-local-token \
 		--env DATABASE_URL=postgres://deepharness:deepharness-local-only@postgres:5432/deepharness \
 		capability-audit bun test --timeout 240000 ./tests/integration/phase-3-stack.test.ts
+	$(TEST_COMPOSE) --profile audit run --rm \
+		--env TEST_BASE_URL=http://gateway:8080 \
+		--env WORKER_TEST_URL=http://worker:8081 \
+		--env WORKER_SHARED_TOKEN=phase-1-local-token \
+		--env DATABASE_URL=postgres://deepharness:deepharness-local-only@postgres:5432/deepharness \
+		capability-audit bun test --timeout 240000 ./tests/integration/phase-4-stack.test.ts
 
 e2e-test:
 	$(TEST_COMPOSE) --profile test up --build --detach --wait --force-recreate

@@ -226,4 +226,158 @@ describe('Harness event projection', () => {
     expect(projection.recoveryStrategy).toBe('load')
     expect(projection.recoveryError).toBe('TRANSCRIPT_CORRUPT:agent-session:line:1')
   })
+
+  test('projects nested Agent, Task, and Team activity without leaking child tools into parent output', () => {
+    const events = [
+      event(2, 'user.message_created', { text: 'Coordinate work' }),
+      event(3, 'turn.started'),
+      event(4, 'tool.call_started', {
+        toolCallId: 'agent-root',
+        toolName: 'Agent',
+        rawInput: { subagent_type: 'general-purpose' },
+      }),
+      event(5, 'agent.started', {
+        id: 'agent-root',
+        toolCallId: 'agent-root',
+        agentType: 'general-purpose',
+        status: 'running',
+        permissionMode: 'default',
+        metadata: { activityLimits: {
+          maxActiveAgents: 4,
+          maxAgentDepth: 3,
+          maxTeamPeers: 4,
+          maxAgentTokens: 1000,
+          activeAgents: 1,
+          observedAgentTokens: 0,
+        } },
+      }),
+      event(6, 'agent.started', {
+        id: 'agent-child',
+        toolCallId: 'agent-child',
+        parentAgentId: 'agent-root',
+        parentToolCallId: 'agent-root',
+        agentType: 'Explore',
+        status: 'running',
+        permissionMode: 'default',
+      }),
+      event(7, 'tool.call_started', {
+        toolCallId: 'nested-read',
+        toolName: 'Read',
+        parentAgentId: 'agent-child',
+        rawInput: { file_path: '/workspace/source/README.md' },
+      }),
+      event(8, 'agent.updated', {
+        id: 'agent-child',
+        toolCallId: 'agent-child',
+        parentAgentId: 'agent-root',
+        status: 'running',
+        output: 'nested output',
+      }),
+      event(9, 'task.created', {
+        id: '1',
+        vendorTaskId: '1',
+        subject: 'Implement',
+        status: 'pending',
+      }),
+      event(10, 'task.updated', {
+        id: '1',
+        vendorTaskId: '1',
+        owner: 'builder',
+      }),
+      event(11, 'team.updated', {
+        id: 'phase-four',
+        name: 'phase-four',
+        status: 'active',
+        peers: [{ name: 'builder', status: 'active' }],
+      }),
+      event(12, 'team.message', {
+        teamId: 'phase-four',
+        sender: 'team-lead',
+        recipient: 'builder',
+        messageType: 'message',
+        content: 'Run verification',
+        deliveryStatus: 'delivered',
+      }),
+    ]
+    const projection = projectHarnessEvents(events)
+    const replay = projectHarnessEvents(events)
+
+    expect(projection.messages[1]?.content).toHaveLength(1)
+    expect((projection.messages[1]?.content[0] as { toolCallId?: string }).toolCallId).toBe('agent-root')
+    expect(JSON.stringify(projection.messages)).not.toContain('nested-read')
+    expect(projection.agents.find(agent => agent.id === 'agent-child')).toMatchObject({
+      parentAgentId: 'agent-root',
+      output: 'nested output',
+    })
+    expect(projection.tasks[0]).toMatchObject({
+      status: 'pending',
+      owner: 'builder',
+    })
+    expect(projection.teams[0]?.peers[0]?.id).toBe('builder')
+    expect(replay.teams[0]?.peers[0]?.id).toBe(projection.teams[0]?.peers[0]?.id)
+    expect(projection.teamMessages[0]).toMatchObject({
+      sender: 'team-lead',
+      recipient: 'builder',
+      deliveryStatus: 'delivered',
+    })
+    expect(projection.activityLimits).toMatchObject({ activeAgents: 1, maxAgentDepth: 3 })
+  })
+
+  test('projects session close as terminal activity without completing ordinary pending Tasks', () => {
+    const closedAt = '2026-07-28T08:00:00.000Z'
+    const projection = projectHarnessEvents([
+      event(1, 'agent.started', {
+        id: 'agent-running',
+        toolCallId: 'agent-running',
+        agentType: 'Explore',
+        status: 'running',
+        permissionMode: 'default',
+        metadata: { activityLimits: {
+          maxActiveAgents: 4,
+          maxAgentDepth: 3,
+          maxTeamPeers: 4,
+          maxAgentTokens: 1000,
+          activeAgents: 1,
+          observedAgentTokens: 0,
+        } },
+      }),
+      event(2, 'task.created', {
+        id: 'background-task',
+        vendorTaskId: 'background-task',
+        subject: 'Background process',
+        status: 'in_progress',
+        taskType: 'local_agent',
+      }),
+      event(3, 'task.created', {
+        id: 'ordinary-task',
+        vendorTaskId: 'ordinary-task',
+        subject: 'Ordinary pending work',
+        status: 'pending',
+      }),
+      event(4, 'team.updated', {
+        id: 'phase-four',
+        name: 'phase-four',
+        status: 'active',
+        peers: [{ id: 'builder', name: 'builder', status: 'active' }],
+      }),
+      { ...event(5, 'session.closed', { status: 'closed' }), timestamp: closedAt },
+    ])
+
+    expect(projection.status).toBe('closed')
+    expect(projection.agents[0]).toMatchObject({
+      status: 'stopped',
+      completedAt: closedAt,
+      metadata: { stopReason: 'session_closed' },
+    })
+    expect(projection.tasks.find(task => task.id === 'background-task')).toMatchObject({
+      status: 'stopped',
+      completedAt: closedAt,
+    })
+    expect(projection.tasks.find(task => task.id === 'ordinary-task')?.status).toBe('pending')
+    expect(projection.teams[0]?.peers[0]).toMatchObject({
+      status: 'stopped',
+      metadata: { stopReason: 'session_closed' },
+    })
+    expect(projection.activityLimits?.activeAgents).toBe(0)
+  })
 })

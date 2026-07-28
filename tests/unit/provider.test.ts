@@ -49,7 +49,12 @@ describe('provider selection and credentials', () => {
     expect(agentEnvironment({
       PATH: '/usr/bin',
       OPENAI_API_KEY: 'secret',
+      CLAUDE_CODE_ENABLE_TASKS: '1',
       UNRELATED_SECRET: 'must-not-pass',
-    })).toEqual({ PATH: '/usr/bin', OPENAI_API_KEY: 'secret' })
+    })).toEqual({
+      PATH: '/usr/bin',
+      OPENAI_API_KEY: 'secret',
+      CLAUDE_CODE_ENABLE_TASKS: '1',
+    })
   })
 })

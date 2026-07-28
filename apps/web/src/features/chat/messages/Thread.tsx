@@ -8,11 +8,14 @@ import {
 } from '@assistant-ui/react'
 import {
   ArrowDown,
+  Bot,
   Check,
   ChevronRight,
   CircleAlert,
   FileCode2,
   ListChecks,
+  ListTodo,
+  Network,
   Search,
   Send,
   Square,
@@ -56,15 +59,20 @@ function ToolFrame({
   detail,
   children,
   error,
+  expanded,
 }: {
   icon: ReactNode
   title: string
   detail?: string
   children: ReactNode
   error?: boolean | undefined
+  expanded?: boolean | undefined
 }) {
   return (
-    <details className={`tool-frame${error ? ' tool-frame-error' : ''}`} open={error || undefined}>
+    <details
+      className={`tool-frame${error ? ' tool-frame-error' : ''}`}
+      open={error || expanded || undefined}
+    >
       <summary>
         <span className="tool-icon">{icon}</span>
         <span className="tool-heading">
@@ -76,6 +84,12 @@ function ToolFrame({
       <div className="tool-body">{children}</div>
     </details>
   )
+}
+
+function hasPendingApproval(part: ToolCallMessagePartProps): boolean {
+  return Boolean(part.approval
+    && part.approval.approved === undefined
+    && !part.approval.resolution)
 }
 
 function ApprovalActions({ part }: { part: ToolCallMessagePartProps }) {
@@ -104,7 +118,7 @@ function FileTool({ part }: { part: ToolCallMessagePartProps }) {
   const before = part.args.old_string
   const after = part.args.new_string ?? part.args.content
   return (
-    <ToolFrame icon={<FileCode2 size={16} />} title={part.toolName} detail={path} error={part.isError}>
+    <ToolFrame icon={<FileCode2 size={16} />} title={part.toolName} detail={path} error={part.isError} expanded={hasPendingApproval(part)}>
       {(before !== undefined || after !== undefined) && (
         <div className="diff-grid">
           {before !== undefined && <JsonPreview value={before} />}
@@ -119,7 +133,7 @@ function FileTool({ part }: { part: ToolCallMessagePartProps }) {
 
 function ShellTool({ part }: { part: ToolCallMessagePartProps }) {
   return (
-    <ToolFrame icon={<TerminalSquare size={16} />} title={part.toolName} detail={String(part.args.command ?? '')} error={part.isError}>
+    <ToolFrame icon={<TerminalSquare size={16} />} title={part.toolName} detail={String(part.args.command ?? '')} error={part.isError} expanded={hasPendingApproval(part)}>
       {part.result !== undefined && <JsonPreview value={part.result} />}
       <ApprovalActions part={part} />
     </ToolFrame>
@@ -129,7 +143,7 @@ function ShellTool({ part }: { part: ToolCallMessagePartProps }) {
 function SearchTool({ part }: { part: ToolCallMessagePartProps }) {
   const detail = String(part.args.pattern ?? part.args.query ?? part.args.path ?? '')
   return (
-    <ToolFrame icon={<Search size={16} />} title={part.toolName} detail={detail} error={part.isError}>
+    <ToolFrame icon={<Search size={16} />} title={part.toolName} detail={detail} error={part.isError} expanded={hasPendingApproval(part)}>
       <JsonPreview value={part.args} />
       {part.result !== undefined && <JsonPreview value={part.result} />}
       <ApprovalActions part={part} />
@@ -140,7 +154,7 @@ function SearchTool({ part }: { part: ToolCallMessagePartProps }) {
 function PlanTool({ part }: { part: ToolCallMessagePartProps }) {
   const entries: unknown[] = Array.isArray(part.args.todos) ? part.args.todos : []
   return (
-    <ToolFrame icon={<ListChecks size={16} />} title={part.toolName} detail={`${entries.length} items`} error={part.isError}>
+    <ToolFrame icon={<ListChecks size={16} />} title={part.toolName} detail={`${entries.length} items`} error={part.isError} expanded={hasPendingApproval(part)}>
       <ol className="plan-list">
         {entries.map((entry, index) => {
           const item = entry as Record<string, unknown>
@@ -153,6 +167,44 @@ function PlanTool({ part }: { part: ToolCallMessagePartProps }) {
         })}
       </ol>
       {part.result !== undefined && entries.length === 0 && <JsonPreview value={part.result} />}
+      <ApprovalActions part={part} />
+    </ToolFrame>
+  )
+}
+
+function AgentToolView({ part }: { part: ToolCallMessagePartProps }) {
+  const detail = String(part.args.description ?? part.args.subagent_type ?? '')
+  return (
+    <ToolFrame icon={<Bot size={16} />} title={part.toolName} detail={detail} error={part.isError} expanded={hasPendingApproval(part)}>
+      <dl className="tool-facts">
+        <div><dt>Type</dt><dd>{String(part.args.subagent_type ?? 'general-purpose')}</dd></div>
+        <div><dt>Mode</dt><dd>{part.args.run_in_background === true ? 'Background' : 'Synchronous'}</dd></div>
+        {part.args.name !== undefined && <div><dt>Name</dt><dd>{String(part.args.name)}</dd></div>}
+        {part.args.team_name !== undefined && <div><dt>Team</dt><dd>{String(part.args.team_name)}</dd></div>}
+      </dl>
+      {part.result !== undefined && <JsonPreview value={part.result} />}
+      <ApprovalActions part={part} />
+    </ToolFrame>
+  )
+}
+
+function TaskToolView({ part }: { part: ToolCallMessagePartProps }) {
+  const detail = String(part.args.subject ?? part.args.taskId ?? part.args.task_id ?? '')
+  return (
+    <ToolFrame icon={<ListTodo size={16} />} title={part.toolName} detail={detail} error={part.isError} expanded={hasPendingApproval(part)}>
+      <JsonPreview value={part.args} />
+      {part.result !== undefined && <JsonPreview value={part.result} />}
+      <ApprovalActions part={part} />
+    </ToolFrame>
+  )
+}
+
+function TeamToolView({ part }: { part: ToolCallMessagePartProps }) {
+  const detail = String(part.args.team_name ?? part.args.to ?? '')
+  return (
+    <ToolFrame icon={<Network size={16} />} title={part.toolName} detail={detail} error={part.isError} expanded={hasPendingApproval(part)}>
+      <JsonPreview value={part.args} />
+      {part.result !== undefined && <JsonPreview value={part.result} />}
       <ApprovalActions part={part} />
     </ToolFrame>
   )
@@ -204,7 +256,7 @@ function QuestionTool({ sessionId, part }: { sessionId: string; part: ToolCallMe
   }
 
   return (
-    <ToolFrame icon={<ListChecks size={16} />} title="Questions" detail={`${questions.length} pending`}>
+    <ToolFrame icon={<ListChecks size={16} />} title="Questions" detail={`${questions.length} pending`} expanded={Boolean(pending)}>
       <div className="question-list">
         {questions.map((question, questionIndex) => {
           const key = String(question.question ?? `Question ${questionIndex + 1}`)
@@ -253,7 +305,7 @@ function QuestionTool({ sessionId, part }: { sessionId: string; part: ToolCallMe
 
 function GenericTool({ part }: { part: ToolCallMessagePartProps }) {
   return (
-    <ToolFrame icon={<TerminalSquare size={16} />} title={part.toolName} error={part.isError}>
+    <ToolFrame icon={<TerminalSquare size={16} />} title={part.toolName} error={part.isError} expanded={hasPendingApproval(part)}>
       <div className="tool-section-label">Input</div>
       <JsonPreview value={part.args} />
       {part.result !== undefined && <><div className="tool-section-label">Output</div><JsonPreview value={part.result} /></>}
@@ -265,6 +317,9 @@ function GenericTool({ part }: { part: ToolCallMessagePartProps }) {
 function ToolRenderer({ sessionId, part }: { sessionId: string; part: ToolCallMessagePartProps }) {
   const name = part.toolName
   if (/AskUserQuestion/i.test(name)) return <QuestionTool sessionId={sessionId} part={part} />
+  if (/^(?:Agent|Task)$/i.test(name)) return <AgentToolView part={part} />
+  if (/^Task(?:Create|Get|List|Update|Output|Stop)$/i.test(name)) return <TaskToolView part={part} />
+  if (/^(?:TeamCreate|TeamDelete|SendMessage|ListPeers)$/i.test(name)) return <TeamToolView part={part} />
   if (/Todo|PlanMode|VerifyPlan|Brief/i.test(name)) return <PlanTool part={part} />
   if (/Notebook/i.test(name)) return <FileTool part={part} />
   if (/Read|Write|Edit|File/i.test(name)) return <FileTool part={part} />

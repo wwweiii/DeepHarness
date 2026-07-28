@@ -20,6 +20,25 @@ export type SessionStatus =
 export type SessionProcessState = 'queued' | 'starting' | 'running' | 'stopped' | 'exited'
 export type SessionRecoveryStrategy = 'new' | 'resume' | 'load' | 'fork'
 export type WorkspaceMode = 'shared' | 'worktree'
+export type AgentActivityStatus =
+  | 'starting'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'stopping'
+  | 'stopped'
+  | 'interrupted'
+  | 'quota_exceeded'
+export type TaskActivityStatus =
+  | 'pending'
+  | 'in_progress'
+  | 'completed'
+  | 'failed'
+  | 'stopping'
+  | 'stopped'
+  | 'deleted'
+  | 'unknown'
+export type TeamActivityStatus = 'active' | 'deleting' | 'deleted' | 'error'
 
 export type HarnessEventType =
   | 'session.created'
@@ -51,6 +70,14 @@ export type HarnessEventType =
   | 'worker.disconnected'
   | 'context.updated'
   | 'workspace.lock_changed'
+  | 'agent.started'
+  | 'agent.updated'
+  | 'agent.completed'
+  | 'task.created'
+  | 'task.updated'
+  | 'task.output_delta'
+  | 'team.updated'
+  | 'team.message'
 
 export const HARNESS_EVENT_TYPES: HarnessEventType[] = [
   'session.created',
@@ -82,6 +109,14 @@ export const HARNESS_EVENT_TYPES: HarnessEventType[] = [
   'worker.disconnected',
   'context.updated',
   'workspace.lock_changed',
+  'agent.started',
+  'agent.updated',
+  'agent.completed',
+  'task.created',
+  'task.updated',
+  'task.output_delta',
+  'team.updated',
+  'team.message',
 ]
 
 export interface HarnessEvent {
@@ -150,6 +185,26 @@ export type WorkerCommand =
       type: 'close_session'
       sessionId: string
       payload: { removeCleanWorktree: boolean }
+    }
+  | {
+      id: string
+      type: 'stop_agent'
+      sessionId: string
+      payload: {
+        agentId: string
+        vendorAgentId: string
+        reason: string
+      }
+    }
+  | {
+      id: string
+      type: 'stop_task'
+      sessionId: string
+      payload: {
+        taskId: string
+        vendorTaskId: string
+        reason: string
+      }
     }
 
 export type GatewayToWorkerMessage =
@@ -251,6 +306,123 @@ export interface PermissionOption {
   optionId: string
   kind: string
   name: string
+}
+
+export interface AgentActivityRecord {
+  id: string
+  sessionId: string
+  turnId: string | null
+  vendorAgentId: string | null
+  toolCallId: string
+  parentAgentId: string | null
+  parentToolCallId: string | null
+  agentType: string
+  name: string | null
+  description: string
+  status: AgentActivityStatus
+  runInBackground: boolean
+  permissionMode: string
+  workspacePath: string | null
+  totalTokens: number | null
+  totalDurationMs: number | null
+  totalToolUseCount: number | null
+  output: JsonValue
+  metadata: Record<string, JsonValue>
+  startedAt: string
+  updatedAt: string
+  completedAt: string | null
+}
+
+export interface TaskActivityRecord {
+  id: string
+  sessionId: string
+  turnId: string | null
+  vendorTaskId: string
+  parentAgentId: string | null
+  subject: string
+  description: string
+  status: TaskActivityStatus
+  owner: string | null
+  blockedBy: string[]
+  blocks: string[]
+  taskType: string | null
+  output: JsonValue
+  metadata: Record<string, JsonValue>
+  createdAt: string
+  updatedAt: string
+  completedAt: string | null
+}
+
+export interface TeamPeerRecord {
+  id: string
+  sessionId: string
+  teamId: string
+  agentId: string | null
+  name: string
+  role: string
+  status: string
+  address: string | null
+  cwd: string | null
+  pid: number | null
+  metadata: Record<string, JsonValue>
+  updatedAt: string
+}
+
+export interface TeamActivityRecord {
+  id: string
+  sessionId: string
+  name: string
+  description: string
+  status: TeamActivityStatus
+  leadAgentId: string | null
+  metadata: Record<string, JsonValue>
+  peers: TeamPeerRecord[]
+  createdAt: string
+  updatedAt: string
+  deletedAt: string | null
+}
+
+export interface TeamMessageRecord {
+  id: string
+  sessionId: string
+  teamId: string | null
+  sender: string
+  recipient: string
+  messageType: string
+  content: JsonValue
+  summary: string | null
+  deliveryStatus: string
+  metadata: Record<string, JsonValue>
+  createdAt: string
+}
+
+export interface AgentDefinitionSummary {
+  id: string
+  name: string
+  enabled: boolean
+  invocable: boolean | null
+  tested: boolean
+  matrixClass: string
+  conditions: JsonValue[]
+  knownGap: string | null
+}
+
+export interface ActivityLimits {
+  maxActiveAgents: number
+  maxAgentDepth: number
+  maxTeamPeers: number
+  maxAgentTokens: number
+  activeAgents: number
+  observedAgentTokens: number
+}
+
+export interface SessionActivitySnapshot {
+  agents: AgentActivityRecord[]
+  tasks: TaskActivityRecord[]
+  teams: TeamActivityRecord[]
+  messages: TeamMessageRecord[]
+  definitions: AgentDefinitionSummary[]
+  limits: ActivityLimits | null
 }
 
 export interface ProviderProfile {

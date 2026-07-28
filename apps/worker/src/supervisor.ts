@@ -20,9 +20,12 @@ import {
 } from './workspace.ts'
 import { unlink, writeFile } from 'node:fs/promises'
 import { findTranscript, inspectTranscript } from './transcript.ts'
+import { ActivityTracker } from './activity.ts'
+import { readPersistedActivityState } from './activityState.ts'
 
 type SendMessage = (message: WorkerToGatewayMessage) => void
 type PromptCommand = Extract<WorkerCommand, { type: 'prompt' }>
+type ActivityControlCommand = Extract<WorkerCommand, { type: 'stop_agent' | 'stop_task' }>
 
 interface PendingPermission {
   permissionRequestId: string
@@ -43,7 +46,7 @@ interface OpenToolCall {
 }
 
 const missingTerminalToolResult =
-  'Vendor ACP ended the turn without forwarding the terminal tool_result update; raw output is unavailable.'
+  'Vendor ACP ended the turn without forwarding the terminal tool_result update; the persisted result was not yet observable during bounded transcript reconciliation.'
 
 function jsonValue(value: unknown): JsonValue {
   return JSON.parse(JSON.stringify(value ?? null)) as JsonValue
@@ -76,6 +79,7 @@ class AgentSessionRuntime {
   private terminating = false
   private drainingPrompts = false
   private readonly promptQueue: PromptCommand[] = []
+  private readonly activityControlQueue: ActivityControlCommand[] = []
   private readonly toolNames = new Map<string, string>()
   private readonly pendingPermissions = new Map<string, PendingPermission>()
   private readonly questionContinuations: string[] = []
@@ -83,6 +87,12 @@ class AgentSessionRuntime {
   private readonly deniedToolCalls = new Set<string>()
   private ready = false
   private vendorSessionId: string | null = null
+  private activity: ActivityTracker | null = null
+  private activeControl: {
+    kind: 'agent' | 'task'
+    id: string
+    vendorId: string
+  } | null = null
 
   constructor(
     private readonly send: SendMessage,
@@ -120,7 +130,9 @@ class AgentSessionRuntime {
       else if (command.type === 'resolve_permission') this.resolvePermission(command)
       else if (command.type === 'set_mode') await this.setMode(command)
       else if (command.type === 'set_model') await this.setModel(command)
-      else await this.close(command)
+      else if (command.type === 'stop_agent' || command.type === 'stop_task') {
+        this.enqueueActivityControl(command)
+      } else await this.close(command)
       this.commandResult(command, true)
     } catch (error) {
       let message = error instanceof Error ? error.message : String(error)
@@ -159,7 +171,7 @@ class AgentSessionRuntime {
   }
 
   stopIdle(): void {
-    if (!this.client || this.activeTurnId || this.pendingPermissions.size > 0) return
+    if (!this.client || this.activeTurnId || this.pendingPermissions.size > 0 || this.activity?.hasActiveAgents) return
     this.terminating = true
     this.event('session.process_changed', {
       processState: 'stopped',
@@ -180,6 +192,22 @@ class AgentSessionRuntime {
   private async startSession(command: Extract<WorkerCommand, { type: 'start_session' }>): Promise<void> {
     if (this.client) throw new Error('Only one active Agent process is supported by this Worker')
     this.harnessSessionId = command.sessionId
+    this.activity = new ActivityTracker({
+      permissionMode: command.payload.permissionMode,
+      workspacePath: this.prepared.cwd,
+      maxActiveAgents: Math.max(1, Number.parseInt(process.env.WORKER_MAX_SUBAGENTS_PER_SESSION ?? '4', 10)),
+      maxAgentDepth: Math.max(1, Number.parseInt(process.env.WORKER_MAX_SUBAGENT_DEPTH ?? '3', 10)),
+      maxTeamPeers: Math.max(1, Number.parseInt(process.env.WORKER_MAX_TEAM_PEERS_PER_SESSION ?? '4', 10)),
+      maxAgentTokens: Math.max(1, Number.parseInt(process.env.WORKER_MAX_SUBAGENT_TOKENS ?? '200000', 10)),
+      emit: (type, payload, turnId) => this.event(type, payload, turnId),
+      onPolicyViolation: reason => {
+        this.event('session.interrupted', {
+          reason: 'activity_policy_violation',
+          message: reason,
+        }, this.activeTurnId)
+        this.client?.cancel()
+      },
+    })
     this.event('session.status_changed', { status: 'starting' }, null)
     const runtime = process.env.AGENT_RUNTIME ?? 'bun'
     const entrypoint = process.env.AGENT_ENTRYPOINT ?? '/opt/claude-code/dist/cli-bun.js'
@@ -260,6 +288,7 @@ class AgentSessionRuntime {
     const agentSessionId = String(session.sessionId)
     this.vendorSessionId = agentSessionId
     this.ready = true
+    await this.reconcileActivityState(null)
     this.event('session.status_changed', {
       status: 'idle',
       processState: 'running',
@@ -301,6 +330,7 @@ class AgentSessionRuntime {
           acpMethod: null,
         },
       },
+      activityLimits: jsonValue(this.activity.limits),
     }, null)
     this.onIdle(this)
   }
@@ -349,7 +379,12 @@ class AgentSessionRuntime {
     if (this.drainingPrompts) return
     this.drainingPrompts = true
     try {
-      while (this.promptQueue.length > 0) {
+      while (this.promptQueue.length > 0 || this.activityControlQueue.length > 0) {
+        const control = this.activityControlQueue.shift()
+        if (control) {
+          await this.runActivityControl(control)
+          continue
+        }
         const command = this.promptQueue.shift()
         if (!command) continue
         this.emitQueue()
@@ -362,6 +397,7 @@ class AgentSessionRuntime {
         } finally {
           this.activeTurnId = null
           this.questionContinuations.length = 0
+          this.idleIfEligible()
         }
       }
     } finally {
@@ -380,6 +416,7 @@ class AgentSessionRuntime {
     let result: Record<string, unknown> = {}
     do {
       result = await this.client.prompt(promptText, crypto.randomUUID())
+      await this.reconcileActivityState(this.activeTurnId, true)
       this.finishOpenToolCalls()
       const usage = result.usage
       if (usage && typeof usage === 'object') {
@@ -397,7 +434,7 @@ class AgentSessionRuntime {
       this.event('session.interrupted', { reason: 'user_cancelled' }, this.activeTurnId)
     }
     this.event('turn.completed', { stopReason }, this.activeTurnId)
-    this.onIdle(this)
+    this.idleIfEligible()
   }
 
   private cancel(command: Extract<WorkerCommand, { type: 'cancel' }>): void {
@@ -412,6 +449,7 @@ class AgentSessionRuntime {
       throw new Error('Agent session is not active')
     }
     await this.client.setMode(command.payload.modeId)
+    this.activity?.setPermissionMode(command.payload.modeId)
     this.event('session.configuration_changed', {
       permissionMode: command.payload.modeId,
     }, null)
@@ -433,9 +471,58 @@ class AgentSessionRuntime {
     try {
       await this.client?.closeSession()
     } finally {
+      this.activity?.closeActive('session_closed')
       this.event('session.closed', { status: 'closed' }, null)
       this.event('session.process_changed', { processState: 'stopped', reason: 'closed' }, null)
       this.client?.terminate()
+    }
+  }
+
+  private enqueueActivityControl(command: ActivityControlCommand): void {
+    if (!this.client || this.harnessSessionId !== command.sessionId || !this.activity) {
+      throw new Error('Agent session is not active')
+    }
+    const kind = command.type === 'stop_agent' ? 'agent' : 'task'
+    const id = command.type === 'stop_agent' ? command.payload.agentId : command.payload.taskId
+    const target = kind === 'agent'
+      ? this.activity.requestAgentStop(id)
+      : this.activity.requestTaskStop(id)
+    if (!target) throw new Error(`${kind === 'agent' ? 'Agent' : 'Task'} activity was not found`)
+    this.activityControlQueue.push(command)
+    void this.drainPromptQueue()
+  }
+
+  private async runActivityControl(command: ActivityControlCommand): Promise<void> {
+    if (!this.client || !this.activity) throw new Error('Agent session is not active')
+    const kind = command.type === 'stop_agent' ? 'agent' : 'task'
+    const id = command.type === 'stop_agent' ? command.payload.agentId : command.payload.taskId
+    const vendorId = command.type === 'stop_agent'
+      ? command.payload.vendorAgentId
+      : command.payload.vendorTaskId
+    this.activeControl = { kind, id, vendorId }
+    this.onActivity(this)
+    try {
+      const prompt = [
+        `[deepharness-control:stop-${kind}]`,
+        'This is an authenticated Harness control command.',
+        `Call TaskStop exactly once with task_id ${JSON.stringify(vendorId)}.`,
+        'Do not perform any other action. Report a failure if TaskStop is unavailable.',
+      ].join('\n')
+      const result = await this.client.prompt(prompt, crypto.randomUUID())
+      await this.reconcileActivityState(this.activeTurnId, true)
+      this.finishOpenToolCalls()
+      if (this.activity.isStopping(kind, id)) {
+        this.activity.controlFailed(
+          kind,
+          id,
+          `Vendor did not confirm TaskStop (stopReason=${String(result.stopReason ?? 'unknown')})`,
+        )
+      }
+    } catch (error) {
+      this.activity.controlFailed(kind, id, error instanceof Error ? error.message : String(error))
+    } finally {
+      this.activeControl = null
+      this.idleIfEligible()
     }
   }
 
@@ -519,6 +606,24 @@ class AgentSessionRuntime {
       expiresAt,
     }
     this.event('permission.requested', payload, this.activeTurnId)
+    const logicalInput = toolName === 'ExecuteExtraTool'
+      ? objectValue(pending.input.params)
+      : pending.input
+    const logicalToolName = toolName === 'ExecuteExtraTool'
+      ? String(pending.input.tool_name ?? '')
+      : toolName
+    const requestedTaskId = String(logicalInput.task_id ?? logicalInput.shell_id ?? '')
+    const controlAllow = options.find(option => /allow/i.test(`${option.kind} ${option.optionId}`))
+    if (this.activeControl
+      && logicalToolName === 'TaskStop'
+      && requestedTaskId === this.activeControl.vendorId
+      && controlAllow) {
+      this.client?.respond(pending.rpcId, {
+        outcome: { outcome: 'selected', optionId: controlAllow.optionId },
+      })
+      this.finishPermission(pending, 'approved', controlAllow.optionId)
+      return
+    }
     if (pending.question) {
       this.event('question.requested', {
         ...payload,
@@ -553,7 +658,7 @@ class AgentSessionRuntime {
   }
 
   private startAssistantMessage(): void {
-    if (this.assistantStarted) return
+    if (this.assistantStarted || this.activeControl) return
     this.assistantStarted = true
     this.event('assistant.message_started', {}, this.activeTurnId)
   }
@@ -561,9 +666,20 @@ class AgentSessionRuntime {
   private handleUpdate(notification: AcpUpdate): void {
     const update = notification.update
     const type = update.sessionUpdate
+    const meta = update._meta as Record<string, unknown> | undefined
+    const claudeCode = meta?.claudeCode as Record<string, unknown> | undefined
+    const parentToolUseId = typeof claudeCode?.parentToolUseId === 'string'
+      ? claudeCode.parentToolUseId
+      : null
     if (type === 'agent_message_chunk' || type === 'agent_thought_chunk') {
       const content = update.content as Record<string, unknown> | undefined
       if (content?.type !== 'text' || typeof content.text !== 'string') return
+      if (this.activity?.observeChunk(
+        parentToolUseId,
+        type === 'agent_message_chunk' ? 'text' : 'reasoning',
+        content.text,
+      )) return
+      if (this.activeControl) return
       this.startAssistantMessage()
       this.event(
         type === 'agent_message_chunk' ? 'assistant.text_delta' : 'assistant.reasoning_delta',
@@ -578,17 +694,30 @@ class AgentSessionRuntime {
       const toolCallId = typeof update.toolCallId === 'string'
         ? update.toolCallId
         : crypto.randomUUID()
-      const meta = update._meta as Record<string, unknown> | undefined
-      const claudeCode = meta?.claudeCode as Record<string, unknown> | undefined
       const knownName = this.toolNames.get(toolCallId)
       const name = typeof claudeCode?.toolName === 'string'
         ? claudeCode.toolName
         : knownName ?? (typeof update.title === 'string' ? update.title : 'UnknownTool')
       this.toolNames.set(toolCallId, name)
+      const rawInput = objectValue(update.rawInput)
+      const rawOutput = update.rawOutput === undefined ? undefined : jsonValue(update.rawOutput)
+      const activityRoute = this.activity?.observeTool({
+        toolCallId,
+        toolName: name,
+        status: typeof update.status === 'string' ? update.status : 'pending',
+        rawInput,
+        ...(rawOutput !== undefined ? { rawOutput } : {}),
+        parentToolUseId,
+        turnId: this.activeTurnId,
+      })
       const payload = {
         ...jsonPayload(update),
         toolCallId,
-        toolName: name,
+        toolName: activityRoute?.toolName ?? name,
+        rawInput: activityRoute?.rawInput ?? rawInput,
+        ...(activityRoute?.rawOutput !== undefined ? { rawOutput: activityRoute.rawOutput } : {}),
+        parentToolUseId,
+        parentAgentId: activityRoute?.parentAgentId ?? null,
       }
       const status = update.status
       if (status === 'completed' || status === 'failed') {
@@ -609,6 +738,7 @@ class AgentSessionRuntime {
         payload,
         this.activeTurnId,
       )
+      if (status === 'completed' || status === 'failed') this.idleIfEligible()
       return
     }
 
@@ -633,6 +763,66 @@ class AgentSessionRuntime {
     }
   }
 
+  async resync(): Promise<void> {
+    if (!this.client || !this.harnessSessionId) return
+    this.event('session.process_changed', {
+      processState: 'running',
+      pid: this.client.pid,
+      reason: 'worker_reconnected',
+      cwd: this.prepared.cwd,
+    }, this.activeTurnId)
+    this.event('session.status_changed', {
+      status: this.activeTurnId ? 'running' : 'idle',
+      processState: 'running',
+      agentSessionId: this.vendorSessionId,
+    }, this.activeTurnId)
+    await this.reconcileActivityState(this.activeTurnId)
+    this.activity?.resync(this.activeTurnId)
+  }
+
+  private async reconcileActivityState(turnId: string | null, settleTranscript = false): Promise<void> {
+    if (!this.vendorSessionId || !this.activity) return
+    const attempts = settleTranscript ? 6 : 1
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      try {
+        const snapshot = await readPersistedActivityState(this.vendorSessionId)
+        const reconciledToolIds = this.activity.reconcile(snapshot, turnId)
+        for (const toolCallId of reconciledToolIds) {
+          const open = this.openToolCalls.get(toolCallId)
+          const result = snapshot.toolResults.find(candidate => candidate.toolCallId === toolCallId)
+          if (!open || !result) continue
+          const payload: Record<string, JsonValue> = {
+            ...open.payload,
+            sessionUpdate: 'tool_call_update',
+            status: result.failed ? 'failed' : 'completed',
+            rawOutput: result.output,
+            inferred: true,
+            reconciliationSource: 'vendor_transcript',
+          }
+          this.event('tool.call_completed', payload, open.turnId)
+          this.openToolCalls.delete(toolCallId)
+          this.deniedToolCalls.delete(toolCallId)
+        }
+        if (!settleTranscript || this.openToolCalls.size === 0 || reconciledToolIds.size > 0) return
+      } catch (error) {
+        console.error(JSON.stringify({
+          service: 'worker',
+          event: 'activity_reconciliation_failed',
+          sessionId: this.harnessSessionId,
+          error: error instanceof Error ? error.message : String(error),
+        }))
+        return
+      }
+      await Bun.sleep(25 * (attempt + 1))
+    }
+  }
+
+  private idleIfEligible(): void {
+    if (!this.activeTurnId && !this.activity?.hasActiveAgents && !this.activeControl) {
+      this.onIdle(this)
+    }
+  }
+
   private emitQueue(): void {
     this.event('prompt.queue_updated', {
       depth: this.promptQueue.length,
@@ -644,7 +834,7 @@ class AgentSessionRuntime {
     for (const [toolCallId, open] of this.openToolCalls) {
       if (open.turnId !== this.activeTurnId) continue
       const denied = this.deniedToolCalls.has(toolCallId)
-      this.event('tool.call_completed', {
+      const payload: Record<string, JsonValue> = {
         ...open.payload,
         sessionUpdate: 'tool_call_update',
         status: denied ? 'failed' : 'completed',
@@ -652,7 +842,17 @@ class AgentSessionRuntime {
         content: [],
         inferred: true,
         knownGap: missingTerminalToolResult,
-      }, open.turnId)
+      }
+      this.activity?.observeTool({
+        toolCallId,
+        toolName: String(payload.toolName ?? 'UnknownTool'),
+        status: denied ? 'failed' : 'completed',
+        rawInput: objectValue(payload.rawInput),
+        rawOutput: null,
+        parentToolUseId: typeof payload.parentToolUseId === 'string' ? payload.parentToolUseId : null,
+        turnId: open.turnId,
+      })
+      this.event('tool.call_completed', payload, open.turnId)
       this.openToolCalls.delete(toolCallId)
       this.deniedToolCalls.delete(toolCallId)
     }
@@ -731,6 +931,10 @@ export class WorkerSupervisor {
 
   get queuedProcessCount(): number {
     return this.pendingStarts.length
+  }
+
+  async resync(): Promise<void> {
+    await Promise.all([...this.runtimes.values()].map(runtime => runtime.resync()))
   }
 
   async handle(command: WorkerCommand): Promise<void> {

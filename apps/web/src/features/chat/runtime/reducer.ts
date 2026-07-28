@@ -1,4 +1,6 @@
 import type {
+  ActivityLimits,
+  AgentActivityRecord,
   HarnessEvent,
   PermissionOption,
   SessionMode,
@@ -6,6 +8,10 @@ import type {
   SessionProcessState,
   SessionRecoveryStrategy,
   SessionStatus,
+  TaskActivityRecord,
+  TeamActivityRecord,
+  TeamMessageRecord,
+  TeamPeerRecord,
 } from '@deepharness/protocol'
 import type { ThreadMessageLike } from '@assistant-ui/react'
 
@@ -43,6 +49,11 @@ export interface HarnessProjection {
   eventCount: number
   availableModes: SessionMode[]
   availableModels: SessionModel[]
+  agents: AgentActivityRecord[]
+  tasks: TaskActivityRecord[]
+  teams: TeamActivityRecord[]
+  teamMessages: TeamMessageRecord[]
+  activityLimits: ActivityLimits | null
 }
 
 type MutableMessage = {
@@ -125,6 +136,121 @@ function applyToolEvent(message: MutableMessage, event: HarnessEvent): void {
   }
 }
 
+function nullableString(value: unknown): string | null {
+  return typeof value === 'string' ? value : null
+}
+
+function numberOrNull(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
+function agentFromEvent(event: HarnessEvent, prior?: AgentActivityRecord): AgentActivityRecord {
+  return {
+    id: String(event.payload.id ?? event.payload.toolCallId ?? event.id),
+    sessionId: event.sessionId,
+    turnId: event.turnId ?? prior?.turnId ?? null,
+    vendorAgentId: nullableString(event.payload.vendorAgentId) ?? prior?.vendorAgentId ?? null,
+    toolCallId: String(event.payload.toolCallId ?? prior?.toolCallId ?? event.id),
+    parentAgentId: nullableString(event.payload.parentAgentId) ?? prior?.parentAgentId ?? null,
+    parentToolCallId: nullableString(event.payload.parentToolCallId) ?? prior?.parentToolCallId ?? null,
+    agentType: String(event.payload.agentType ?? prior?.agentType ?? 'unknown'),
+    name: nullableString(event.payload.name) ?? prior?.name ?? null,
+    description: String(event.payload.description ?? prior?.description ?? ''),
+    status: String(event.payload.status ?? prior?.status ?? 'running') as AgentActivityRecord['status'],
+    runInBackground: event.payload.runInBackground === true || prior?.runInBackground === true,
+    permissionMode: String(event.payload.permissionMode ?? prior?.permissionMode ?? 'default'),
+    workspacePath: nullableString(event.payload.workspacePath) ?? prior?.workspacePath ?? null,
+    totalTokens: numberOrNull(event.payload.totalTokens) ?? prior?.totalTokens ?? null,
+    totalDurationMs: numberOrNull(event.payload.totalDurationMs) ?? prior?.totalDurationMs ?? null,
+    totalToolUseCount: numberOrNull(event.payload.totalToolUseCount) ?? prior?.totalToolUseCount ?? null,
+    output: event.payload.output ?? prior?.output ?? null,
+    metadata: {
+      ...(prior?.metadata ?? {}),
+      ...objectValue(event.payload.metadata),
+    } as AgentActivityRecord['metadata'],
+    startedAt: String(event.payload.startedAt ?? prior?.startedAt ?? event.timestamp),
+    updatedAt: event.timestamp,
+    completedAt: event.type === 'agent.completed' ? event.timestamp : prior?.completedAt ?? null,
+  }
+}
+
+function taskFromEvent(event: HarnessEvent, prior?: TaskActivityRecord): TaskActivityRecord {
+  const id = String(event.payload.id ?? event.payload.vendorTaskId ?? event.id)
+  const nextStatus = String(event.payload.status ?? prior?.status ?? 'unknown')
+  return {
+    id,
+    sessionId: event.sessionId,
+    turnId: event.turnId ?? prior?.turnId ?? null,
+    vendorTaskId: String(event.payload.vendorTaskId ?? prior?.vendorTaskId ?? id),
+    parentAgentId: nullableString(event.payload.parentAgentId) ?? prior?.parentAgentId ?? null,
+    subject: String(event.payload.subject ?? prior?.subject ?? ''),
+    description: String(event.payload.description ?? prior?.description ?? ''),
+    status: nextStatus as TaskActivityRecord['status'],
+    owner: nullableString(event.payload.owner) ?? prior?.owner ?? null,
+    blockedBy: Array.isArray(event.payload.blockedBy)
+      ? event.payload.blockedBy.map(String)
+      : prior?.blockedBy ?? [],
+    blocks: Array.isArray(event.payload.blocks) ? event.payload.blocks.map(String) : prior?.blocks ?? [],
+    taskType: nullableString(event.payload.taskType) ?? prior?.taskType ?? null,
+    output: event.payload.output ?? prior?.output ?? null,
+    metadata: {
+      ...(prior?.metadata ?? {}),
+      ...objectValue(event.payload.metadata),
+    } as TaskActivityRecord['metadata'],
+    createdAt: String(event.payload.createdAt ?? prior?.createdAt ?? event.timestamp),
+    updatedAt: event.timestamp,
+    completedAt: ['completed', 'failed', 'stopped', 'deleted'].includes(nextStatus)
+      ? event.timestamp
+      : prior?.completedAt ?? null,
+  }
+}
+
+function peerFromValue(
+  value: unknown,
+  event: HarnessEvent,
+  teamId: string,
+): TeamPeerRecord {
+  const peer = objectValue(value)
+  const id = String(peer.id ?? peer.agentId ?? peer.address ?? peer.name ?? `${teamId}:unnamed-peer`)
+  return {
+    id,
+    sessionId: event.sessionId,
+    teamId,
+    agentId: nullableString(peer.agentId),
+    name: String(peer.name ?? id),
+    role: String(peer.role ?? 'peer'),
+    status: String(peer.status ?? 'unknown'),
+    address: nullableString(peer.address),
+    cwd: nullableString(peer.cwd),
+    pid: numberOrNull(peer.pid),
+    metadata: objectValue(peer.metadata) as TeamPeerRecord['metadata'],
+    updatedAt: event.timestamp,
+  }
+}
+
+function teamFromEvent(event: HarnessEvent, prior?: TeamActivityRecord): TeamActivityRecord {
+  const id = String(event.payload.id ?? event.payload.name ?? event.id)
+  const status = String(event.payload.status ?? prior?.status ?? 'active')
+  return {
+    id,
+    sessionId: event.sessionId,
+    name: String(event.payload.name ?? prior?.name ?? id),
+    description: String(event.payload.description ?? prior?.description ?? ''),
+    status: status as TeamActivityRecord['status'],
+    leadAgentId: nullableString(event.payload.leadAgentId) ?? prior?.leadAgentId ?? null,
+    metadata: {
+      ...(prior?.metadata ?? {}),
+      ...objectValue(event.payload.metadata),
+    } as TeamActivityRecord['metadata'],
+    peers: Array.isArray(event.payload.peers)
+      ? event.payload.peers.map(value => peerFromValue(value, event, id))
+      : prior?.peers ?? [],
+    createdAt: String(event.payload.createdAt ?? prior?.createdAt ?? event.timestamp),
+    updatedAt: event.timestamp,
+    deletedAt: status === 'deleted' ? event.timestamp : prior?.deletedAt ?? null,
+  }
+}
+
 export function projectHarnessEvents(events: HarnessEvent[]): HarnessProjection {
   const messages: MutableMessage[] = []
   const seen = new Set<string>()
@@ -141,6 +267,11 @@ export function projectHarnessEvents(events: HarnessEvent[]): HarnessProjection 
   let contextState: Record<string, unknown> | null = null
   let availableModes: SessionMode[] = []
   let availableModels: SessionModel[] = []
+  const agents = new Map<string, AgentActivityRecord>()
+  const tasks = new Map<string, TaskActivityRecord>()
+  const teams = new Map<string, TeamActivityRecord>()
+  const teamMessages: TeamMessageRecord[] = []
+  let activityLimits: ActivityLimits | null = null
 
   for (const event of [...events].sort((left, right) => left.seq - right.seq)) {
     if (seen.has(event.id)) continue
@@ -172,11 +303,50 @@ export function projectHarnessEvents(events: HarnessEvent[]): HarnessProjection 
         ? String(event.payload.loadError ?? event.payload.resumeError ?? event.payload.message ?? 'Recovery failed')
         : null
     }
-    if (event.type === 'context.updated') contextState = event.payload
+    if (event.type === 'context.updated') {
+      contextState = event.payload
+      const limits = objectValue(event.payload.activityLimits)
+      if (Object.keys(limits).length > 0) activityLimits = limits as unknown as ActivityLimits
+    }
     if (event.type === 'worker.disconnected') processState = 'stopped'
     if (event.type === 'session.closed') {
       status = 'closed'
       processState = 'stopped'
+      for (const [id, agent] of agents) {
+        if (!['starting', 'running', 'stopping'].includes(agent.status)) continue
+        agents.set(id, {
+          ...agent,
+          status: 'stopped',
+          metadata: { ...agent.metadata, stopReason: 'session_closed' },
+          updatedAt: event.timestamp,
+          completedAt: agent.completedAt ?? event.timestamp,
+        })
+      }
+      for (const [id, task] of tasks) {
+        const processBacked = task.taskType !== null
+        if (!processBacked || !['pending', 'in_progress', 'stopping'].includes(task.status)) continue
+        tasks.set(id, {
+          ...task,
+          status: 'stopped',
+          metadata: { ...task.metadata, stopReason: 'session_closed' },
+          updatedAt: event.timestamp,
+          completedAt: task.completedAt ?? event.timestamp,
+        })
+      }
+      for (const [id, team] of teams) {
+        const peers = team.peers.map(peer => (
+          ['active', 'online', 'starting', 'running', 'stopping'].includes(peer.status)
+            ? {
+                ...peer,
+                status: 'stopped',
+                metadata: { ...peer.metadata, stopReason: 'session_closed' },
+                updatedAt: event.timestamp,
+              }
+            : peer
+        ))
+        teams.set(id, { ...team, peers, updatedAt: event.timestamp })
+      }
+      if (activityLimits) activityLimits = { ...activityLimits, activeAgents: 0 }
     }
     if (event.type === 'session.configuration_changed') {
       if (typeof event.payload.permissionMode === 'string') permissionMode = event.payload.permissionMode
@@ -226,8 +396,38 @@ export function projectHarnessEvents(events: HarnessEvent[]): HarnessProjection 
       const text = event.payload.text
       if (typeof text === 'string') appendPart(getAssistant(messages, turnId), 'reasoning', text)
     }
-    if (event.type.startsWith('tool.call_') && turnId) {
+    if (event.type.startsWith('tool.call_') && turnId && typeof event.payload.parentAgentId !== 'string') {
       applyToolEvent(getAssistant(messages, turnId), event)
+    }
+    if (event.type === 'agent.started' || event.type === 'agent.updated' || event.type === 'agent.completed') {
+      const id = String(event.payload.id ?? event.payload.toolCallId ?? event.id)
+      const agent = agentFromEvent(event, agents.get(id))
+      agents.set(id, agent)
+      const limits = objectValue(objectValue(event.payload.metadata).activityLimits)
+      if (Object.keys(limits).length > 0) activityLimits = limits as unknown as ActivityLimits
+    }
+    if (event.type === 'task.created' || event.type === 'task.updated' || event.type === 'task.output_delta') {
+      const id = String(event.payload.id ?? event.payload.vendorTaskId ?? event.id)
+      tasks.set(id, taskFromEvent(event, tasks.get(id)))
+    }
+    if (event.type === 'team.updated') {
+      const id = String(event.payload.id ?? event.payload.name ?? event.id)
+      teams.set(id, teamFromEvent(event, teams.get(id)))
+    }
+    if (event.type === 'team.message') {
+      teamMessages.push({
+        id: event.id,
+        sessionId: event.sessionId,
+        teamId: nullableString(event.payload.teamId),
+        sender: String(event.payload.sender ?? 'unknown'),
+        recipient: String(event.payload.recipient ?? 'unknown'),
+        messageType: String(event.payload.messageType ?? 'message'),
+        content: event.payload.content ?? null,
+        summary: nullableString(event.payload.summary),
+        deliveryStatus: String(event.payload.deliveryStatus ?? 'unknown'),
+        metadata: objectValue(event.payload.metadata) as TeamMessageRecord['metadata'],
+        createdAt: event.timestamp,
+      })
     }
     if (event.type === 'permission.requested' && turnId) {
       const message = getAssistant(messages, turnId)
@@ -299,5 +499,10 @@ export function projectHarnessEvents(events: HarnessEvent[]): HarnessProjection 
     eventCount: seen.size,
     availableModes,
     availableModels,
+    agents: [...agents.values()],
+    tasks: [...tasks.values()],
+    teams: [...teams.values()],
+    teamMessages,
+    activityLimits,
   }
 }

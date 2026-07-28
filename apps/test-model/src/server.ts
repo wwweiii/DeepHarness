@@ -165,7 +165,174 @@ function findTool(body: RequestBody, names: string[]): string | null {
   return null
 }
 
+function toolUses(body: RequestBody): Array<Record<string, unknown>> {
+  return (body.messages ?? []).flatMap(message => blocks(message)
+    .filter(block => block.type === 'tool_use'))
+}
+
+function latestToolUse(body: RequestBody): Record<string, unknown> | null {
+  return toolUses(body).at(-1) ?? null
+}
+
+function hasDiscoveredTool(body: RequestBody, name: string): boolean {
+  return toolUses(body).some(tool => {
+    if (String(tool.name ?? '').toLowerCase() !== 'searchextratools') return false
+    const input = tool.input && typeof tool.input === 'object' && !Array.isArray(tool.input)
+      ? tool.input as Record<string, unknown>
+      : {}
+    const query = String(input.query ?? '')
+    const selected = query.match(/^select:(.+)$/i)?.[1]
+      ?.split(',')
+      .map(value => value.trim().toLowerCase())
+      ?? []
+    return selected.includes(name.toLowerCase())
+  })
+}
+
+function logicalTool(
+  body: RequestBody,
+  name: string,
+  input: Record<string, unknown>,
+): { name: string; input: Record<string, unknown> } | null {
+  const direct = findTool(body, [name])
+  if (direct) return { name: direct, input }
+  const deferred = findTool(body, ['ExecuteExtraTool'])
+  if (!deferred) return null
+  if (!hasDiscoveredTool(body, name)) {
+    const search = findTool(body, ['SearchExtraTools'])
+    if (search) return { name: search, input: { query: `select:${name}` } }
+  }
+  return { name: deferred, input: { tool_name: name, params: input } }
+}
+
+function markerValue(prompt: string, marker: string, fallback: string): string {
+  const match = prompt.match(new RegExp(`${marker}:([^\\s\\]]+)`, 'i'))
+  return match?.[1] ?? fallback
+}
+
 function requestedTool(body: RequestBody, prompt: string): { name: string; input: Record<string, unknown> } | null {
+  const normalized = prompt.toLowerCase()
+  const shutdownRequestId = prompt.match(/"requestId"\s*:\s*"([^"]+)"/i)?.[1]
+  if (normalized.includes('"type":"shutdown_request"') && shutdownRequestId) {
+    return logicalTool(body, 'SendMessage', {
+      to: 'team-lead',
+      message: {
+        type: 'shutdown_response',
+        request_id: shutdownRequestId,
+        approve: true,
+      },
+    })
+  }
+  if (normalized.includes('[subagent:level-1]')) {
+    return logicalTool(body, 'Agent', {
+      description: 'Nested level two agent',
+      prompt: '[subagent:level-2] Return NESTED_AGENT_LEVEL_2_OK.',
+      subagent_type: 'Explore',
+    })
+  }
+  if (normalized.includes('[tool:agent-nested]')) {
+    return logicalTool(body, 'Agent', {
+      description: 'Nested level one agent',
+      prompt: '[subagent:level-1] Spawn the requested nested agent.',
+      subagent_type: 'general-purpose',
+    })
+  }
+  if (normalized.includes('[tool:team-agent]')) {
+    return logicalTool(body, 'Agent', {
+      description: 'Named coordinator teammate',
+      prompt: '[subagent:team] Return TEAM_AGENT_READY and wait for messages.',
+      subagent_type: 'general-purpose',
+      name: markerValue(prompt, 'agent-name', 'builder'),
+      team_name: markerValue(prompt, 'team-name', 'phase-four-team'),
+      run_in_background: true,
+    })
+  }
+  if (normalized.includes('[tool:agent-async]')) {
+    return logicalTool(body, 'Agent', {
+      description: 'Long running background agent',
+      prompt: `[subagent:async] ${'keep working '.repeat(80)}`,
+      subagent_type: 'general-purpose',
+      run_in_background: true,
+    })
+  }
+  if (normalized.includes('[tool:agent-plan]')) {
+    return logicalTool(body, 'Agent', {
+      description: 'Built-in Plan phase four agent',
+      prompt: '[subagent:plan] Return PLAN_AGENT_OK.',
+      subagent_type: 'Plan',
+    })
+  }
+  if (normalized.includes('[tool:agent-verification]')) {
+    return logicalTool(body, 'Agent', {
+      description: 'Built-in verification phase four agent',
+      prompt: '[subagent:verification] Return VERIFICATION_AGENT_OK.',
+      subagent_type: 'verification',
+    })
+  }
+  if (normalized.includes('[tool:agent-custom]')) {
+    return logicalTool(body, 'Agent', {
+      description: 'Project custom phase four agent',
+      prompt: '[subagent:custom] Return CUSTOM_AGENT_OK.',
+      subagent_type: 'phase-four-checker',
+    })
+  }
+  if (normalized.includes('[tool:agent]')) {
+    return logicalTool(body, 'Agent', {
+      description: 'Synchronous phase four agent',
+      prompt: '[subagent:sync] Return SYNC_AGENT_OK.',
+      subagent_type: 'Explore',
+    })
+  }
+  if (normalized.includes('[tool:task-create]')) {
+    return logicalTool(body, 'TaskCreate', {
+      subject: markerValue(prompt, 'task-subject', 'Phase four task'),
+      description: 'Created by the deterministic phase four ACP test.',
+      activeForm: 'Running phase four task',
+    })
+  }
+  if (normalized.includes('[tool:task-get]')) {
+    return logicalTool(body, 'TaskGet', { taskId: markerValue(prompt, 'task-id', '1') })
+  }
+  if (normalized.includes('[tool:task-list]')) return logicalTool(body, 'TaskList', {})
+  if (normalized.includes('[tool:task-update]')) {
+    return logicalTool(body, 'TaskUpdate', {
+      taskId: markerValue(prompt, 'task-id', '1'),
+      status: markerValue(prompt, 'task-status', 'in_progress'),
+      owner: markerValue(prompt, 'task-owner', 'team-lead'),
+      metadata: { phase: 4 },
+    })
+  }
+  if (normalized.includes('[tool:task-output]')) {
+    return logicalTool(body, 'TaskOutput', {
+      task_id: markerValue(prompt, 'task-id', '1'),
+      block: false,
+      timeout: 0,
+    })
+  }
+  if (normalized.includes('[tool:task-stop]')) {
+    return logicalTool(body, 'TaskStop', { task_id: markerValue(prompt, 'task-id', '1') })
+  }
+  if (normalized.includes('[tool:team-create]')) {
+    return logicalTool(body, 'TeamCreate', {
+      team_name: markerValue(prompt, 'team-name', 'phase-four-team'),
+      description: 'Deterministic phase four coordinator team',
+    })
+  }
+  if (normalized.includes('[tool:team-delete]')) return logicalTool(body, 'TeamDelete', { wait_ms: 1000 })
+  if (normalized.includes('[tool:send-message]')) {
+    return logicalTool(body, 'SendMessage', {
+      to: markerValue(prompt, 'message-to', 'team-lead'),
+      summary: 'Phase four routed message',
+      message: 'PHASE_FOUR_TEAM_MESSAGE_OK',
+    })
+  }
+  if (normalized.includes('[tool:list-peers]')) return logicalTool(body, 'ListPeers', { include_self: true })
+  if (normalized.includes('[deepharness-control:stop-agent]')
+    || normalized.includes('[deepharness-control:stop-task]')) {
+    const taskId = prompt.match(/task_id\s+"([^"]+)"/i)?.[1]
+      ?? markerValue(prompt, 'task-id', '')
+    return taskId ? logicalTool(body, 'TaskStop', { task_id: taskId }) : null
+  }
   const scenarios: Array<{ marker: string; names: string[]; input: Record<string, unknown> }> = [
     {
       marker: '[tool:read]',
@@ -286,9 +453,37 @@ const server = Bun.serve({
         })),
       }))
     }
-    const result = toolResult(body)
-    if (result !== null) return textResponse(body, `Tool completed through ACP:\n${result}`, 20)
     const prompt = userText(body)
+    const result = toolResult(body)
+    if (result !== null) {
+      const latest = latestToolUse(body)
+      if (String(latest?.name ?? '').toLowerCase() === 'searchextratools') {
+        const requested = requestedTool(body, prompt)
+        if (requested) return toolUseResponse(body, requested.name, requested.input)
+      }
+      return textResponse(body, `Tool completed through ACP:\n${result}`, 20)
+    }
+    if (prompt.toLowerCase().includes('[subagent:level-2]')) {
+      return textResponse(body, 'NESTED_AGENT_LEVEL_2_OK', 25)
+    }
+    if (prompt.toLowerCase().includes('[subagent:sync]')) {
+      return textResponse(body, 'SYNC_AGENT_OK', 25)
+    }
+    if (prompt.toLowerCase().includes('[subagent:plan]')) {
+      return textResponse(body, 'PLAN_AGENT_OK', 25)
+    }
+    if (prompt.toLowerCase().includes('[subagent:verification]')) {
+      return textResponse(body, 'VERIFICATION_AGENT_OK', 25)
+    }
+    if (prompt.toLowerCase().includes('[subagent:custom]')) {
+      return textResponse(body, 'CUSTOM_AGENT_OK', 25)
+    }
+    if (prompt.toLowerCase().includes('[subagent:async]')) {
+      return textResponse(body, `ASYNC_AGENT ${'working '.repeat(160)}`, 100)
+    }
+    if (prompt.toLowerCase().includes('[subagent:team]')) {
+      return textResponse(body, 'TEAM_AGENT_READY', 35)
+    }
     if (prompt.toLowerCase().includes('[tool:unknown]')) {
       return toolUseResponse(body, 'FutureHarnessTool', {
         payload: '<script>window.__deepharnessUnsafeToolExecuted = true</script>',

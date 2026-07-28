@@ -112,7 +112,18 @@ export type HarnessCapabilityEvidence = {
     evidence_path?: string
     scenario?: string
     invocable?: boolean | null
-    workflow: 'tool' | 'permission' | 'question' | 'configuration' | 'queue' | 'provider' | 'recovery'
+    workflow:
+      | 'tool'
+      | 'permission'
+      | 'question'
+      | 'configuration'
+      | 'queue'
+      | 'provider'
+      | 'recovery'
+      | 'agent'
+      | 'task'
+      | 'team'
+      | 'coordinator'
     evidence: string
     known_gap?: string
   }>

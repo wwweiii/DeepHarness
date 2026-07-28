@@ -39,10 +39,10 @@ function connect(): void {
       kind: 'register',
       worker: {
         id: workerId,
-        name: 'DeepHarness phase 3 worker',
+        name: 'DeepHarness phase 4 worker',
         maxConcurrency: supervisor.concurrency,
         workspaceRoots,
-        version: '0.3.0',
+        version: '0.4.0',
         vendorCommit,
         providerId: provider.providerId,
         credentialStatus: provider.credentialStatus,
@@ -58,6 +58,7 @@ function connect(): void {
       const message = JSON.parse(String(event.data)) as GatewayToWorkerMessage
       if (message.kind === 'registered') {
         registered = true
+        void supervisor.resync()
         return
       }
       commandQueue = commandQueue
@@ -125,6 +126,14 @@ const server = Bun.serve({
       }
       const sessionId = decodeURIComponent(path.slice('/internal/test/stop/'.length))
       return Response.json({ stopped: supervisor.stopSessionForTest(sessionId) })
+    }
+    if (path === '/internal/test/reconnect-gateway' && process.env.ENABLE_TEST_CONTROL === '1') {
+      if (request.headers.get('x-worker-token') !== workerToken) {
+        return new Response('Unauthorized', { status: 401 })
+      }
+      const connected = socket?.readyState === WebSocket.OPEN
+      socket?.close(4000, 'test reconnect')
+      return Response.json({ disconnected: connected })
     }
     if (path.startsWith('/internal/test/transcript/') && process.env.ENABLE_TEST_CONTROL === '1') {
       if (request.headers.get('x-worker-token') !== workerToken) {

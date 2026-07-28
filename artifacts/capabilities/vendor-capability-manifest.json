@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
-  "vendor_commit": "34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d",
+  "vendor_commit": "987e55034c38497e1081367fdbe2056a6603ebc7",
   "vendor_repository": "https://github.com/claude-code-best/claude-code.git",
-  "vendor_tag": "v2.8.4",
-  "build_id": "ccb-bun-v2.8.4-34b3dc99bf40",
-  "generated_at": "2026-07-28T08:47:22.432Z",
-  "reviewed_at": "2026-07-27T16:55:08.356Z",
+  "vendor_tag": "v2.8.4-7-g987e5503",
+  "build_id": "ccb-bun-v2.8.4-7-g987e5503-987e55034c38",
+  "generated_at": "2026-07-28T16:03:26.060Z",
+  "reviewed_at": "2026-07-28T15:57:06.000Z",
   "build_features": [
     {
       "id": "feature.ABLATION_BASELINE",
@@ -1142,11 +1142,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "compiled:default"
+        "compiled:default",
+        "harness:phase-4:agent"
       ],
       "source_evidence": [
         {
@@ -1160,10 +1161,16 @@
           "line": 14,
           "detail": "feature('BUILTIN_EXPLORE_PLAN_AGENTS') reference",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration executes the compiled built-in Explore and Plan Agent definitions through AgentTool.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The feature is compiled into the kernel and is expected to be inherited through ACP."
     },
@@ -7296,11 +7303,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "compiled:default"
+        "compiled:default",
+        "harness:phase-4:agent"
       ],
       "source_evidence": [
         {
@@ -7332,10 +7340,16 @@
           "line": 375,
           "detail": "feature('VERIFICATION_AGENT') reference",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration executes the built-in verification Agent and reconciles its background task notification to a completed Agent lifecycle.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
     },
@@ -7815,10 +7829,11 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "env:CLAUDE_CODE_ENABLE_TASKS"
+        "env:CLAUDE_CODE_ENABLE_TASKS",
+        "harness:phase-4:task"
       ],
       "source_evidence": [
         {
@@ -7826,10 +7841,16 @@
           "line": 135,
           "detail": "Runtime environment condition",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "The Phase 4 Docker profile enables CLAUDE_CODE_ENABLE_TASKS=1, the Worker passes it through its explicit child environment allowlist, and the non-interactive ACP session successfully invokes TaskCreate.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
     },
@@ -8518,10 +8539,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:agent",
+        "fixture:[tool:agent]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -8534,10 +8558,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration invokes synchronous, background, and nested Agent tools through the real ACP process and reconstructs their terminal output from vendor persistence.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -8605,7 +8635,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "ACP permission outcomes cannot return AskUserQuestion updatedInput.answers; DeepHarness continues with an audited same-turn follow-up prompt. Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "ACP permission outcomes cannot return AskUserQuestion updatedInput.answers; DeepHarness continues with an audited same-turn follow-up prompt. Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
@@ -8644,7 +8674,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -8906,7 +8936,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -9129,7 +9159,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -9168,7 +9198,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -9207,7 +9237,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -9246,7 +9276,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -9317,7 +9347,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -9578,7 +9608,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -9879,10 +9909,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:team",
+        "fixture:[tool:send-message]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -9895,10 +9928,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration sends a peer message and verifies the durable sender, recipient, delivery status, and audit projection.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -10129,11 +10168,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
+      "tested": true,
       "conditions": [
-        "runtime:todo_v2"
+        "runtime:todo_v2",
+        "harness:phase-4:task",
+        "fixture:[tool:task-create]"
       ],
       "source_evidence": [
         {
@@ -10147,10 +10188,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration creates both standalone and Team-backed vendor tasks and projects their durable pending state.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -10161,11 +10208,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
+      "tested": true,
       "conditions": [
-        "runtime:todo_v2"
+        "runtime:todo_v2",
+        "harness:phase-4:task",
+        "fixture:[tool:task-get]"
       ],
       "source_evidence": [
         {
@@ -10179,10 +10228,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration reads a created vendor task through TaskGet and reconciles the returned state.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -10193,11 +10248,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
+      "tested": true,
       "conditions": [
-        "runtime:todo_v2"
+        "runtime:todo_v2",
+        "harness:phase-4:task",
+        "fixture:[tool:task-list]"
       ],
       "source_evidence": [
         {
@@ -10211,10 +10268,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration lists vendor tasks and verifies the projection survives a Worker-to-Gateway reconnect.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -10225,10 +10288,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:task",
+        "fixture:[tool:task-output]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -10241,10 +10307,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration reads a background Agent task through TaskOutput and attaches output to the correct local_agent task.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -10255,10 +10327,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:task",
+        "fixture:[deepharness-control:stop-agent]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -10271,10 +10346,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration stops a running background Agent through the authenticated Harness control endpoint, which invokes TaskStop for the exact vendor Agent id and verifies terminal propagation.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -10285,11 +10366,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
+      "tested": true,
       "conditions": [
-        "runtime:todo_v2"
+        "runtime:todo_v2",
+        "harness:phase-4:task",
+        "fixture:[tool:task-update]"
       ],
       "source_evidence": [
         {
@@ -10303,10 +10386,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration assigns a vendor task owner, moves it to in_progress, and persists vendor metadata.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -10317,10 +10406,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:team",
+        "fixture:[tool:team-create]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -10333,10 +10425,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration creates a vendor Team, projects its lead and in-process peer addresses, and restores the projection after reconnect.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -10347,10 +10445,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:team",
+        "fixture:[tool:team-delete]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -10363,10 +10464,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration invokes TeamDelete after a peer approves shutdown and verifies the vendor's active-member failure without falsely deleting the Team.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "The locked vendor leaves an in-process teammate active after shutdown approval, so TeamDelete cannot complete cleanup; see gap.vendor.in-process-team-shutdown. Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -10464,11 +10571,11 @@
         {
           "path": "tests/integration/phase-2-stack.test.ts",
           "line": 1,
-          "detail": "Phase 2 Docker integration invokes TodoWrite and projects the structured todo state.",
+          "detail": "Phase 2 Docker integration invokes TodoWrite and projects structured todo state on the legacy surface; when the Phase 4 Worker selects Task v2, the same gate verifies TodoWrite is absent and TaskCreate projects the replacement task state.",
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
+      "known_gap": "TodoWrite is mutually exclusive with Task v2 in non-interactive sessions; CLAUDE_CODE_ENABLE_TASKS selects TaskCreate/Get/List/Update for the Phase 4 Worker profile.",
       "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
@@ -14232,12 +14339,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
         "workspace:.claude/agents",
-        "plugins"
+        "plugins",
+        "harness:phase-4:agent"
       ],
       "source_evidence": [
         {
@@ -14245,10 +14353,16 @@
           "line": 296,
           "detail": "Dynamic custom/plugin Agent definition loader",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration discovers and executes the workspace phase-four-checker Agent definition.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
     },
@@ -14259,11 +14373,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "build_feature:BUILTIN_EXPLORE_PLAN_AGENTS"
+        "build_feature:BUILTIN_EXPLORE_PLAN_AGENTS",
+        "harness:phase-4:agent"
       ],
       "source_evidence": [
         {
@@ -14271,10 +14386,16 @@
           "line": 64,
           "detail": "EXPLORE_AGENT",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration executes Explore synchronously and persists its vendor Agent id, usage, and output.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
     },
@@ -14285,20 +14406,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:agent"
+      ],
       "source_evidence": [
         {
           "path": "packages/builtin-tools/src/tools/AgentTool/built-in/generalPurposeAgent.ts",
           "line": 25,
           "detail": "GENERAL_PURPOSE_AGENT",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration executes a two-level nested general-purpose Agent hierarchy and verifies exact parent routing.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
     },
@@ -14309,11 +14438,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "build_feature:BUILTIN_EXPLORE_PLAN_AGENTS"
+        "build_feature:BUILTIN_EXPLORE_PLAN_AGENTS",
+        "harness:phase-4:agent"
       ],
       "source_evidence": [
         {
@@ -14321,10 +14451,16 @@
           "line": 73,
           "detail": "PLAN_AGENT",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration executes the built-in Plan Agent and persists its terminal lifecycle.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
     },
@@ -14359,11 +14495,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "build_feature:VERIFICATION_AGENT"
+        "build_feature:VERIFICATION_AGENT",
+        "harness:phase-4:agent"
       ],
       "source_evidence": [
         {
@@ -14371,10 +14508,16 @@
           "line": 134,
           "detail": "VERIFICATION_AGENT",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration executes the verification Agent as a vendor background Agent and recovers its task notification, output, and usage.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
     }
@@ -16222,7 +16365,7 @@
     {
       "id": "gap.acp.tool-result-terminal-update",
       "status": "expected_failure",
-      "summary": "The vendor ACP notification converter supports terminal tool results, but the forwarding loop skips the user SDK message that carries tool_result.",
+      "summary": "The vendor ACP notification converter supports terminal tool results, but the forwarding loop skips the user SDK message that carries tool_result; DeepHarness recovery is post-persistence rather than ACP-native or live.",
       "evidence": [
         {
           "path": "src/services/acp/bridge/forwarding.ts",
@@ -16233,11 +16376,17 @@
         {
           "path": "tests/integration/phase-2-stack.test.ts",
           "line": 1,
-          "detail": "Real ACP tool execution reaches in_progress and the model receives the result, but no terminal tool_call_update is observed before prompt completion.",
+          "detail": "Real ACP tool execution reaches in_progress and the model receives the result, but no native terminal tool_call_update is observed before prompt completion.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "apps/worker/src/activityState.ts",
+          "line": 193,
+          "detail": "The Harness uses a read-only, bounded transcript reconciliation adapter to recover persisted terminal output after ACP prompt completion.",
           "evidenceType": "runtime"
         }
       ],
-      "upstream_strategy": "Track an upstream ACP fix that forwards user tool_result blocks, then remove inferred terminal events and assert native rawOutput."
+      "upstream_strategy": "Track an upstream ACP fix that forwards user tool_result blocks as terminal tool_call_update notifications, then remove the post-persistence adapter and assert native live output."
     },
     {
       "id": "gap.acp.ask-user-question-updated-input",
@@ -16252,6 +16401,112 @@
         }
       ],
       "upstream_strategy": "Track an upstream ACP fix that permits a permission response to return updated tool input, then replace the compatibility follow-up with native answers."
+    },
+    {
+      "id": "gap.acp.subagent-prelaunch-policy",
+      "status": "expected_failure",
+      "summary": "Agent workers assemble an independent tool pool and custom Agent definitions can override restrictive parent permission modes before ACP exposes a Harness-acknowledged prelaunch policy point; post-observation cancellation cannot provide an atomic no-expansion guarantee.",
+      "evidence": [
+        {
+          "path": "packages/builtin-tools/src/tools/AgentTool/AgentTool.tsx",
+          "line": 719,
+          "detail": "The vendor builds the child worker tool pool independently with the Agent definition permission mode or acceptEdits.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "packages/builtin-tools/src/tools/AgentTool/runAgent.ts",
+          "line": 421,
+          "detail": "A custom Agent definition can override the parent permission mode for the spawned query.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "tests/unit/activity-tracker.test.ts",
+          "line": 46,
+          "detail": "Harness detects late Agent input permission expansion and cancels the outer ACP prompt, which is conservative but post-observation.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Add an ACP pre-tool authorization request or session policy contract that can reject Agent launch and constrain child mode/tools before vendor execution begins."
+    },
+    {
+      "id": "gap.acp.coordinator-mode-activation",
+      "status": "expected_failure",
+      "summary": "The locked vendor compiles coordinator mode, but activation is a local-jsx command and ACP only publishes prompt commands, so Web sessions cannot enter the native coordinator mode.",
+      "evidence": [
+        {
+          "path": "src/commands/coordinator.ts",
+          "line": 17,
+          "detail": "Coordinator activation is implemented as a local-jsx command.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "src/services/acp/bridge/forwarding.ts",
+          "line": 311,
+          "detail": "The current ACP surface has no coordinator mode configuration operation.",
+          "evidenceType": "source"
+        }
+      ],
+      "upstream_strategy": "Expose coordinator activation and status as an ACP session configuration capability with explicit tool and quota semantics."
+    },
+    {
+      "id": "gap.build.list-peers-uds-inbox",
+      "status": "expected_failure",
+      "summary": "ListPeers is guarded by the optional UDS_INBOX build feature, which is not compiled into the locked default vendor build and therefore cannot be discovered or invoked through ACP.",
+      "evidence": [
+        {
+          "path": "src/tools.ts",
+          "line": 153,
+          "detail": "ListPeers is conditionally imported only when feature('UDS_INBOX') is compiled.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "The real ACP test asserts SearchExtraTools/ExecuteExtraTool returns a not-found failure without creating a false peer projection.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Provide a separately reviewed vendor build profile with UDS_INBOX or an ACP-native peer listing capability, then replace the expected-failure assertion with a routed peer contract."
+    },
+    {
+      "id": "gap.vendor.in-process-team-shutdown",
+      "status": "expected_failure",
+      "summary": "The locked vendor records an in-process teammate's approved graceful shutdown but does not make that teammate inactive, so TeamDelete remains blocked and ACP exposes no addressable teammate stop operation.",
+      "evidence": [
+        {
+          "path": "packages/builtin-tools/src/tools/SendMessageTool/SendMessageTool.ts",
+          "line": 381,
+          "detail": "The shutdown approval path relies on finding the teammate task in the approving teammate's AppState and aborting its controller.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "The real ACP test records shutdown_approved, then asserts TeamDelete still returns the active-member failure and closes the session to stop the process.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Fix in-process shutdown approval to abort the parent-owned teammate task, or expose an ACP operation that addresses and stops a team peer before TeamDelete retries cleanup."
+    },
+    {
+      "id": "gap.acp.agent-triggers",
+      "status": "expected_failure",
+      "summary": "The locked vendor compiles Agent trigger support, but its management entry point is a local-jsx command and its scheduler is mounted by the REPL lifecycle; neither trigger registration nor trigger-fired prompts are exposed through the current ACP session surface.",
+      "evidence": [
+        {
+          "path": "src/commands/schedule/index.ts",
+          "line": 3,
+          "detail": "The trigger management command is registered as local-jsx and therefore is absent from ACP available prompt commands.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "src/hooks/useScheduledTasks.ts",
+          "line": 74,
+          "detail": "Local scheduled Agent prompts are delivered by a REPL-mounted hook rather than an ACP lifecycle service.",
+          "evidenceType": "source"
+        }
+      ],
+      "upstream_strategy": "Expose trigger registry operations and trigger-fired prompt events through ACP; then implement the durable scheduler and remote-provider profile in Phase 7."
     }
   ],
   "probe_environment": {
@@ -16289,7 +16544,7 @@
     },
     "unclassified": 0,
     "unclassified_ids": [],
-    "expected_failure_gaps": 6
+    "expected_failure_gaps": 11
   },
   "capabilities": [
     {
@@ -17105,12 +17360,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
         "workspace:.claude/agents",
-        "plugins"
+        "plugins",
+        "harness:phase-4:agent"
       ],
       "source_evidence": [
         {
@@ -17118,10 +17374,16 @@
           "line": 296,
           "detail": "Dynamic custom/plugin Agent definition loader",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration discovers and executes the workspace phase-four-checker Agent definition.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
     },
@@ -17132,11 +17394,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "build_feature:BUILTIN_EXPLORE_PLAN_AGENTS"
+        "build_feature:BUILTIN_EXPLORE_PLAN_AGENTS",
+        "harness:phase-4:agent"
       ],
       "source_evidence": [
         {
@@ -17144,10 +17407,16 @@
           "line": 64,
           "detail": "EXPLORE_AGENT",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration executes Explore synchronously and persists its vendor Agent id, usage, and output.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
     },
@@ -17158,20 +17427,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:agent"
+      ],
       "source_evidence": [
         {
           "path": "packages/builtin-tools/src/tools/AgentTool/built-in/generalPurposeAgent.ts",
           "line": 25,
           "detail": "GENERAL_PURPOSE_AGENT",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration executes a two-level nested general-purpose Agent hierarchy and verifies exact parent routing.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
     },
@@ -17182,11 +17459,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "build_feature:BUILTIN_EXPLORE_PLAN_AGENTS"
+        "build_feature:BUILTIN_EXPLORE_PLAN_AGENTS",
+        "harness:phase-4:agent"
       ],
       "source_evidence": [
         {
@@ -17194,10 +17472,16 @@
           "line": 73,
           "detail": "PLAN_AGENT",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration executes the built-in Plan Agent and persists its terminal lifecycle.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
     },
@@ -17232,11 +17516,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "build_feature:VERIFICATION_AGENT"
+        "build_feature:VERIFICATION_AGENT",
+        "harness:phase-4:agent"
       ],
       "source_evidence": [
         {
@@ -17244,10 +17529,16 @@
           "line": 134,
           "detail": "VERIFICATION_AGENT",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration executes the verification Agent as a vendor background Agent and recovers its task notification, output, and usage.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
     },
@@ -21892,11 +22183,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "compiled:default"
+        "compiled:default",
+        "harness:phase-4:agent"
       ],
       "source_evidence": [
         {
@@ -21910,10 +22202,16 @@
           "line": 14,
           "detail": "feature('BUILTIN_EXPLORE_PLAN_AGENTS') reference",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration executes the compiled built-in Explore and Plan Agent definitions through AgentTool.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The feature is compiled into the kernel and is expected to be inherited through ACP."
     },
@@ -28046,11 +28344,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "compiled:default"
+        "compiled:default",
+        "harness:phase-4:agent"
       ],
       "source_evidence": [
         {
@@ -28082,10 +28381,16 @@
           "line": 375,
           "detail": "feature('VERIFICATION_AGENT') reference",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration executes the built-in verification Agent and reconciles its background task notification to a completed Agent lifecycle.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
     },
@@ -29522,10 +29827,11 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "env:CLAUDE_CODE_ENABLE_TASKS"
+        "env:CLAUDE_CODE_ENABLE_TASKS",
+        "harness:phase-4:task"
       ],
       "source_evidence": [
         {
@@ -29533,10 +29839,16 @@
           "line": 135,
           "detail": "Runtime environment condition",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "The Phase 4 Docker profile enables CLAUDE_CODE_ENABLE_TASKS=1, the Worker passes it through its explicit child environment allowlist, and the non-interactive ACP session successfully invokes TaskCreate.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "Runtime condition changes the effective ACP session tool or behavior surface."
     },
@@ -30223,10 +30535,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:agent",
+        "fixture:[tool:agent]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -30239,10 +30554,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration invokes synchronous, background, and nested Agent tools through the real ACP process and reconstructs their terminal output from vendor persistence.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -30310,7 +30631,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "ACP permission outcomes cannot return AskUserQuestion updatedInput.answers; DeepHarness continues with an audited same-turn follow-up prompt. Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "ACP permission outcomes cannot return AskUserQuestion updatedInput.answers; DeepHarness continues with an audited same-turn follow-up prompt. Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
@@ -30349,7 +30670,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -30611,7 +30932,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -30834,7 +31155,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -30873,7 +31194,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -30912,7 +31233,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -30951,7 +31272,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -31022,7 +31343,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -31283,7 +31604,7 @@
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
       "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
@@ -31584,10 +31905,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:team",
+        "fixture:[tool:send-message]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -31600,10 +31924,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration sends a peer message and verifies the durable sender, recipient, delivery status, and audit projection.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -31834,11 +32164,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
+      "tested": true,
       "conditions": [
-        "runtime:todo_v2"
+        "runtime:todo_v2",
+        "harness:phase-4:task",
+        "fixture:[tool:task-create]"
       ],
       "source_evidence": [
         {
@@ -31852,10 +32184,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration creates both standalone and Team-backed vendor tasks and projects their durable pending state.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -31866,11 +32204,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
+      "tested": true,
       "conditions": [
-        "runtime:todo_v2"
+        "runtime:todo_v2",
+        "harness:phase-4:task",
+        "fixture:[tool:task-get]"
       ],
       "source_evidence": [
         {
@@ -31884,10 +32224,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration reads a created vendor task through TaskGet and reconciles the returned state.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -31898,11 +32244,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
+      "tested": true,
       "conditions": [
-        "runtime:todo_v2"
+        "runtime:todo_v2",
+        "harness:phase-4:task",
+        "fixture:[tool:task-list]"
       ],
       "source_evidence": [
         {
@@ -31916,10 +32264,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration lists vendor tasks and verifies the projection survives a Worker-to-Gateway reconnect.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -31930,10 +32284,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:task",
+        "fixture:[tool:task-output]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -31946,10 +32303,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration reads a background Agent task through TaskOutput and attaches output to the correct local_agent task.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -31960,10 +32323,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:task",
+        "fixture:[deepharness-control:stop-agent]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -31976,10 +32342,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration stops a running background Agent through the authenticated Harness control endpoint, which invokes TaskStop for the exact vendor Agent id and verifies terminal propagation.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -31990,11 +32362,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
+      "tested": true,
       "conditions": [
-        "runtime:todo_v2"
+        "runtime:todo_v2",
+        "harness:phase-4:task",
+        "fixture:[tool:task-update]"
       ],
       "source_evidence": [
         {
@@ -32008,10 +32382,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration assigns a vendor task owner, moves it to in_progress, and persists vendor metadata.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -32022,10 +32402,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:team",
+        "fixture:[tool:team-create]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -32038,10 +32421,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration creates a vendor Team, projects its lead and in-process peer addresses, and restores the projection after reconnect.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -32052,10 +32441,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-4:team",
+        "fixture:[tool:team-delete]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -32068,10 +32460,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 4 Docker integration invokes TeamDelete after a peer approves shutdown and verifies the vendor's active-member failure without falsely deleting the Team.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "The locked vendor leaves an in-process teammate active after shutdown approval, so TeamDelete cannot complete cleanup; see gap.vendor.in-process-team-shutdown. Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -32169,11 +32567,11 @@
         {
           "path": "tests/integration/phase-2-stack.test.ts",
           "line": 1,
-          "detail": "Phase 2 Docker integration invokes TodoWrite and projects the structured todo state.",
+          "detail": "Phase 2 Docker integration invokes TodoWrite and projects structured todo state on the legacy surface; when the Phase 4 Worker selects Task v2, the same gate verifies TodoWrite is absent and TaskCreate projects the replacement task state.",
           "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
+      "known_gap": "TodoWrite is mutually exclusive with Task v2 in non-interactive sessions; CLAUDE_CODE_ENABLE_TASKS selects TaskCreate/Get/List/Update for the Phase 4 Worker profile.",
       "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."

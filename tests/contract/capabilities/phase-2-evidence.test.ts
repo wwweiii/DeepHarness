@@ -67,13 +67,14 @@ describe('phase 2 Harness capability evidence', () => {
     expect(gap.upstream_strategy).toContain('upstream ACP fix')
   })
 
-  test('records inferred terminal tool state without claiming native raw output', async () => {
+  test('records post-persistence terminal recovery without claiming native live output', async () => {
     const manifest = await json('artifacts/capabilities/vendor-capability-manifest.json')
     const gap = manifest.known_gaps.find(
       (item: any) => item.id === 'gap.acp.tool-result-terminal-update',
     )
     expect(gap).toMatchObject({ status: 'expected_failure' })
     expect(gap.summary).toContain('tool_result')
+    expect(gap.summary).toContain('post-persistence')
     expect(gap.evidence).toEqual(expect.arrayContaining([
       expect.objectContaining({
         path: 'src/services/acp/bridge/forwarding.ts',
@@ -91,8 +92,10 @@ describe('phase 2 Harness capability evidence', () => {
       const capability = manifest.capabilities.find((item: any) => item.id === entry.id)
       if (entry.id === 'tool.TodoWriteTool') {
         expect(capability.known_gap ?? '').not.toContain('rawOutput')
+        expect(capability.known_gap).toContain('CLAUDE_CODE_ENABLE_TASKS')
       } else {
         expect(capability.known_gap).toContain('rawOutput')
+        expect(capability.known_gap).toContain('transcript persistence')
       }
     }
   })
@@ -113,16 +116,15 @@ describe('phase 2 Harness capability evidence', () => {
     }
   })
 
-  test('publishes a gated Phase 2 to Phase 3 capability diff', async () => {
-    const diff = await json('artifacts/capabilities/vendor-capability-diff.json')
+  test('publishes a gated capability diff without regressions', async () => {
+    const [diff, lock] = await Promise.all([
+      json('artifacts/capabilities/vendor-capability-diff.json'),
+      json('config/vendor-lock.json'),
+    ])
     expect(diff.status).toBe('compared')
-    expect(diff.previous_vendor_commit).toBe(diff.current_vendor_commit)
-    expect(diff.changed).toHaveLength(6)
-    expect(diff.changed).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: 'acp.loadSession' }),
-      expect.objectContaining({ id: 'acp.unstable_resumeSession' }),
-      expect.objectContaining({ id: 'acp.unstable_forkSession' }),
-    ]))
+    expect(diff.previous_vendor_commit).toMatch(/^[0-9a-f]{40}$/)
+    expect(diff.current_vendor_commit).toBe(lock.commit)
+    expect(diff.changed.length).toBeGreaterThan(0)
     expect(diff.regressions).toEqual([])
     expect(diff.gate).toEqual({
       unreviewed_additions: [],

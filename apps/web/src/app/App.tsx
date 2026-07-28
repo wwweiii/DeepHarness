@@ -1,5 +1,7 @@
 import type {
+  AgentDefinitionSummary,
   HarnessEvent,
+  SessionActivitySnapshot,
   SessionRecord,
   SessionSnapshot,
   WorkspaceRecord,
@@ -7,16 +9,19 @@ import type {
 import {
   Activity,
   Blocks,
+  Bot,
   Box,
   CirclePlus,
   GitFork,
   MessagesSquare,
+  Network,
   Radio,
   RefreshCw,
   Square,
+  ListTodo,
   X,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { CapabilityPage } from '../features/capabilities/CapabilityPage.tsx'
 import { Thread } from '../features/chat/messages/Thread.tsx'
 import { HarnessRuntimeProvider } from '../features/chat/runtime/HarnessRuntimeProvider.tsx'
@@ -78,6 +83,11 @@ function projectionFromSession(session: SessionRecord): HarnessProjection {
     eventCount: 0,
     availableModes: session.availableModes,
     availableModels: session.availableModels,
+    agents: [],
+    tasks: [],
+    teams: [],
+    teamMessages: [],
+    activityLimits: null,
   }
 }
 
@@ -103,6 +113,191 @@ function statusLabel(status: HarnessProjection['status']): string {
   return status.replaceAll('_', ' ')
 }
 
+type InspectorTab = 'overview' | 'agents' | 'tasks' | 'teams'
+
+function ActivityInspector({
+  session,
+  workspace,
+  projection,
+  definitions,
+  busy,
+  onConfiguration,
+  onStop,
+}: {
+  session: SessionRecord
+  workspace: WorkspaceRecord | null
+  projection: HarnessProjection
+  definitions: AgentDefinitionSummary[]
+  busy: boolean
+  onConfiguration: (kind: 'mode' | 'model', value: string) => Promise<void>
+  onStop: (kind: 'agents' | 'tasks', id: string) => Promise<void>
+}) {
+  const [tab, setTab] = useState<InspectorTab>('overview')
+  const modes = projection.availableModes.length > 0 ? projection.availableModes : session.availableModes
+  const models = projection.availableModels.length > 0 ? projection.availableModels : session.availableModels
+  const currentMode = projection.permissionMode ?? session.permissionMode
+  const currentModel = projection.modelId ?? session.modelId
+  const agentDepth = (id: string): number => {
+    let depth = 0
+    let parent = projection.agents.find(agent => agent.id === id)?.parentAgentId ?? null
+    const seen = new Set<string>()
+    while (parent && !seen.has(parent)) {
+      seen.add(parent)
+      depth += 1
+      parent = projection.agents.find(agent => agent.id === parent)?.parentAgentId ?? null
+    }
+    return depth
+  }
+  return (
+    <aside className="inspector">
+      <div className="inspector-title"><Activity size={17} aria-hidden="true" /><strong>Session</strong></div>
+      <div className="inspector-tabs" role="tablist" aria-label="Session inspector">
+        {(['overview', 'agents', 'tasks', 'teams'] as const).map(value => (
+          <button
+            key={value}
+            role="tab"
+            aria-selected={tab === value}
+            className={tab === value ? 'active' : ''}
+            onClick={() => setTab(value)}
+          >{value}</button>
+        ))}
+      </div>
+      {tab === 'overview' && <>
+        <dl>
+          <div><dt>Status</dt><dd>{statusLabel(projection.status)}</dd></div>
+          <div><dt>Process</dt><dd>{projection.processState}</dd></div>
+          <div><dt>Recovery</dt><dd>{projection.recoveryStrategy ?? 'new'}</dd></div>
+          <div>
+            <dt>Mode</dt>
+            <dd><select
+              aria-label="Permission mode"
+              value={currentMode}
+              disabled={projection.status !== 'idle' || projection.processState !== 'running'}
+              onChange={event => void onConfiguration('mode', event.target.value)}
+            >
+              {modes.map(mode => <option key={mode.id} value={mode.id}>{mode.name}</option>)}
+              {modes.length === 0 && <option value={currentMode}>{currentMode}</option>}
+            </select></dd>
+          </div>
+          <div>
+            <dt>Model</dt>
+            <dd><select
+              aria-label="Model"
+              value={currentModel ?? ''}
+              disabled={projection.status !== 'idle' || projection.processState !== 'running'}
+              onChange={event => void onConfiguration('model', event.target.value)}
+            >
+              {models.map(model => <option key={model.modelId} value={model.modelId}>{model.name}</option>)}
+              {models.length === 0 && <option value={currentModel ?? ''}>{currentModel || 'Vendor default'}</option>}
+            </select></dd>
+          </div>
+          <div><dt>Provider</dt><dd>{session.providerId}</dd></div>
+          <div><dt>Workspace</dt><dd>{workspace?.mode ?? 'unknown'}</dd></div>
+          <div><dt>Prompt queue</dt><dd>{projection.promptQueueDepth}</dd></div>
+          <div><dt>Events</dt><dd>{projection.eventCount}</dd></div>
+        </dl>
+        {projection.usage && (
+          <div className="usage-block">
+            <span>Latest usage</span>
+            <dl className="usage-values">
+              {Object.entries(projection.usage).map(([key, value]) => (
+                <div key={key}><dt>{key}</dt><dd>{String(value)}</dd></div>
+              ))}
+              {!('costUsd' in projection.usage) && <div><dt>costUsd</dt><dd>Unavailable from ACP</dd></div>}
+            </dl>
+          </div>
+        )}
+      </>}
+      {tab === 'agents' && <div className="activity-panel" data-testid="agent-activity-panel">
+        {projection.activityLimits && <div className="activity-limits">
+          <span>{projection.activityLimits.activeAgents}/{projection.activityLimits.maxActiveAgents} active</span>
+          <span>depth {projection.activityLimits.maxAgentDepth}</span>
+          <span>{projection.activityLimits.observedAgentTokens}/{projection.activityLimits.maxAgentTokens} tokens</span>
+        </div>}
+        <section className="agent-definitions" data-testid="agent-definitions">
+          <div className="activity-section-title">Agent definitions</div>
+          {definitions.length === 0 && <p className="activity-empty">No definitions discovered</p>}
+          {definitions.map(definition => <div key={definition.id} className="agent-definition-row">
+            <div>
+              <strong>{definition.name}</strong>
+              <small>{definition.matrixClass} · {definition.tested ? 'tested' : 'not tested'}</small>
+            </div>
+            <span className={definition.enabled ? 'definition-enabled' : 'definition-disabled'}>
+              {definition.enabled ? 'enabled' : 'disabled'}
+            </span>
+          </div>)}
+        </section>
+        {projection.agents.length === 0 && <p className="activity-empty">No sub-agents</p>}
+        {projection.agents.map(agent => {
+          const running = ['starting', 'running', 'stopping'].includes(agent.status)
+          const lastTool = agent.metadata.lastToolCall as Record<string, unknown> | undefined
+          return <div
+            key={agent.id}
+            className="activity-row agent-row"
+            style={{ '--agent-depth': agentDepth(agent.id) } as CSSProperties}
+            data-agent-id={agent.id}
+          >
+            <Bot size={15} aria-hidden="true" />
+            <div className="activity-main">
+              <strong>{agent.name ?? agent.agentType}</strong>
+              <small>{agent.status}{agent.runInBackground ? ' · background' : ''}</small>
+              {agent.description && <span>{agent.description}</span>}
+              {lastTool && <code>{String(lastTool.toolName ?? 'tool')} · {String(lastTool.status ?? '')}</code>}
+              {agent.output !== null && <pre>{typeof agent.output === 'string' ? agent.output : JSON.stringify(agent.output, null, 2)}</pre>}
+            </div>
+            {running && <button
+              className="activity-stop"
+              title="Stop agent"
+              aria-label={`Stop ${agent.name ?? agent.agentType}`}
+              disabled={busy || agent.status === 'stopping'}
+              onClick={() => void onStop('agents', agent.id)}
+            ><Square size={13} fill="currentColor" /></button>}
+          </div>
+        })}
+      </div>}
+      {tab === 'tasks' && <div className="activity-panel" data-testid="task-activity-panel">
+        {projection.tasks.length === 0 && <p className="activity-empty">No tasks</p>}
+        {projection.tasks.map(task => {
+          const stoppable = Boolean(task.taskType) && ['pending', 'in_progress', 'stopping'].includes(task.status)
+          return <div key={task.id} className="activity-row" data-task-id={task.id}>
+            <ListTodo size={15} aria-hidden="true" />
+            <div className="activity-main">
+              <strong>{task.subject || `Task ${task.vendorTaskId}`}</strong>
+              <small>{task.status}{task.owner ? ` · ${task.owner}` : ''}</small>
+              {task.description && <span>{task.description}</span>}
+              {task.output !== null && <pre>{typeof task.output === 'string' ? task.output : JSON.stringify(task.output, null, 2)}</pre>}
+            </div>
+            {stoppable && <button
+              className="activity-stop"
+              title="Stop task"
+              aria-label={`Stop task ${task.vendorTaskId}`}
+              disabled={busy || task.status === 'stopping'}
+              onClick={() => void onStop('tasks', task.id)}
+            ><Square size={13} fill="currentColor" /></button>}
+          </div>
+        })}
+      </div>}
+      {tab === 'teams' && <div className="activity-panel" data-testid="team-activity-panel">
+        {projection.teams.length === 0 && <p className="activity-empty">No teams</p>}
+        {projection.teams.map(team => <section key={team.id} className="team-section">
+          <div className="activity-row">
+            <Network size={15} aria-hidden="true" />
+            <div className="activity-main"><strong>{team.name}</strong><small>{team.status} · {team.peers.length} peers</small></div>
+          </div>
+          {team.peers.map(peer => <div key={peer.id} className="peer-route">
+            <span>{peer.name}</span><code>{peer.address ?? peer.agentId ?? peer.role}</code><small>{peer.status}</small>
+          </div>)}
+        </section>)}
+        {projection.teamMessages.map(message => <div key={message.id} className="team-message">
+          <code>{message.sender} → {message.recipient}</code>
+          <span>{message.summary ?? (typeof message.content === 'string' ? message.content : message.messageType)}</span>
+          <small>{message.deliveryStatus}</small>
+        </div>)}
+      </div>}
+    </aside>
+  )
+}
+
 function Shell({
   session,
   sessions,
@@ -126,12 +321,28 @@ function Shell({
     projection: projectionFromSession(session),
     connected: false,
   })
-  const [view, setView] = useState<'chat' | 'capabilities'>('chat')
+  const [view, setView] = useState<'chat' | 'capabilities' | 'activity'>('chat')
+  const [definitions, setDefinitions] = useState<AgentDefinitionSummary[]>([])
   const [workspaceId, setWorkspaceId] = useState(workspaces[0]?.id ?? '')
   const [busy, setBusy] = useState(false)
   const [actionError, setActionError] = useState<string | null>(null)
   const onProjection = useCallback((value: LiveState) => setLive(value), [])
   const isRunning = ['running', 'cancelling'].includes(live.projection.status)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setDefinitions([])
+    void json<SessionActivitySnapshot>(`/api/sessions/${session.id}/activity`, {
+      signal: controller.signal,
+    }).then(activity => {
+      if (!controller.signal.aborted) setDefinitions(activity.definitions)
+    }).catch(error => {
+      if (!controller.signal.aborted) {
+        setActionError(error instanceof Error ? error.message : String(error))
+      }
+    })
+    return () => controller.abort()
+  }, [session.id])
 
   const run = async (action: () => Promise<string | void>) => {
     setBusy(true)
@@ -153,15 +364,10 @@ function Shell({
     await command(`/api/sessions/${session.id}/${kind}`,
       kind === 'mode' ? { modeId: value } : { modelId: value })
   }
-  const modes = live.projection.availableModes.length > 0
-    ? live.projection.availableModes
-    : session.availableModes
-  const models = live.projection.availableModels.length > 0
-    ? live.projection.availableModels
-    : session.availableModels
-  const currentMode = live.projection.permissionMode ?? session.permissionMode
-  const currentModel = live.projection.modelId ?? session.modelId
   const forkWorkspace = workspaces.find(candidate => candidate.id === workspaceId && candidate.mode === 'worktree')
+  const stopActivity = async (kind: 'agents' | 'tasks', id: string) => run(async () => {
+    await command(`/api/sessions/${session.id}/${kind}/${encodeURIComponent(id)}/stop`)
+  })
 
   return (
     <HarnessRuntimeProvider
@@ -230,6 +436,7 @@ function Shell({
         <main className={`workbench workbench-${view}`}>
           <div className="mobile-view-tabs">
             <button className={view === 'chat' ? 'active' : ''} onClick={() => setView('chat')}>Chat</button>
+            <button className={view === 'activity' ? 'active' : ''} onClick={() => setView('activity')}>Activity</button>
             <button className={view === 'capabilities' ? 'active' : ''} onClick={() => setView('capabilities')}>Capabilities</button>
           </div>
           {view === 'chat' ? <>
@@ -298,56 +505,28 @@ function Shell({
               </div>
             )}
             <Thread isRunning={isRunning} sessionId={session.id} />
-          </> : <CapabilityPage />}
+          </> : view === 'capabilities' ? <CapabilityPage /> : <div className="mobile-activity">
+            <ActivityInspector
+              session={session}
+              workspace={workspace}
+              projection={live.projection}
+              definitions={definitions}
+              busy={busy}
+              onConfiguration={changeConfiguration}
+              onStop={stopActivity}
+            />
+          </div>}
         </main>
 
-        <aside className="inspector">
-          <div className="inspector-title"><Activity size={17} aria-hidden="true" /><strong>Session</strong></div>
-          <dl>
-            <div><dt>Status</dt><dd>{statusLabel(live.projection.status)}</dd></div>
-            <div><dt>Process</dt><dd>{live.projection.processState}</dd></div>
-            <div><dt>Recovery</dt><dd>{live.projection.recoveryStrategy ?? 'new'}</dd></div>
-            <div>
-              <dt>Mode</dt>
-              <dd><select
-                aria-label="Permission mode"
-                value={currentMode}
-                disabled={live.projection.status !== 'idle' || live.projection.processState !== 'running'}
-                onChange={event => void changeConfiguration('mode', event.target.value)}
-              >
-                {modes.map(mode => <option key={mode.id} value={mode.id}>{mode.name}</option>)}
-                {modes.length === 0 && <option value={currentMode}>{currentMode}</option>}
-              </select></dd>
-            </div>
-            <div>
-              <dt>Model</dt>
-              <dd><select
-                aria-label="Model"
-                value={currentModel ?? ''}
-                disabled={live.projection.status !== 'idle' || live.projection.processState !== 'running'}
-                onChange={event => void changeConfiguration('model', event.target.value)}
-              >
-                {models.map(model => <option key={model.modelId} value={model.modelId}>{model.name}</option>)}
-                {models.length === 0 && <option value={currentModel ?? ''}>{currentModel || 'Vendor default'}</option>}
-              </select></dd>
-            </div>
-            <div><dt>Provider</dt><dd>{session.providerId}</dd></div>
-            <div><dt>Workspace</dt><dd>{workspace?.mode ?? 'unknown'}</dd></div>
-            <div><dt>Prompt queue</dt><dd>{live.projection.promptQueueDepth}</dd></div>
-            <div><dt>Events</dt><dd>{live.projection.eventCount}</dd></div>
-          </dl>
-          {live.projection.usage && (
-            <div className="usage-block">
-              <span>Latest usage</span>
-              <dl className="usage-values">
-                {Object.entries(live.projection.usage).map(([key, value]) => (
-                  <div key={key}><dt>{key}</dt><dd>{String(value)}</dd></div>
-                ))}
-                {!('costUsd' in live.projection.usage) && <div><dt>costUsd</dt><dd>Unavailable from ACP</dd></div>}
-              </dl>
-            </div>
-          )}
-        </aside>
+        <ActivityInspector
+          session={session}
+          workspace={workspace}
+          projection={live.projection}
+          definitions={definitions}
+          busy={busy}
+          onConfiguration={changeConfiguration}
+          onStop={stopActivity}
+        />
       </div>
     </HarnessRuntimeProvider>
   )

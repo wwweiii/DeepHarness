@@ -17,6 +17,11 @@ services:
       ANTHROPIC_BASE_URL: http://test-model:8090
       PERMISSION_REQUEST_TIMEOUT_MS: "10000"
       WORKER_MAX_CONCURRENCY: "2"
+      WORKER_MAX_SUBAGENTS_PER_SESSION: "3"
+      WORKER_MAX_SUBAGENT_DEPTH: "2"
+      WORKER_MAX_TEAM_PEERS_PER_SESSION: "3"
+      WORKER_MAX_SUBAGENT_TOKENS: "10000"
+      CLAUDE_CODE_ENABLE_TASKS: "1"
       AGENT_IDLE_TTL_MS: "120000"
       ENABLE_TEST_CONTROL: "1"
     depends_on:
@@ -72,6 +77,7 @@ services:
         bun test --timeout 60000 tests/integration/phase-1-stack.test.ts
         bun test --timeout 180000 tests/integration/phase-2-stack.test.ts
         bun test --timeout 240000 tests/integration/phase-3-stack.test.ts
+        bun test --timeout 240000 tests/integration/phase-4-stack.test.ts
         node node_modules/@playwright/test/cli.js test --config playwright.config.ts
     networks: [control]
     volumes:
