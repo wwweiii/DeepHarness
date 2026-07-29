@@ -255,6 +255,56 @@
       "scenario": "[tool:send-message]",
       "workflow": "team",
       "evidence": "Phase 4 Docker integration sends a peer message and verifies the durable sender, recipient, delivery status, and audit projection."
+    },
+    {
+      "id": "command.prompt.statusline",
+      "phase": 5,
+      "workflow": "command",
+      "evidence": "Phase 5 Docker integration consumes the real ACP available_commands_update, invokes /statusline from the Web command endpoint, and completes the resulting ACP turn."
+    },
+    {
+      "id": "tool.SkillTool",
+      "phase": 5,
+      "scenario": "[tool:skill]",
+      "workflow": "skill",
+      "evidence": "Phase 5 Docker integration discovers the workspace Skill source and executes phase-five-skill through the real vendor SkillTool lifecycle."
+    },
+    {
+      "id": "tool.SearchExtraToolsTool",
+      "phase": 5,
+      "scenario": "[tool:list-peers]",
+      "workflow": "extra-tool",
+      "evidence_path": "tests/integration/phase-4-stack.test.ts",
+      "evidence": "The Docker integration exercises SearchExtraTools through the real ACP process before selecting a deferred extension tool; Phase 5 projects its activation state and generic renderer."
+    },
+    {
+      "id": "tool.ExecuteExtraTool",
+      "phase": 5,
+      "scenario": "[tool:list-peers]",
+      "workflow": "extra-tool",
+      "evidence_path": "tests/integration/phase-4-stack.test.ts",
+      "evidence": "The Docker integration executes the selected deferred tool through ExecuteExtraTool and preserves the vendor not-found result for the disabled ListPeers capability."
+    },
+    {
+      "id": "integration.skills",
+      "phase": 5,
+      "invocable": null,
+      "workflow": "extension-projection",
+      "evidence": "Phase 5 Docker integration projects the actual project Skill path, activation condition, ACP command visibility, and successful execution state."
+    },
+    {
+      "id": "integration.plugins",
+      "phase": 5,
+      "invocable": null,
+      "workflow": "extension-projection",
+      "evidence": "Phase 5 Docker integration projects the effective enabledPlugins source without credential values; unit coverage verifies isolated load errors and controlled settings.local.json updates."
+    },
+    {
+      "id": "integration.hooks",
+      "phase": 5,
+      "invocable": null,
+      "workflow": "extension-projection",
+      "evidence": "Phase 5 Docker integration projects Hook source, event, activation state, and definition count without copying executable command bodies; unit coverage verifies the controlled global toggle."
     }
   ],
   "known_gaps": [
@@ -403,6 +453,26 @@
         }
       ],
       "upstream_strategy": "Expose trigger registry operations and trigger-fired prompt events through ACP; then implement the durable scheduler and remote-provider profile in Phase 7."
+    },
+    {
+      "id": "gap.acp.command-hot-reload",
+      "status": "expected_failure",
+      "summary": "ACP defines available_commands_update, but the locked vendor only schedules it while opening, loading, resuming, or forking a session; project command and Skill file changes are not reloaded in an already-running QueryEngine.",
+      "evidence": [
+        {
+          "path": "src/services/acp/agent/AcpAgent.ts",
+          "line": 404,
+          "detail": "scheduleAvailableCommandsUpdate is called by session lifecycle methods and has no settings or filesystem watcher subscription.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 370,
+          "detail": "DeepHarness consumes every available_commands_update in real time but keeps the catalog tied to ACP authority instead of making newly scanned files falsely callable.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Add an upstream ACP command reload operation or emit available_commands_update after vendor command and Skill discovery invalidation; then add a same-session create/delete contract and remove the restart requirement."
     }
   ]
 }

@@ -39,6 +39,9 @@ export type TaskActivityStatus =
   | 'deleted'
   | 'unknown'
 export type TeamActivityStatus = 'active' | 'deleting' | 'deleted' | 'error'
+export type ExtensionKind = 'skill' | 'plugin' | 'hook' | 'setting' | 'extra_tool'
+export type ExtensionStatus = 'ready' | 'disabled' | 'error' | 'blocked' | 'unknown'
+export type McpHealthStatus = 'configured' | 'disabled' | 'error' | 'blocked'
 
 export type HarnessEventType =
   | 'session.created'
@@ -78,6 +81,9 @@ export type HarnessEventType =
   | 'task.output_delta'
   | 'team.updated'
   | 'team.message'
+  | 'commands.updated'
+  | 'extensions.updated'
+  | 'extension.configuration_changed'
 
 export const HARNESS_EVENT_TYPES: HarnessEventType[] = [
   'session.created',
@@ -117,6 +123,9 @@ export const HARNESS_EVENT_TYPES: HarnessEventType[] = [
   'task.output_delta',
   'team.updated',
   'team.message',
+  'commands.updated',
+  'extensions.updated',
+  'extension.configuration_changed',
 ]
 
 export interface HarnessEvent {
@@ -204,6 +213,22 @@ export type WorkerCommand =
         taskId: string
         vendorTaskId: string
         reason: string
+      }
+    }
+  | {
+      id: string
+      type: 'refresh_extensions'
+      sessionId: string
+      payload: Record<string, never>
+    }
+  | {
+      id: string
+      type: 'set_extension_enabled'
+      sessionId: string
+      payload: {
+        kind: 'plugin' | 'hook'
+        name: string
+        enabled: boolean
       }
     }
 
@@ -405,6 +430,73 @@ export interface AgentDefinitionSummary {
   matrixClass: string
   conditions: JsonValue[]
   knownGap: string | null
+}
+
+export interface AvailableCommand {
+  name: string
+  description: string
+  inputHint: string | null
+  source: 'acp' | 'manifest'
+  commandType: 'prompt' | 'local' | 'local-jsx'
+  callable: boolean
+  blockedReason: string | null
+  updatedAt: string
+}
+
+export interface ExtensionEntry {
+  id: string
+  kind: ExtensionKind
+  name: string
+  source: 'user' | 'project' | 'local' | 'vendor' | 'plugin'
+  path: string | null
+  enabled: boolean
+  status: ExtensionStatus
+  condition: string | null
+  error: string | null
+  metadata: Record<string, JsonValue>
+}
+
+export interface McpResourceSummary {
+  uri: string
+  name: string
+  description: string | null
+  mimeType: string | null
+}
+
+export interface McpServerStatus {
+  name: string
+  source: 'user' | 'project' | 'local' | 'plugin'
+  transport: string
+  endpoint: string | null
+  enabled: boolean
+  health: McpHealthStatus
+  authStatus: 'not_required' | 'configured' | 'required' | 'blocked' | 'unknown'
+  supportsTools: boolean | null
+  supportsResources: boolean | null
+  resources: McpResourceSummary[]
+  error: string | null
+  blockedReason: string | null
+  metadata: Record<string, JsonValue>
+}
+
+export interface ExtensionAuditRecord {
+  id: string
+  sessionId: string
+  kind: 'plugin' | 'hook'
+  name: string
+  action: 'enabled' | 'disabled'
+  restartRequired: boolean
+  createdAt: string
+}
+
+export interface SessionExtensionSnapshot {
+  revision: number
+  commands: AvailableCommand[]
+  extensions: ExtensionEntry[]
+  mcpServers: McpServerStatus[]
+  audits: ExtensionAuditRecord[]
+  sourceErrors: string[]
+  updatedAt: string | null
 }
 
 export interface ActivityLimits {

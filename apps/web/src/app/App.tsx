@@ -18,11 +18,13 @@ import {
   Radio,
   RefreshCw,
   Square,
+  TerminalSquare,
   ListTodo,
   X,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { CapabilityPage } from '../features/capabilities/CapabilityPage.tsx'
+import { ExtensionsPage } from '../features/extensions/ExtensionsPage.tsx'
 import { Thread } from '../features/chat/messages/Thread.tsx'
 import { HarnessRuntimeProvider } from '../features/chat/runtime/HarnessRuntimeProvider.tsx'
 import type { HarnessProjection } from '../features/chat/runtime/reducer.ts'
@@ -321,7 +323,7 @@ function Shell({
     projection: projectionFromSession(session),
     connected: false,
   })
-  const [view, setView] = useState<'chat' | 'capabilities' | 'activity'>('chat')
+  const [view, setView] = useState<'chat' | 'capabilities' | 'extensions' | 'activity'>('chat')
   const [definitions, setDefinitions] = useState<AgentDefinitionSummary[]>([])
   const [workspaceId, setWorkspaceId] = useState(workspaces[0]?.id ?? '')
   const [busy, setBusy] = useState(false)
@@ -427,6 +429,9 @@ function Shell({
           <button className={view === 'capabilities' ? 'view-item active' : 'view-item'} onClick={() => setView('capabilities')}>
             <Blocks size={16} /> Capabilities
           </button>
+          <button className={view === 'extensions' ? 'view-item active' : 'view-item'} onClick={() => setView('extensions')}>
+            <TerminalSquare size={16} /> Extensions
+          </button>
           <div className="rail-footer">
             <Box size={16} aria-hidden="true" />
             <span>{workspace?.name ?? 'Workspace unavailable'}<small>{workspace?.mode ?? 'unknown'}</small></span>
@@ -437,6 +442,7 @@ function Shell({
           <div className="mobile-view-tabs">
             <button className={view === 'chat' ? 'active' : ''} onClick={() => setView('chat')}>Chat</button>
             <button className={view === 'activity' ? 'active' : ''} onClick={() => setView('activity')}>Activity</button>
+            <button className={view === 'extensions' ? 'active' : ''} onClick={() => setView('extensions')}>Extensions</button>
             <button className={view === 'capabilities' ? 'active' : ''} onClick={() => setView('capabilities')}>Capabilities</button>
           </div>
           {view === 'chat' ? <>
@@ -505,7 +511,12 @@ function Shell({
               </div>
             )}
             <Thread isRunning={isRunning} sessionId={session.id} />
-          </> : view === 'capabilities' ? <CapabilityPage /> : <div className="mobile-activity">
+          </> : view === 'capabilities' ? <CapabilityPage />
+            : view === 'extensions' ? <ExtensionsPage
+              sessionId={session.id}
+              mutableState={live.projection.status === 'idle' && live.projection.processState === 'running'}
+            />
+            : <div className="mobile-activity">
             <ActivityInspector
               session={session}
               workspace={workspace}

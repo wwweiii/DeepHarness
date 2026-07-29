@@ -222,6 +222,12 @@ app.get('/api/sessions/:sessionId/activity', async c => {
   return c.json(await store.getActivity(sessionId))
 })
 
+app.get('/api/sessions/:sessionId/extensions', async c => {
+  const snapshot = await store.getExtensions(c.req.param('sessionId'))
+  if (!snapshot) return apiError('Session not found', 404)
+  return c.json(snapshot)
+})
+
 app.get('/api/workspaces', async c => c.json({ workspaces: await store.listWorkspaces() }))
 
 app.post('/api/workspaces', async c => {
@@ -342,13 +348,10 @@ app.post('/api/sessions/:sessionId/fork', async c => {
   }
 })
 
-app.post('/api/sessions/:sessionId/prompts', async c => {
-  const key = idempotencyKey(c.req.raw)
+async function submitPrompt(request: Request, sessionId: string, text: string): Promise<Response> {
+  const key = idempotencyKey(request)
   if (!key) return apiError('Idempotency-Key header is required', 400)
-  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
-  const text = typeof body.text === 'string' ? body.text.trim() : ''
   if (!text) return apiError('Prompt text is required', 400)
-  const sessionId = c.req.param('sessionId')
   const turnId = crypto.randomUUID()
   try {
     const result = await store.createPrompt({
@@ -360,7 +363,7 @@ app.post('/api/sessions/:sessionId/prompts', async c => {
       text,
     })
     const command = result.prompt
-    if (!result.created) return c.json({ turnId: command.payload.turnId }, 202)
+    if (!result.created) return Response.json({ turnId: command.payload.turnId }, { status: 202 })
     const { event } = await store.appendEvent({
       id: crypto.randomUUID(),
       sessionId,
@@ -373,7 +376,7 @@ app.post('/api/sessions/:sessionId/prompts', async c => {
     for (const pending of result.commands) {
       if (!await deliver(pending)) return apiError('Worker is offline; commands remain queued', 503)
     }
-    return c.json({ turnId: command.payload.turnId }, 202)
+    return Response.json({ turnId: command.payload.turnId }, { status: 202 })
   } catch (error) {
     const message = (error as Error).message
     if (message === 'SESSION_NOT_FOUND') return apiError('Session not found', 404)
@@ -382,6 +385,27 @@ app.post('/api/sessions/:sessionId/prompts', async c => {
     if (message === 'WORKSPACE_BUSY') return apiError('Workspace is locked by another write session', 409)
     throw error
   }
+}
+
+app.post('/api/sessions/:sessionId/prompts', async c => {
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const text = typeof body.text === 'string' ? body.text.trim() : ''
+  return submitPrompt(c.req.raw, c.req.param('sessionId'), text)
+})
+
+app.post('/api/sessions/:sessionId/commands/:commandName/invoke', async c => {
+  const name = c.req.param('commandName')
+  if (!/^[A-Za-z0-9][A-Za-z0-9:_-]{0,99}$/.test(name)) {
+    return apiError('Command name is invalid', 400)
+  }
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const args = typeof body.args === 'string' ? body.args.trim() : ''
+  if (args.length > 8_000) return apiError('Command arguments are too long', 422)
+  const sessionId = c.req.param('sessionId')
+  if (!await store.isPromptCommandAvailable(sessionId, name)) {
+    return apiError('Command is not callable through the current ACP session', 409)
+  }
+  return submitPrompt(c.req.raw, sessionId, `/${name}${args ? ` ${args}` : ''}`)
 })
 
 app.post('/api/sessions/:sessionId/recover', async c => {
@@ -445,6 +469,7 @@ async function controlCommand(input: {
   request: Request
   sessionId: string
   type: 'resolve_permission' | 'set_mode' | 'set_model'
+    | 'refresh_extensions' | 'set_extension_enabled'
   payload: Record<string, JsonValue>
 }): Promise<Response> {
   const key = idempotencyKey(input.request)
@@ -537,6 +562,58 @@ app.post('/api/sessions/:sessionId/model', async c => {
     payload: { modelId },
   })
 })
+
+app.post('/api/sessions/:sessionId/extensions/refresh', c => controlCommand({
+  request: c.req.raw,
+  sessionId: c.req.param('sessionId'),
+  type: 'refresh_extensions',
+  payload: {},
+}))
+
+app.patch('/api/sessions/:sessionId/extensions/:kind/:name', async c => {
+  const kind = c.req.param('kind')
+  const name = c.req.param('name')
+  if (kind !== 'plugin' && kind !== 'hook') return apiError('Extension kind is not mutable', 400)
+  if (!name || name.length > 200) return apiError('Extension name is invalid', 400)
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  if (typeof body.enabled !== 'boolean') return apiError('enabled must be a boolean', 400)
+  return controlCommand({
+    request: c.req.raw,
+    sessionId: c.req.param('sessionId'),
+    type: 'set_extension_enabled',
+    payload: { kind, name, enabled: body.enabled },
+  })
+})
+
+app.get('/api/sessions/:sessionId/mcp/:serverName/resources', async c => {
+  const snapshot = await store.getExtensions(c.req.param('sessionId'))
+  if (!snapshot) return apiError('Session not found', 404)
+  const server = snapshot.mcpServers.find(candidate => candidate.name === c.req.param('serverName'))
+  if (!server) return apiError('MCP server not found', 404)
+  return c.json({
+    server: server.name,
+    available: server.supportsResources === true,
+    resources: server.resources,
+    blockedReason: server.blockedReason,
+  })
+})
+
+app.post('/api/sessions/:sessionId/mcp/:serverName/auth', async c => {
+  const snapshot = await store.getExtensions(c.req.param('sessionId'))
+  if (!snapshot) return apiError('Session not found', 404)
+  const server = snapshot.mcpServers.find(candidate => candidate.name === c.req.param('serverName'))
+  if (!server) return apiError('MCP server not found', 404)
+  return apiError(
+    server.blockedReason ?? 'MCP authentication is unavailable through the current ACP session',
+    409,
+  )
+})
+
+app.get('/api/mcp/oauth/callback', c => c.json({
+  error: 'MCP OAuth callback is blocked because the current ACP session does not expose an MCP auth exchange.',
+  knownGap: 'gap.acp.dynamic-mcp-tools',
+  credentialsStored: false,
+}, 501))
 
 app.post('/api/sessions/:sessionId/cancel', async c => {
   const key = idempotencyKey(c.req.raw)

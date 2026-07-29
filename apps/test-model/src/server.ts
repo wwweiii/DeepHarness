@@ -327,6 +327,12 @@ function requestedTool(body: RequestBody, prompt: string): { name: string; input
     })
   }
   if (normalized.includes('[tool:list-peers]')) return logicalTool(body, 'ListPeers', { include_self: true })
+  if (normalized.includes('[tool:skill]')) {
+    return logicalTool(body, 'Skill', {
+      skill: 'phase-five-skill',
+      args: 'PHASE_FIVE_SKILL_TOOL_ARG',
+    })
+  }
   if (normalized.includes('[deepharness-control:stop-agent]')
     || normalized.includes('[deepharness-control:stop-task]')) {
     const taskId = prompt.match(/task_id\s+"([^"]+)"/i)?.[1]

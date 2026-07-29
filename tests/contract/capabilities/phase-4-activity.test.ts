@@ -112,7 +112,7 @@ describe('phase 4 Agent, Task, Team, and Coordinator capability contract', () =>
 
   test('publishes the Agent capability transitions in the gated diff', async () => {
     const [diff, lock] = await Promise.all([
-      json('artifacts/capabilities/vendor-capability-diff.json'),
+      json('artifacts/capabilities/vendor-capability-diff-phase-4.json'),
       json('config/vendor-lock.json'),
     ])
     expect(diff.previous_vendor_commit).toBe('34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d')

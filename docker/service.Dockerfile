@@ -108,6 +108,7 @@ COPY --from=workspace-deps /app ./
 COPY playwright.config.ts ./
 COPY tests ./tests
 COPY config ./config
+COPY docs ./docs
 COPY compose.yaml compose.test.yaml compose.providers.yaml .gitmodules Makefile ./
 
 ENV NODE_ENV=test \

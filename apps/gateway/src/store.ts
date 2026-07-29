@@ -4,17 +4,22 @@ import type {
   ActivityLimits,
   AgentActivityRecord,
   AgentDefinitionSummary,
+  AvailableCommand,
   EventPage,
+  ExtensionAuditRecord,
+  ExtensionEntry,
   HarnessEvent,
   HarnessEventType,
   JsonValue,
   SessionRecord,
   SessionRecoveryStrategy,
   SessionActivitySnapshot,
+  SessionExtensionSnapshot,
   TaskActivityRecord,
   TeamActivityRecord,
   TeamMessageRecord,
   TeamPeerRecord,
+  McpServerStatus,
   WorkerCommand,
   WorkspaceRecord,
 } from '@deepharness/protocol'
@@ -228,6 +233,31 @@ function teamMessageFromRow(row: Record<string, unknown>): TeamMessageRecord {
   }
 }
 
+function availableCommandFromRow(row: Record<string, unknown>): AvailableCommand {
+  return {
+    name: String(row.name),
+    description: String(row.description ?? ''),
+    inputHint: row.input_hint === null ? null : String(row.input_hint),
+    source: row.source as AvailableCommand['source'],
+    commandType: row.command_type as AvailableCommand['commandType'],
+    callable: row.available === true && row.user_invocable === true,
+    blockedReason: row.blocked_reason === null ? null : String(row.blocked_reason),
+    updatedAt: iso(row.updated_at),
+  }
+}
+
+function extensionAuditFromRow(row: Record<string, unknown>): ExtensionAuditRecord {
+  return {
+    id: String(row.id),
+    sessionId: String(row.session_id),
+    kind: row.kind as ExtensionAuditRecord['kind'],
+    name: String(row.name),
+    action: row.action as ExtensionAuditRecord['action'],
+    restartRequired: row.restart_required === true,
+    createdAt: iso(row.created_at),
+  }
+}
+
 function commandFromRow(row: {
   id: string
   session_id: string
@@ -428,6 +458,81 @@ export class GatewayStore {
       definitions,
       limits,
     }
+  }
+
+  async getExtensions(sessionId: string): Promise<SessionExtensionSnapshot | null> {
+    if (!await this.getSession(sessionId)) return null
+    const [commandRows, stateRows, auditRows, blockedRows] = await Promise.all([
+      this.database<Record<string, unknown>[]>`
+        SELECT * FROM available_commands WHERE session_id = ${sessionId}
+        ORDER BY available DESC, user_invocable DESC, name ASC
+      `,
+      this.database<Record<string, unknown>[]>`
+        SELECT * FROM session_extension_state WHERE session_id = ${sessionId}
+      `,
+      this.database<Record<string, unknown>[]>`
+        SELECT * FROM extension_audit_logs WHERE session_id = ${sessionId}
+        ORDER BY created_at DESC LIMIT 100
+      `,
+      this.database<Array<{
+        name: string
+        conditions: JsonValue[]
+        known_gap: string | null
+      }>>`
+        SELECT capability.name, capability.conditions, capability.known_gap
+        FROM capabilities capability
+        JOIN capability_manifests manifest ON manifest.id = capability.manifest_id
+        WHERE capability.kind = 'command' AND capability.advertised_by_acp = false
+          AND manifest.status = 'ready'
+          AND manifest.generated_at = (
+            SELECT max(generated_at) FROM capability_manifests WHERE status = 'ready'
+          )
+        ORDER BY capability.name ASC
+      `,
+    ])
+    const state = stateRows[0]
+    const blocked: AvailableCommand[] = blockedRows.map(row => {
+      const commandType = row.conditions.some(value => String(value) === 'command_type:local-jsx')
+        ? 'local-jsx'
+        : 'local'
+      return {
+        name: row.name,
+        description: 'Vendor terminal command',
+        inputHint: null,
+        source: 'manifest',
+        commandType,
+        callable: false,
+        blockedReason: row.known_gap
+          ?? 'ACP available_commands_update only publishes prompt commands.',
+        updatedAt: state ? iso(state.updated_at) : new Date(0).toISOString(),
+      }
+    })
+    return {
+      revision: Number(state?.revision ?? 0),
+      commands: [...commandRows.map(availableCommandFromRow), ...blocked],
+      extensions: Array.isArray(state?.extensions)
+        ? state.extensions as ExtensionEntry[]
+        : [],
+      mcpServers: Array.isArray(state?.mcp_servers)
+        ? state.mcp_servers as McpServerStatus[]
+        : [],
+      audits: auditRows.map(extensionAuditFromRow),
+      sourceErrors: Array.isArray(state?.source_errors)
+        ? state.source_errors.map(String)
+        : [],
+      updatedAt: state ? iso(state.updated_at) : null,
+    }
+  }
+
+  async isPromptCommandAvailable(sessionId: string, name: string): Promise<boolean> {
+    const rows = await this.database<{ available: boolean }[]>`
+      SELECT EXISTS (
+        SELECT 1 FROM available_commands
+        WHERE session_id = ${sessionId} AND name = ${name}
+          AND command_type = 'prompt' AND available = true AND user_invocable = true
+      ) AS available
+    `
+    return rows[0]?.available === true
   }
 
   async appendEvent(input: EventInput): Promise<AppendEventResult> {
@@ -769,6 +874,7 @@ export class GatewayStore {
     commandId: string
     idempotencyKey: string
     type: 'resolve_permission' | 'set_mode' | 'set_model'
+      | 'refresh_extensions' | 'set_extension_enabled'
     payload: Record<string, JsonValue>
   }): Promise<{ command: WorkerCommand; created: boolean }> {
     return this.database.begin(async transaction => {
@@ -1174,6 +1280,115 @@ export class GatewayStore {
         UPDATE sessions SET context_state = ${this.database.json(event.payload)}, updated_at = now()
         WHERE id = ${event.sessionId}
       `
+    }
+    if (event.type === 'commands.updated') {
+      const commands = Array.isArray(event.payload.commands) ? event.payload.commands : []
+      await this.database.begin(async transaction => {
+        await transaction`DELETE FROM available_commands WHERE session_id = ${event.sessionId}`
+        for (const value of commands) {
+          if (!value || typeof value !== 'object' || Array.isArray(value)) continue
+          const command = value as Record<string, JsonValue>
+          if (typeof command.name !== 'string') continue
+          await transaction`
+            INSERT INTO available_commands (
+              session_id, name, description, input_hint, source, command_type,
+              user_invocable, available, blocked_reason, updated_at
+            ) VALUES (
+              ${event.sessionId}, ${command.name}, ${String(command.description ?? '')},
+              ${typeof command.inputHint === 'string' ? command.inputHint : null},
+              ${String(command.source ?? 'acp')}, ${String(command.commandType ?? 'prompt')},
+              ${command.callable !== false}, ${true},
+              ${typeof command.blockedReason === 'string' ? command.blockedReason : null},
+              ${new Date(event.timestamp)}
+            )
+          `
+        }
+      })
+    }
+    if (event.type === 'extensions.updated') {
+      const extensions = Array.isArray(event.payload.extensions) ? event.payload.extensions : []
+      const mcpServers = Array.isArray(event.payload.mcpServers) ? event.payload.mcpServers : []
+      await this.database.begin(async transaction => {
+        await transaction`
+          INSERT INTO session_extension_state (
+            session_id, revision, extensions, mcp_servers, source_errors, updated_at
+          ) VALUES (
+            ${event.sessionId}, ${typeof event.payload.revision === 'number' ? event.payload.revision : 0},
+            ${transaction.json(extensions)}, ${transaction.json(mcpServers)},
+            ${transaction.json(event.payload.sourceErrors ?? [])}, ${new Date(event.timestamp)}
+          )
+          ON CONFLICT (session_id) DO UPDATE SET
+            revision = GREATEST(session_extension_state.revision, EXCLUDED.revision),
+            extensions = EXCLUDED.extensions,
+            mcp_servers = EXCLUDED.mcp_servers,
+            source_errors = EXCLUDED.source_errors,
+            updated_at = EXCLUDED.updated_at
+        `
+        await transaction`
+          DELETE FROM integrations
+          WHERE kind IN ('mcp', 'skill', 'plugin', 'hook')
+            AND config_redacted->>'sessionId' = ${event.sessionId}
+        `
+        for (const value of [...extensions, ...mcpServers]) {
+          if (!value || typeof value !== 'object' || Array.isArray(value)) continue
+          const integration = value as Record<string, JsonValue>
+          const kind = typeof integration.kind === 'string' ? integration.kind : 'mcp'
+          if (!['mcp', 'skill', 'plugin', 'hook'].includes(kind)) continue
+          const name = String(integration.name ?? 'unknown')
+          const status = String(integration.status ?? integration.health ?? 'unknown')
+          await transaction`
+            INSERT INTO integrations (
+              id, kind, name, enabled, config_redacted, credential_status,
+              health_status, capabilities, last_checked_at
+            ) VALUES (
+              ${`${kind}:${event.sessionId}:${name}`}, ${kind}, ${name},
+              ${integration.enabled === true},
+              ${transaction.json({
+                sessionId: event.sessionId,
+                source: integration.source ?? 'project',
+                path: integration.path ?? null,
+                transport: integration.transport ?? null,
+                endpoint: integration.endpoint ?? null,
+                credentialValuesProjected: false,
+              })},
+              ${String(integration.authStatus ?? 'not_applicable')}, ${status},
+              ${transaction.json({
+                supportsTools: integration.supportsTools ?? null,
+                supportsResources: integration.supportsResources ?? null,
+                resourceCount: Array.isArray(integration.resources) ? integration.resources.length : 0,
+              })}, ${new Date(event.timestamp)}
+            )
+          `
+        }
+      })
+    }
+    if (event.type === 'extension.configuration_changed') {
+      await this.database.begin(async transaction => {
+        await transaction`
+          INSERT INTO extension_audit_logs (
+            id, session_id, kind, name, action, restart_required, created_at
+          ) VALUES (
+            ${event.id}, ${event.sessionId}, ${String(event.payload.kind ?? 'plugin')},
+            ${String(event.payload.name ?? 'unknown')},
+            ${String(event.payload.action ?? 'disabled')},
+            ${event.payload.restartRequired !== false}, ${new Date(event.timestamp)}
+          ) ON CONFLICT (id) DO NOTHING
+        `
+        await transaction`
+          INSERT INTO audit_logs (id, action, resource_type, resource_id, metadata)
+          VALUES (
+            ${crypto.randomUUID()}, 'extension.configuration_changed',
+            ${String(event.payload.kind ?? 'extension')}, ${String(event.payload.name ?? 'unknown')},
+            ${transaction.json({
+              sessionId: event.sessionId,
+              enabled: event.payload.enabled ?? false,
+              restartRequired: event.payload.restartRequired ?? true,
+              settingsSource: event.payload.settingsSource ?? 'local',
+              eventId: event.id,
+            })}
+          )
+        `
+      })
     }
     if (event.type === 'session.closed') {
       await this.database.begin(async transaction => {

@@ -81,10 +81,11 @@ export class AcpClient {
   async newSession(input: {
     permissionMode: string
     modelId: string | null
+    mcpServers?: JsonObject[]
   }): Promise<JsonObject> {
     const result = await this.request('session/new', {
       cwd: this.options.cwd,
-      mcpServers: [],
+      mcpServers: input.mcpServers ?? [],
       _meta: { permissionMode: input.permissionMode },
     }, 60_000)
     const sessionId = result.sessionId
@@ -103,11 +104,12 @@ export class AcpClient {
     sessionId: string
     permissionMode: string
     modelId: string | null
+    mcpServers?: JsonObject[]
   }): Promise<JsonObject> {
     const result = await this.request('session/resume', {
       sessionId: input.sessionId,
       cwd: this.options.cwd,
-      mcpServers: [],
+      mcpServers: input.mcpServers ?? [],
       _meta: { permissionMode: input.permissionMode },
     }, 60_000)
     this.sessionId = String(result.sessionId ?? input.sessionId)
@@ -119,11 +121,12 @@ export class AcpClient {
     sessionId: string
     permissionMode: string
     modelId: string | null
+    mcpServers?: JsonObject[]
   }): Promise<JsonObject> {
     const result = await this.request('session/load', {
       sessionId: input.sessionId,
       cwd: this.options.cwd,
-      mcpServers: [],
+      mcpServers: input.mcpServers ?? [],
       _meta: { permissionMode: input.permissionMode },
     }, 60_000)
     this.sessionId = String(result.sessionId ?? input.sessionId)
@@ -135,11 +138,12 @@ export class AcpClient {
     sourceSessionId: string
     permissionMode: string
     modelId: string | null
+    mcpServers?: JsonObject[]
   }): Promise<JsonObject> {
     const result = await this.request('session/fork', {
       sessionId: input.sourceSessionId,
       cwd: this.options.cwd,
-      mcpServers: [],
+      mcpServers: input.mcpServers ?? [],
       _meta: { permissionMode: input.permissionMode },
     }, 60_000)
     const sessionId = result.sessionId

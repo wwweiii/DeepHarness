@@ -22,10 +22,19 @@ import { unlink, writeFile } from 'node:fs/promises'
 import { findTranscript, inspectTranscript } from './transcript.ts'
 import { ActivityTracker } from './activity.ts'
 import { readPersistedActivityState } from './activityState.ts'
+import {
+  discoverExtensions,
+  setExtensionEnabled,
+  type DiscoveredExtensions,
+} from './extensions.ts'
 
 type SendMessage = (message: WorkerToGatewayMessage) => void
 type PromptCommand = Extract<WorkerCommand, { type: 'prompt' }>
 type ActivityControlCommand = Extract<WorkerCommand, { type: 'stop_agent' | 'stop_task' }>
+type ExtensionControlCommand = Extract<
+  WorkerCommand,
+  { type: 'refresh_extensions' | 'set_extension_enabled' }
+>
 
 interface PendingPermission {
   permissionRequestId: string
@@ -85,6 +94,15 @@ class AgentSessionRuntime {
   private readonly questionContinuations: string[] = []
   private readonly openToolCalls = new Map<string, OpenToolCall>()
   private readonly deniedToolCalls = new Set<string>()
+  private extensionState: DiscoveredExtensions = {
+    extensions: [],
+    mcpServers: [],
+    acpMcpServers: [],
+    sourceErrors: [],
+  }
+  private availableCommands: Array<Record<string, JsonValue>> = []
+  private extensionRevision = 0
+  private readOnly = false
   private ready = false
   private vendorSessionId: string | null = null
   private activity: ActivityTracker | null = null
@@ -132,6 +150,9 @@ class AgentSessionRuntime {
       else if (command.type === 'set_model') await this.setModel(command)
       else if (command.type === 'stop_agent' || command.type === 'stop_task') {
         this.enqueueActivityControl(command)
+      } else if (command.type === 'refresh_extensions'
+        || command.type === 'set_extension_enabled') {
+        await this.handleExtensionControl(command)
       } else await this.close(command)
       this.commandResult(command, true)
     } catch (error) {
@@ -192,6 +213,7 @@ class AgentSessionRuntime {
   private async startSession(command: Extract<WorkerCommand, { type: 'start_session' }>): Promise<void> {
     if (this.client) throw new Error('Only one active Agent process is supported by this Worker')
     this.harnessSessionId = command.sessionId
+    this.readOnly = command.payload.readOnly
     this.activity = new ActivityTracker({
       permissionMode: command.payload.permissionMode,
       workspacePath: this.prepared.cwd,
@@ -209,6 +231,7 @@ class AgentSessionRuntime {
       },
     })
     this.event('session.status_changed', { status: 'starting' }, null)
+    await this.refreshExtensionState()
     const runtime = process.env.AGENT_RUNTIME ?? 'bun'
     const entrypoint = process.env.AGENT_ENTRYPOINT ?? '/opt/claude-code/dist/cli-bun.js'
     const client = new AcpClient({
@@ -262,6 +285,7 @@ class AgentSessionRuntime {
           sessionId: command.payload.agentSessionId,
           permissionMode: command.payload.permissionMode,
           modelId: command.payload.modelId,
+          mcpServers: this.extensionState.acpMcpServers,
         })
         recoveryStrategy = 'load'
       } catch (loadError) {
@@ -339,7 +363,9 @@ class AgentSessionRuntime {
     client: AcpClient,
     payload: Extract<WorkerCommand, { type: 'start_session' }>['payload'],
   ): Promise<Record<string, unknown>> {
-    if (payload.recoveryStrategy === 'new') return client.newSession(payload)
+    if (payload.recoveryStrategy === 'new') {
+      return client.newSession({ ...payload, mcpServers: this.extensionState.acpMcpServers })
+    }
     if (payload.recoveryStrategy === 'fork') {
       if (!payload.sourceAgentSessionId) throw new Error('Fork requires a source Agent session id')
       await inspectTranscript(payload.sourceAgentSessionId)
@@ -347,6 +373,7 @@ class AgentSessionRuntime {
         sourceSessionId: payload.sourceAgentSessionId,
         permissionMode: payload.permissionMode,
         modelId: payload.modelId,
+        mcpServers: this.extensionState.acpMcpServers,
       })
     }
     if (!payload.agentSessionId) throw new Error('Recovery requires an Agent session id')
@@ -356,13 +383,59 @@ class AgentSessionRuntime {
         sessionId: payload.agentSessionId,
         permissionMode: payload.permissionMode,
         modelId: payload.modelId,
+        mcpServers: this.extensionState.acpMcpServers,
       })
     }
     return client.resumeSession({
       sessionId: payload.agentSessionId,
       permissionMode: payload.permissionMode,
       modelId: payload.modelId,
+      mcpServers: this.extensionState.acpMcpServers,
     })
+  }
+
+  private async handleExtensionControl(command: ExtensionControlCommand): Promise<void> {
+    if (command.type === 'set_extension_enabled') {
+      if (this.readOnly) throw new Error('Workspace is read-only')
+      await setExtensionEnabled({
+        cwd: this.prepared.cwd,
+        kind: command.payload.kind,
+        name: command.payload.name,
+        enabled: command.payload.enabled,
+      })
+      this.event('extension.configuration_changed', {
+        kind: command.payload.kind,
+        name: command.payload.name,
+        enabled: command.payload.enabled,
+        action: command.payload.enabled ? 'enabled' : 'disabled',
+        restartRequired: true,
+        settingsSource: 'local',
+      }, null)
+    }
+    await this.refreshExtensionState()
+  }
+
+  private async refreshExtensionState(): Promise<void> {
+    this.extensionState = await discoverExtensions(this.prepared.cwd)
+    this.extensionRevision += 1
+    this.event('extensions.updated', {
+      revision: this.extensionRevision,
+      extensions: jsonValue(this.extensionState.extensions),
+      mcpServers: jsonValue(this.extensionState.mcpServers),
+      sourceErrors: jsonValue(this.extensionState.sourceErrors),
+      mcpRuntime: {
+        status: 'blocked',
+        knownGap: 'gap.acp.dynamic-mcp-tools',
+        detail: 'ACP createSession constructs QueryEngine with mcpClients=[]',
+      },
+    }, null)
+  }
+
+  private emitAvailableCommands(): void {
+    this.event('commands.updated', {
+      commands: jsonValue(this.availableCommands),
+      source: 'acp.available_commands_update',
+    }, null)
   }
 
   private enqueuePrompt(command: PromptCommand): void {
@@ -671,6 +744,25 @@ class AgentSessionRuntime {
     const parentToolUseId = typeof claudeCode?.parentToolUseId === 'string'
       ? claudeCode.parentToolUseId
       : null
+    if (type === 'available_commands_update') {
+      const commands = Array.isArray(update.availableCommands) ? update.availableCommands : []
+      this.availableCommands = commands.flatMap(value => {
+        const command = objectValue(value)
+        if (typeof command.name !== 'string') return []
+        const input = objectValue(command.input)
+        return [{
+          name: command.name,
+          description: typeof command.description === 'string' ? command.description : '',
+          inputHint: typeof input.hint === 'string' ? input.hint : null,
+          source: 'acp',
+          commandType: 'prompt',
+          callable: true,
+          blockedReason: null,
+        } satisfies Record<string, JsonValue>]
+      })
+      this.emitAvailableCommands()
+      return
+    }
     if (type === 'agent_message_chunk' || type === 'agent_thought_chunk') {
       const content = update.content as Record<string, unknown> | undefined
       if (content?.type !== 'text' || typeof content.text !== 'string') return
@@ -765,6 +857,8 @@ class AgentSessionRuntime {
 
   async resync(): Promise<void> {
     if (!this.client || !this.harnessSessionId) return
+    await this.refreshExtensionState()
+    this.emitAvailableCommands()
     this.event('session.process_changed', {
       processState: 'running',
       pid: this.client.pid,

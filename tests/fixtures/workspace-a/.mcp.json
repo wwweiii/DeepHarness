@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "phase-five-test": {
+      "type": "http",
+      "url": "http://test-model:8090/mcp?credential=not-projected"
+    }
+  }
+}

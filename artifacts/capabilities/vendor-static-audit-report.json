@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "vendor_commit": "987e55034c38497e1081367fdbe2056a6603ebc7",
-  "generated_at": "2026-07-28T16:03:24.157Z",
+  "generated_at": "2026-07-28T17:26:10.570Z",
   "probe": "static-source-audit",
   "capabilities": [
     {

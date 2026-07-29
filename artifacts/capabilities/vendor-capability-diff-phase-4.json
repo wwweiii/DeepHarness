@@ -1,0 +1,471 @@
+{
+  "schema_version": 1,
+  "status": "compared",
+  "previous_vendor_commit": "34b3dc99bf40c57c0b78f3b5b1d70471ebc2d06d",
+  "current_vendor_commit": "987e55034c38497e1081367fdbe2056a6603ebc7",
+  "generated_at": "2026-07-28T16:03:26.066Z",
+  "added": [],
+  "removed": [],
+  "changed": [
+    {
+      "id": "agent.custom-agent-definitions",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "agent.Explore",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "agent.general-purpose",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "agent.Plan",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "agent.verification",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "feature.BUILTIN_EXPLORE_PLAN_AGENTS",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "feature.VERIFICATION_AGENT",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "runtime_flag.CLAUDE_CODE_ENABLE_TASKS",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.AgentTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.AskUserQuestionTool",
+      "changes": [
+        {
+          "field": "known_gap",
+          "before": "ACP permission outcomes cannot return AskUserQuestion updatedInput.answers; DeepHarness continues with an audited same-turn follow-up prompt. Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+          "after": "ACP permission outcomes cannot return AskUserQuestion updatedInput.answers; DeepHarness continues with an audited same-turn follow-up prompt. Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.BashTool",
+      "changes": [
+        {
+          "field": "known_gap",
+          "before": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.EnterPlanModeTool",
+      "changes": [
+        {
+          "field": "known_gap",
+          "before": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.FileEditTool",
+      "changes": [
+        {
+          "field": "known_gap",
+          "before": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.FileReadTool",
+      "changes": [
+        {
+          "field": "known_gap",
+          "before": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.FileWriteTool",
+      "changes": [
+        {
+          "field": "known_gap",
+          "before": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.GlobTool",
+      "changes": [
+        {
+          "field": "known_gap",
+          "before": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.GrepTool",
+      "changes": [
+        {
+          "field": "known_gap",
+          "before": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.NotebookEditTool",
+      "changes": [
+        {
+          "field": "known_gap",
+          "before": "Vendor ACP does not forward the user SDK message carrying tool_result, so DeepHarness can infer terminal lifecycle but cannot recover rawOutput.",
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.SendMessageTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.TaskCreateTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.TaskGetTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.TaskListTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.TaskOutputTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.TaskStopTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.TaskUpdateTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.TeamCreateTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.TeamDeleteTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "The locked vendor leaves an in-process teammate active after shutdown approval, so TeamDelete cannot complete cleanup; see gap.vendor.in-process-team-shutdown. Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.TodoWriteTool",
+      "changes": [
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "TodoWrite is mutually exclusive with Task v2 in non-interactive sessions; CLAUDE_CODE_ENABLE_TASKS selects TaskCreate/Get/List/Update for the Phase 4 Worker profile."
+        }
+      ]
+    }
+  ],
+  "regressions": [],
+  "gate": {
+    "unreviewed_additions": [],
+    "unapproved_regressions": []
+  }
+}

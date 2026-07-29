@@ -6,6 +6,7 @@ import {
   useMessagePartReasoning,
   type ToolCallMessagePartProps,
 } from '@assistant-ui/react'
+import type { AvailableCommand, SessionExtensionSnapshot } from '@deepharness/protocol'
 import {
   ArrowDown,
   Bot,
@@ -21,7 +22,7 @@ import {
   Square,
   TerminalSquare,
 } from 'lucide-react'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { requestId } from '../../../lib/requestId.ts'
 
 function TextPart() {
@@ -359,6 +360,107 @@ function AssistantMessage({ sessionId }: { sessionId: string }) {
   )
 }
 
+function CommandPalette({ sessionId, disabled }: { sessionId: string; disabled: boolean }) {
+  const [commands, setCommands] = useState<AvailableCommand[]>([])
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState<string | null>(null)
+  const [args, setArgs] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => {
+    let active = true
+    const load = async () => {
+      const response = await fetch(`/api/sessions/${encodeURIComponent(sessionId)}/extensions`)
+      const value = await response.json().catch(() => ({})) as SessionExtensionSnapshot & { error?: string }
+      if (!response.ok) throw new Error(value.error ?? `Request failed with status ${response.status}`)
+      if (active) setCommands(value.commands.filter(command => command.callable))
+    }
+    void load().catch(cause => active && setError(cause instanceof Error ? cause.message : String(cause)))
+    const source = new EventSource(`/api/sessions/${encodeURIComponent(sessionId)}/events`)
+    source.addEventListener('commands.updated', () => {
+      void load().catch(cause => active && setError(cause instanceof Error ? cause.message : String(cause)))
+    })
+    return () => {
+      active = false
+      source.close()
+    }
+  }, [sessionId])
+  const filtered = commands.filter(command =>
+    `${command.name} ${command.description}`.toLowerCase().includes(query.toLowerCase()))
+  const command = commands.find(candidate => candidate.name === selected) ?? null
+  const invoke = async () => {
+    if (!command) return
+    setBusy(true)
+    setError(null)
+    try {
+      const response = await fetch(
+        `/api/sessions/${encodeURIComponent(sessionId)}/commands/${encodeURIComponent(command.name)}/invoke`,
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'idempotency-key': requestId(),
+          },
+          body: JSON.stringify({ args }),
+        },
+      )
+      const value = await response.json().catch(() => ({})) as { error?: string }
+      if (!response.ok) throw new Error(value.error ?? `Request failed with status ${response.status}`)
+      setOpen(false)
+      setArgs('')
+      setQuery('')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+  return <div className="command-launcher">
+    <button
+      className="icon-button command-trigger"
+      title="Slash commands"
+      aria-label="Slash commands"
+      aria-expanded={open}
+      disabled={disabled || commands.length === 0}
+      onClick={() => setOpen(value => !value)}
+    ><TerminalSquare size={16} /></button>
+    {open && <div className="command-popover" role="dialog" aria-label="Slash command palette">
+      <div className="command-search"><Search size={14} /><input
+        autoFocus
+        aria-label="Search slash commands"
+        value={query}
+        onChange={event => setQuery(event.target.value)}
+        placeholder="Search commands"
+      /></div>
+      <div className="command-options" role="listbox">
+        {filtered.map(item => <button
+          key={item.name}
+          role="option"
+          aria-selected={item.name === selected}
+          className={item.name === selected ? 'selected' : ''}
+          onClick={() => setSelected(item.name)}
+        ><strong>/{item.name}</strong><span>{item.description}</span></button>)}
+        {filtered.length === 0 && <p>No matching commands</p>}
+      </div>
+      {command && <div className="command-arguments">
+        <label htmlFor="command-args">/{command.name}</label>
+        <input
+          id="command-args"
+          value={args}
+          onChange={event => setArgs(event.target.value)}
+          placeholder={command.inputHint ?? 'No arguments required'}
+          onKeyDown={event => {
+            if (event.key === 'Enter') void invoke()
+          }}
+        />
+        <button disabled={busy} onClick={() => void invoke()}>Run</button>
+      </div>}
+      {error && <div className="command-error" role="alert">{error}</div>}
+    </div>}
+  </div>
+}
+
 function Composer({ isRunning }: { isRunning: boolean }) {
   return (
     <ComposerPrimitive.Root className="composer">
@@ -389,6 +491,7 @@ export function Thread({ isRunning, sessionId }: { isRunning: boolean; sessionId
             <ArrowDown size={18} aria-hidden="true" />
             <span className="sr-only">Scroll to latest</span>
           </ThreadPrimitive.ScrollToBottom>
+          <CommandPalette sessionId={sessionId} disabled={isRunning} />
           <Composer isRunning={isRunning} />
         </ThreadPrimitive.ViewportFooter>
       </ThreadPrimitive.Viewport>

@@ -4,7 +4,7 @@
   "vendor_repository": "https://github.com/claude-code-best/claude-code.git",
   "vendor_tag": "v2.8.4-7-g987e5503",
   "build_id": "ccb-bun-v2.8.4-7-g987e5503-987e55034c38",
-  "generated_at": "2026-07-28T16:03:26.060Z",
+  "generated_at": "2026-07-28T17:26:12.378Z",
   "reviewed_at": "2026-07-28T15:57:06.000Z",
   "build_features": [
     {
@@ -8980,10 +8980,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-5:extra-tool",
+        "fixture:[tool:list-peers]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -8996,10 +8999,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "The Docker integration executes the selected deferred tool through ExecuteExtraTool and preserves the vendor not-found result for the disabled ListPeers capability.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -9877,11 +9886,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
+      "tested": true,
       "conditions": [
-        "runtime:ENABLE_SEARCH_EXTRA_TOOLS"
+        "runtime:ENABLE_SEARCH_EXTRA_TOOLS",
+        "harness:phase-5:extra-tool",
+        "fixture:[tool:list-peers]"
       ],
       "source_evidence": [
         {
@@ -9895,10 +9906,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "The Docker integration exercises SearchExtraTools through the real ACP process before selecting a deferred extension tool; Phase 5 projects its activation state and generic renderer.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -9980,10 +9997,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-5:skill",
+        "fixture:[tool:skill]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -9996,10 +10016,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-5-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 5 Docker integration discovers the workspace Skill source and executes phase-five-skill through the real vendor SkillTool lifecycle.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -14281,11 +14307,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
+      "invocable": true,
+      "ui_supported": true,
       "tested": true,
       "conditions": [
-        "command_type:prompt"
+        "command_type:prompt",
+        "harness:phase-5:command"
       ],
       "source_evidence": [
         {
@@ -14298,6 +14325,12 @@
           "path": "acp.session.update.available_commands_update.statusline",
           "line": 1,
           "detail": "Prompt command advertised by the real ACP session",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-5-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 5 Docker integration consumes the real ACP available_commands_update, invokes /statusline from the Web command endpoint, and completes the resulting ACP turn.",
           "evidenceType": "runtime"
         }
       ],
@@ -15574,10 +15607,11 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "optional-integration"
+        "optional-integration",
+        "harness:phase-5:extension-projection"
       ],
       "source_evidence": [
         {
@@ -15585,10 +15619,16 @@
           "line": 1,
           "detail": "Integration source root",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-5-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 5 Docker integration projects Hook source, event, activation state, and definition count without copying executable command bodies; unit coverage verifies the controlled global toggle.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "Extension state and errors require a Harness projection and audit surface."
     },
@@ -16146,10 +16186,11 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "optional-integration"
+        "optional-integration",
+        "harness:phase-5:extension-projection"
       ],
       "source_evidence": [
         {
@@ -16157,10 +16198,16 @@
           "line": 1,
           "detail": "Integration source root",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-5-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 5 Docker integration projects the effective enabledPlugins source without credential values; unit coverage verifies isolated load errors and controlled settings.local.json updates.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "Extension state and errors require a Harness projection and audit surface."
     },
@@ -16198,10 +16245,11 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "optional-integration"
+        "optional-integration",
+        "harness:phase-5:extension-projection"
       ],
       "source_evidence": [
         {
@@ -16209,10 +16257,16 @@
           "line": 1,
           "detail": "Integration source root",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-5-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 5 Docker integration projects the actual project Skill path, activation condition, ACP command visibility, and successful execution state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "Extension state and errors require a Harness projection and audit surface."
     },
@@ -16507,6 +16561,26 @@
         }
       ],
       "upstream_strategy": "Expose trigger registry operations and trigger-fired prompt events through ACP; then implement the durable scheduler and remote-provider profile in Phase 7."
+    },
+    {
+      "id": "gap.acp.command-hot-reload",
+      "status": "expected_failure",
+      "summary": "ACP defines available_commands_update, but the locked vendor only schedules it while opening, loading, resuming, or forking a session; project command and Skill file changes are not reloaded in an already-running QueryEngine.",
+      "evidence": [
+        {
+          "path": "src/services/acp/agent/AcpAgent.ts",
+          "line": 404,
+          "detail": "scheduleAvailableCommandsUpdate is called by session lifecycle methods and has no settings or filesystem watcher subscription.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/chat/messages/Thread.tsx",
+          "line": 370,
+          "detail": "DeepHarness consumes every available_commands_update in real time but keeps the catalog tied to ACP authority instead of making newly scanned files falsely callable.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Add an upstream ACP command reload operation or emit available_commands_update after vendor command and Skill discovery invalidation; then add a same-session create/delete contract and remove the restart requirement."
     }
   ],
   "probe_environment": {
@@ -16544,7 +16618,7 @@
     },
     "unclassified": 0,
     "unclassified_ids": [],
-    "expected_failure_gaps": 11
+    "expected_failure_gaps": 12
   },
   "capabilities": [
     {
@@ -21023,11 +21097,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
+      "invocable": true,
+      "ui_supported": true,
       "tested": true,
       "conditions": [
-        "command_type:prompt"
+        "command_type:prompt",
+        "harness:phase-5:command"
       ],
       "source_evidence": [
         {
@@ -21040,6 +21115,12 @@
           "path": "acp.session.update.available_commands_update.statusline",
           "line": 1,
           "detail": "Prompt command advertised by the real ACP session",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-5-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 5 Docker integration consumes the real ACP available_commands_update, invokes /statusline from the Web command endpoint, and completes the resulting ACP turn.",
           "evidenceType": "runtime"
         }
       ],
@@ -28842,10 +28923,11 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "optional-integration"
+        "optional-integration",
+        "harness:phase-5:extension-projection"
       ],
       "source_evidence": [
         {
@@ -28853,10 +28935,16 @@
           "line": 1,
           "detail": "Integration source root",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-5-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 5 Docker integration projects Hook source, event, activation state, and definition count without copying executable command bodies; unit coverage verifies the controlled global toggle.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "Extension state and errors require a Harness projection and audit surface."
     },
@@ -29414,10 +29502,11 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "optional-integration"
+        "optional-integration",
+        "harness:phase-5:extension-projection"
       ],
       "source_evidence": [
         {
@@ -29425,10 +29514,16 @@
           "line": 1,
           "detail": "Integration source root",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-5-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 5 Docker integration projects the effective enabledPlugins source without credential values; unit coverage verifies isolated load errors and controlled settings.local.json updates.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "Extension state and errors require a Harness projection and audit surface."
     },
@@ -29466,10 +29561,11 @@
       "enabled": false,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "optional-integration"
+        "optional-integration",
+        "harness:phase-5:extension-projection"
       ],
       "source_evidence": [
         {
@@ -29477,10 +29573,16 @@
           "line": 1,
           "detail": "Integration source root",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-5-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 5 Docker integration projects the actual project Skill path, activation condition, ACP command visibility, and successful execution state.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "Extension state and errors require a Harness projection and audit surface."
     },
@@ -30976,10 +31078,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-5:extra-tool",
+        "fixture:[tool:list-peers]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -30992,10 +31097,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "The Docker integration executes the selected deferred tool through ExecuteExtraTool and preserves the vendor not-found result for the disabled ListPeers capability.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -31873,11 +31984,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
+      "tested": true,
       "conditions": [
-        "runtime:ENABLE_SEARCH_EXTRA_TOOLS"
+        "runtime:ENABLE_SEARCH_EXTRA_TOOLS",
+        "harness:phase-5:extra-tool",
+        "fixture:[tool:list-peers]"
       ],
       "source_evidence": [
         {
@@ -31891,10 +32004,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-4-stack.test.ts",
+          "line": 1,
+          "detail": "The Docker integration exercises SearchExtraTools through the real ACP process before selecting a deferred extension tool; Phase 5 projects its activation state and generic renderer.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
@@ -31976,10 +32095,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-5:skill",
+        "fixture:[tool:skill]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -31992,10 +32114,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-5-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 5 Docker integration discovers the workspace Skill source and executes phase-five-skill through the real vendor SkillTool lifecycle.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
