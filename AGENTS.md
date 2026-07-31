@@ -35,3 +35,8 @@ DeepHarness 只通过 ACP 使用 vendor。PostgreSQL 保存控制面事件，ven
 具体调用方法遵循 CodeGraph MCP 工具自带说明。
 
 分析跨服务流程时，分别查询根索引和 vendor 索引，再根据协议与事件名称串联结果。
+
+## Docker Compose 生命周期
+
+- Codex 启动的 Docker Compose 服务在任务结束、失败或中断后必须关闭：`docker compose ... down --remove-orphans`。
+- 默认不要使用 `down -v`，不要删除 named volume 或用户数据；不要关闭任务开始前已有的服务。
