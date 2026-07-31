@@ -49,6 +49,13 @@ export type ReviewFile = {
   schema_version: 1
   vendor_commit: string
   reviewed_at: string
+  approved_regressions?: Array<{
+    id: string
+    from: MatrixClass
+    to: MatrixClass
+    reason: string
+    approved_at: string
+  }>
   entries: Record<string, ReviewEntry>
 }
 
@@ -124,6 +131,10 @@ export type HarnessCapabilityEvidence = {
       | 'task'
       | 'team'
       | 'coordinator'
+      | 'memory'
+      | 'context'
+      | 'session'
+      | 'extension-projection'
     evidence: string
     known_gap?: string
   }>

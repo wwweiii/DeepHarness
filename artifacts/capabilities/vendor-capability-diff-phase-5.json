@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "status": "compared",
+  "previous_vendor_commit": "987e55034c38497e1081367fdbe2056a6603ebc7",
+  "current_vendor_commit": "987e55034c38497e1081367fdbe2056a6603ebc7",
+  "generated_at": "2026-07-28T17:26:12.383Z",
+  "added": [],
+  "removed": [],
+  "changed": [
+    {
+      "id": "command.prompt.statusline",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "integration.hooks",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "integration.plugins",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "integration.skills",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ExecuteExtraTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.SearchExtraToolsTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.SkillTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    }
+  ],
+  "regressions": [],
+  "gate": {
+    "unreviewed_additions": [],
+    "unapproved_regressions": []
+  }
+}

@@ -305,6 +305,83 @@
       "invocable": null,
       "workflow": "extension-projection",
       "evidence": "Phase 5 Docker integration projects Hook source, event, activation state, and definition count without copying executable command bodies; unit coverage verifies the controlled global toggle."
+    },
+    {
+      "id": "tool.LocalMemoryRecallTool",
+      "phase": 6,
+      "scenario": "[tool:local-memory]",
+      "workflow": "memory",
+      "evidence": "Phase 6 Docker integration invokes LocalMemoryRecall through the real ACP process, verifies a seeded cross-session Memory hit, and persists only source/result metadata with content redacted."
+    },
+    {
+      "id": "tool.VaultHttpFetchTool",
+      "phase": 6,
+      "scenario": "[tool:vault-http]",
+      "workflow": "memory",
+      "evidence": "Phase 6 Docker integration invokes VaultHttpFetch through ACP without a configured Vault key and verifies the observable failure contains no key name, query, reason, request body, response body, or secret.",
+      "known_gap": "Successful invocation requires an explicitly configured vendor Vault key and outbound HTTPS access; the base test profile verifies the credential-missing degradation."
+    },
+    {
+      "id": "command.local.compact",
+      "phase": 6,
+      "workflow": "context",
+      "evidence": "Phase 6 Docker integration invokes /compact through ACP session/prompt, observes the vendor JSONL compact boundary, projects its metadata, and executes a subsequent prompt successfully."
+    },
+    {
+      "id": "acp.listSessions",
+      "phase": 6,
+      "workflow": "session",
+      "evidence": "Phase 6 Worker calls ACP session/list after session startup and projects only catalog count and current-session presence, without copying transcript titles or content."
+    },
+    {
+      "id": "acp.loadSession",
+      "phase": 6,
+      "workflow": "session",
+      "evidence": "Phase 6 Docker integration loads the compacted vendor transcript after stopping its isolated Agent process and preserves the Agent session identity."
+    },
+    {
+      "id": "acp.unstable_resumeSession",
+      "phase": 6,
+      "workflow": "session",
+      "evidence": "Phase 6 Docker integration resumes a compacted transcript after simulating a prior vendor commit and records a successful cross-version compatibility result."
+    },
+    {
+      "id": "acp.unstable_forkSession",
+      "phase": 6,
+      "workflow": "session",
+      "evidence": "Phase 6 Docker integration forks the compacted transcript into an isolated Git worktree and completes a prompt in the fork."
+    },
+    {
+      "id": "feature.EXTRACT_MEMORIES",
+      "phase": 6,
+      "invocable": null,
+      "workflow": "memory",
+      "evidence": "Phase 6 verifies the locked build compiles memory extraction and the Context Inspector labels it kernel managed because ACP publishes no extraction lifecycle or status event.",
+      "known_gap": "The vendor runs extraction during internal housekeeping and exposes no dedicated ACP status, result, or configuration event."
+    },
+    {
+      "id": "feature.LODESTONE",
+      "phase": 6,
+      "invocable": null,
+      "workflow": "context",
+      "evidence": "Phase 6 verifies Lodestone is compiled and displays its kernel-managed status without inventing an ACP-visible anchor state.",
+      "known_gap": "Lodestone is compiled into the kernel but its anchor lifecycle is not observable through ACP."
+    },
+    {
+      "id": "feature.PROMPT_CACHE_BREAK_DETECTION",
+      "phase": 6,
+      "invocable": null,
+      "workflow": "context",
+      "evidence": "Phase 6 Context projection preserves cache usage fields when the prompt response supplies them and otherwise displays them as unavailable; the internal cache-break state has no ACP event.",
+      "known_gap": "ACP prompt usage may expose cache token counts, but prompt cache break detection state is not separately observable."
+    },
+    {
+      "id": "feature.TOKEN_BUDGET",
+      "phase": 6,
+      "invocable": null,
+      "workflow": "context",
+      "evidence": "Phase 6 consumes ACP usage_update used/size values, persists the context-window projection, and renders exact unavailable states for budget fields ACP omits.",
+      "known_gap": "ACP exposes context utilization but no dedicated token-budget configuration or remaining-budget event."
     }
   ],
   "known_gaps": [
@@ -473,6 +550,86 @@
         }
       ],
       "upstream_strategy": "Add an upstream ACP command reload operation or emit available_commands_update after vendor command and Skill discovery invalidation; then add a same-session create/delete contract and remove the restart requirement."
+    },
+    {
+      "id": "gap.acp.structured-context-inspection",
+      "status": "expected_failure",
+      "summary": "The locked vendor has internal context analysis and CtxInspectTool, but CONTEXT_COLLAPSE is not compiled and ACP exposes only usage_update rather than a structured context inspection operation.",
+      "evidence": [
+        {
+          "path": "src/tools.ts",
+          "line": 126,
+          "detail": "CtxInspectTool is only assembled when CONTEXT_COLLAPSE is compiled.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "The real stack verifies CONTEXT_COLLAPSE is disabled and renders the status instead of exposing a substitute inspection control.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Expose a read-only ACP context inspection method with token categories and no transcript content, then replace the disabled status with the structured projection."
+    },
+    {
+      "id": "gap.acp.rewind-checkpoint",
+      "status": "expected_failure",
+      "summary": "Rewind and its checkpoint alias require the interactive vendor UI; supportsNonInteractive=false prevents ACP session/prompt invocation.",
+      "evidence": [
+        {
+          "path": "src/commands/rewind/index.ts",
+          "line": 9,
+          "detail": "The rewind command declares supportsNonInteractive=false.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "The Session Context API exposes rewind as blocked with its ACP reason and no callable endpoint.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Add an ACP rewind operation with explicit target message, diff preview, confirmation, and transcript branch semantics before enabling a Web control."
+    },
+    {
+      "id": "gap.acp.structured-compact-event",
+      "status": "expected_failure",
+      "summary": "ACP reduces compact_boundary to fixed assistant text and does not forward trigger, pre-token count, summarized-message count, or boundary identity.",
+      "evidence": [
+        {
+          "path": "src/services/acp/bridge/forwarding.ts",
+          "line": 105,
+          "detail": "The compact boundary is converted to the fixed text 'Compacting completed.' without structured metadata.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "The real stack suppresses the fixed text and recovers metadata from the vendor transcript as a clearly labeled secondary source.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Add a structured ACP compact notification carrying boundary id, trigger, preTokens, messagesSummarized, and completion status; then remove transcript reconciliation."
+    },
+    {
+      "id": "gap.acp.memory-housekeeping-status",
+      "status": "expected_failure",
+      "summary": "Memory extraction and Lodestone run inside vendor housekeeping but have no dedicated ACP lifecycle, result, or configuration status events.",
+      "evidence": [
+        {
+          "path": "src/utils/backgroundHousekeeping.ts",
+          "line": 7,
+          "detail": "Lodestone and extraction are scheduled internally by vendor housekeeping.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/context/ContextPanel.tsx",
+          "line": 1,
+          "detail": "The Context Inspector renders these capabilities as kernel managed and includes the evidence-backed reason.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Expose privacy-preserving ACP housekeeping status events for scheduling, success/failure, and affected memory store identifiers without memory content."
     }
   ]
 }

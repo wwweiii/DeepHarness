@@ -2,6 +2,8 @@ import type {
   GatewayToWorkerMessage,
   WorkerToGatewayMessage,
 } from '@deepharness/protocol'
+import { mkdir, writeFile } from 'node:fs/promises'
+import nodePath from 'node:path'
 import { activeProviderStatus } from './provider.ts'
 import { WorkerSupervisor } from './supervisor.ts'
 
@@ -14,12 +16,27 @@ const workspaceRoots = (process.env.WORKSPACE_ROOTS ?? process.env.WORKSPACE_PAT
   .map(value => value.trim())
   .filter(Boolean)
 const vendorCommit = process.env.VENDOR_COMMIT ?? 'unknown'
+const localMemoryRoot = nodePath.resolve(
+  process.env.AGENT_LOCAL_MEMORY_ROOT ?? '/home/agent/.claude/local-memory',
+)
 const outbound: WorkerToGatewayMessage[] = []
 let socket: WebSocket | null = null
 let registered = false
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 let commandQueue = Promise.resolve()
 let shuttingDown = false
+
+function validMemoryStore(value: unknown): value is string {
+  return typeof value === 'string'
+    && value.length >= 1
+    && value.length <= 255
+    && !value.startsWith('.')
+    && !/[/\\:\0]/.test(value)
+}
+
+function validMemoryKey(value: unknown): value is string {
+  return typeof value === 'string' && /^[A-Za-z0-9._-]{1,128}$/.test(value)
+}
 
 function send(message: WorkerToGatewayMessage): void {
   if (socket?.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message))
@@ -148,6 +165,31 @@ const server = Bun.serve({
       return Response.json({
         damaged: await supervisor.damageTranscriptForTest(sessionId, action),
       })
+    }
+    if (path === '/internal/test/memory/local' && process.env.ENABLE_TEST_CONTROL === '1') {
+      if (request.headers.get('x-worker-token') !== workerToken) {
+        return new Response('Unauthorized', { status: 401 })
+      }
+      if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 })
+      const contentLength = Number.parseInt(request.headers.get('content-length') ?? '0', 10)
+      if (Number.isFinite(contentLength) && contentLength > 64 * 1024) {
+        return new Response('Memory fixture request is too large', { status: 413 })
+      }
+      const body = await request.json().catch(() => null) as Record<string, unknown> | null
+      if (!body || !validMemoryStore(body.store) || !validMemoryKey(body.key)
+        || typeof body.content !== 'string') {
+        return new Response('Invalid Memory fixture', { status: 400 })
+      }
+      const bytes = Buffer.byteLength(body.content, 'utf8')
+      if (bytes > 50 * 1024) return new Response('Memory fixture content is too large', { status: 413 })
+      const storePath = nodePath.resolve(localMemoryRoot, body.store)
+      const entryPath = nodePath.resolve(storePath, `${body.key}.md`)
+      if (nodePath.dirname(entryPath) !== storePath || nodePath.dirname(storePath) !== localMemoryRoot) {
+        return new Response('Memory fixture path is outside the test root', { status: 400 })
+      }
+      await mkdir(storePath, { recursive: true })
+      await writeFile(entryPath, body.content, { encoding: 'utf8', mode: 0o600 })
+      return Response.json({ seeded: true, store: body.store, key: body.key, bytes })
     }
     return new Response('DeepHarness Worker\n', {
       headers: { 'content-type': 'text/plain; charset=utf-8' },

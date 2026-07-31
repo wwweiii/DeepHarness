@@ -3,12 +3,12 @@
   "status": "compared",
   "previous_vendor_commit": "987e55034c38497e1081367fdbe2056a6603ebc7",
   "current_vendor_commit": "987e55034c38497e1081367fdbe2056a6603ebc7",
-  "generated_at": "2026-07-28T17:26:12.383Z",
+  "generated_at": "2026-07-31T01:34:57.146Z",
   "added": [],
   "removed": [],
   "changed": [
     {
-      "id": "command.prompt.statusline",
+      "id": "acp.listSessions",
       "changes": [
         {
           "field": "invocable",
@@ -19,12 +19,27 @@
           "field": "ui_supported",
           "before": false,
           "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
         }
       ]
     },
     {
-      "id": "integration.hooks",
+      "id": "command.local.compact",
       "changes": [
+        {
+          "field": "matrix_class",
+          "before": "C",
+          "after": "B"
+        },
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
         {
           "field": "ui_supported",
           "before": false,
@@ -38,7 +53,7 @@
       ]
     },
     {
-      "id": "integration.plugins",
+      "id": "feature.EXTRACT_MEMORIES",
       "changes": [
         {
           "field": "ui_supported",
@@ -49,11 +64,41 @@
           "field": "tested",
           "before": false,
           "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "The vendor runs extraction during internal housekeeping and exposes no dedicated ACP status, result, or configuration event."
         }
       ]
     },
     {
-      "id": "integration.skills",
+      "id": "feature.LODESTONE",
+      "changes": [
+        {
+          "field": "matrix_class",
+          "before": "A",
+          "after": "B"
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Lodestone is compiled into the kernel but its anchor lifecycle is not observable through ACP."
+        }
+      ]
+    },
+    {
+      "id": "feature.PROMPT_CACHE_BREAK_DETECTION",
       "changes": [
         {
           "field": "ui_supported",
@@ -64,11 +109,36 @@
           "field": "tested",
           "before": false,
           "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "ACP prompt usage may expose cache token counts, but prompt cache break detection state is not separately observable."
         }
       ]
     },
     {
-      "id": "tool.ExecuteExtraTool",
+      "id": "feature.TOKEN_BUDGET",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "ACP exposes context utilization but no dedicated token-budget configuration or remaining-budget event."
+        }
+      ]
+    },
+    {
+      "id": "tool.LocalMemoryRecallTool",
       "changes": [
         {
           "field": "invocable",
@@ -88,8 +158,13 @@
       ]
     },
     {
-      "id": "tool.SearchExtraToolsTool",
+      "id": "tool.VaultHttpFetchTool",
       "changes": [
+        {
+          "field": "matrix_class",
+          "before": "A",
+          "after": "D"
+        },
         {
           "field": "invocable",
           "before": null,
@@ -103,32 +178,38 @@
         {
           "field": "known_gap",
           "before": null,
-          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
-        }
-      ]
-    },
-    {
-      "id": "tool.SkillTool",
-      "changes": [
-        {
-          "field": "invocable",
-          "before": null,
-          "after": true
-        },
-        {
-          "field": "tested",
-          "before": false,
-          "after": true
-        },
-        {
-          "field": "known_gap",
-          "before": null,
-          "after": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+          "after": "Successful invocation requires an explicitly configured vendor Vault key and outbound HTTPS access; the base test profile verifies the credential-missing degradation. Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
         }
       ]
     }
   ],
-  "regressions": [],
+  "regressions": [
+    {
+      "id": "tool.VaultHttpFetchTool",
+      "changes": [
+        {
+          "field": "matrix_class",
+          "before": "A",
+          "after": "D"
+        },
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Successful invocation requires an explicitly configured vendor Vault key and outbound HTTPS access; the base test profile verifies the credential-missing degradation. Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    }
+  ],
   "gate": {
     "unreviewed_additions": [],
     "unapproved_regressions": []

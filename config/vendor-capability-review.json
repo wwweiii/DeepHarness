@@ -1,7 +1,16 @@
 {
   "schema_version": 1,
   "vendor_commit": "987e55034c38497e1081367fdbe2056a6603ebc7",
-  "reviewed_at": "2026-07-28T15:57:06.000Z",
+  "reviewed_at": "2026-07-31T00:00:00.000Z",
+  "approved_regressions": [
+    {
+      "id": "tool.VaultHttpFetchTool",
+      "from": "A",
+      "to": "D",
+      "reason": "Successful execution depends on a configured local Vault key and outbound HTTPS access; Phase 6 corrects the prior unconditional classification and verifies the missing-credential degradation.",
+      "approved_at": "2026-07-31T00:00:00.000Z"
+    }
+  ],
   "entries": {
     "acp.advertised:_meta.claudeCode.forkSession": {
       "matrix_class": "B",
@@ -508,8 +517,8 @@
       "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
     },
     "command.local.compact": {
-      "matrix_class": "C",
-      "rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+      "matrix_class": "B",
+      "rationale": "Compact is non-interactive and requires a Harness ACP prompt adapter plus transcript projection."
     },
     "command.local.context": {
       "matrix_class": "C",
@@ -876,8 +885,8 @@
       "rationale": "The feature is disabled or has a confirmed ACP reachability gap."
     },
     "feature.LODESTONE": {
-      "matrix_class": "A",
-      "rationale": "The feature is compiled into the kernel and is expected to be inherited through ACP."
+      "matrix_class": "B",
+      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
     },
     "feature.MCP_RICH_OUTPUT": {
       "matrix_class": "C",
@@ -1536,8 +1545,8 @@
       "rationale": "Internal or test-only capability is not part of the Agent Harness product surface."
     },
     "tool.VaultHttpFetchTool": {
-      "matrix_class": "A",
-      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+      "matrix_class": "D",
+      "rationale": "Availability depends on container platform, runtime, credentials, or an external service."
     },
     "tool.VerifyPlanExecutionTool": {
       "matrix_class": "B",

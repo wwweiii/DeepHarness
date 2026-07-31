@@ -25,6 +25,7 @@ import {
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { CapabilityPage } from '../features/capabilities/CapabilityPage.tsx'
 import { ExtensionsPage } from '../features/extensions/ExtensionsPage.tsx'
+import { ContextPanel } from '../features/context/ContextPanel.tsx'
 import { Thread } from '../features/chat/messages/Thread.tsx'
 import { HarnessRuntimeProvider } from '../features/chat/runtime/HarnessRuntimeProvider.tsx'
 import type { HarnessProjection } from '../features/chat/runtime/reducer.ts'
@@ -115,7 +116,7 @@ function statusLabel(status: HarnessProjection['status']): string {
   return status.replaceAll('_', ' ')
 }
 
-type InspectorTab = 'overview' | 'agents' | 'tasks' | 'teams'
+type InspectorTab = 'overview' | 'agents' | 'tasks' | 'teams' | 'context'
 
 function ActivityInspector({
   session,
@@ -154,7 +155,7 @@ function ActivityInspector({
     <aside className="inspector">
       <div className="inspector-title"><Activity size={17} aria-hidden="true" /><strong>Session</strong></div>
       <div className="inspector-tabs" role="tablist" aria-label="Session inspector">
-        {(['overview', 'agents', 'tasks', 'teams'] as const).map(value => (
+        {(['overview', 'agents', 'tasks', 'teams', 'context'] as const).map(value => (
           <button
             key={value}
             role="tab"
@@ -296,6 +297,12 @@ function ActivityInspector({
           <small>{message.deliveryStatus}</small>
         </div>)}
       </div>}
+      {tab === 'context' && <ContextPanel
+        sessionId={session.id}
+        status={projection.status}
+        processState={projection.processState}
+        revision={JSON.stringify(projection.contextState ?? {})}
+      />}
     </aside>
   )
 }

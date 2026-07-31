@@ -157,6 +157,15 @@ services:
     networks: [control]
     volumes:
       - ./artifacts/capabilities:/workspace/artifacts/capabilities
+    command:
+      - bun
+      - run
+      - packages/vendor-capabilities/src/cli.ts
+      - audit
+      - --previous
+      - artifacts/capabilities/vendor-capability-manifest.json
+      - --artifacts
+      - /tmp/deepharness-capability-audit
     read_only: true
     tmpfs:
       - /tmp:size=512m,mode=1777

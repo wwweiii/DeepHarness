@@ -69,10 +69,16 @@ function ToolFrame({
   error?: boolean | undefined
   expanded?: boolean | undefined
 }) {
+  const [open, setOpen] = useState(Boolean(error || expanded))
+  useEffect(() => {
+    if (error || expanded) setOpen(true)
+  }, [error, expanded])
+
   return (
     <details
       className={`tool-frame${error ? ' tool-frame-error' : ''}`}
-      open={error || expanded || undefined}
+      open={open}
+      onToggle={event => setOpen(event.currentTarget.open)}
     >
       <summary>
         <span className="tool-icon">{icon}</span>
@@ -306,7 +312,7 @@ function QuestionTool({ sessionId, part }: { sessionId: string; part: ToolCallMe
 
 function GenericTool({ part }: { part: ToolCallMessagePartProps }) {
   return (
-    <ToolFrame icon={<TerminalSquare size={16} />} title={part.toolName} error={part.isError} expanded={hasPendingApproval(part)}>
+    <ToolFrame icon={<TerminalSquare size={16} />} title={part.toolName} error={part.isError} expanded>
       <div className="tool-section-label">Input</div>
       <JsonPreview value={part.args} />
       {part.result !== undefined && <><div className="tool-section-label">Output</div><JsonPreview value={part.result} /></>}

@@ -4,8 +4,8 @@
   "vendor_repository": "https://github.com/claude-code-best/claude-code.git",
   "vendor_tag": "v2.8.4-7-g987e5503",
   "build_id": "ccb-bun-v2.8.4-7-g987e5503-987e55034c38",
-  "generated_at": "2026-07-28T17:26:12.378Z",
-  "reviewed_at": "2026-07-28T15:57:06.000Z",
+  "generated_at": "2026-07-31T01:34:57.136Z",
+  "reviewed_at": "2026-07-31T00:00:00.000Z",
   "build_features": [
     {
       "id": "feature.ABLATION_BASELINE",
@@ -2496,10 +2496,11 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "compiled:default"
+        "compiled:default",
+        "harness:phase-6:memory"
       ],
       "source_evidence": [
         {
@@ -2525,10 +2526,16 @@
           "line": 31,
           "detail": "feature('EXTRACT_MEMORIES') reference",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 verifies the locked build compiles memory extraction and the Context Inspector labels it kernel managed because ACP publishes no extraction lifecycle or status event.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "The vendor runs extraction during internal housekeeping and exposes no dedicated ACP status, result, or configuration event.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
     },
@@ -4304,10 +4311,11 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "compiled:default"
+        "compiled:default",
+        "harness:phase-6:context"
       ],
       "source_evidence": [
         {
@@ -4345,12 +4353,18 @@
           "line": 42,
           "detail": "feature('LODESTONE') reference",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 verifies Lodestone is compiled and displays its kernel-managed status without inventing an ACP-visible anchor state.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
-      "matrix_class": "A",
-      "classification_rationale": "The feature is compiled into the kernel and is expected to be inherited through ACP."
+      "known_gap": "Lodestone is compiled into the kernel but its anchor lifecycle is not observable through ACP.",
+      "last_test_result": "passed",
+      "matrix_class": "B",
+      "classification_rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
     },
     {
       "id": "feature.MCP_RICH_OUTPUT",
@@ -5166,10 +5180,11 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "compiled:default"
+        "compiled:default",
+        "harness:phase-6:context"
       ],
       "source_evidence": [
         {
@@ -5231,10 +5246,16 @@
           "line": 531,
           "detail": "feature('PROMPT_CACHE_BREAK_DETECTION') reference",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Context projection preserves cache usage fields when the prompt response supplies them and otherwise displays them as unavailable; the internal cache-break state has no ACP event.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "ACP prompt usage may expose cache token counts, but prompt cache break detection state is not separately observable.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
     },
@@ -6102,10 +6123,11 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "compiled:default"
+        "compiled:default",
+        "harness:phase-6:context"
       ],
       "source_evidence": [
         {
@@ -6167,10 +6189,16 @@
           "line": 3911,
           "detail": "feature('TOKEN_BUDGET') reference",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 consumes ACP usage_update used/size values, persists the context-window projection, and renders exact unavailable states for budget fields ACP omits.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "ACP exposes context utilization but no dedicated token-budget configuration or remaining-budget event.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
     },
@@ -9432,10 +9460,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-6:memory",
+        "fixture:[tool:local-memory]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -9448,10 +9479,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Docker integration invokes LocalMemoryRecall through the real ACP process, verifies a seeded cross-session Memory hit, and persists only source/result metadata with content redacted.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -10645,10 +10682,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-6:memory",
+        "fixture:[tool:vault-http]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -10661,12 +10701,18 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Docker integration invokes VaultHttpFetch through ACP without a configured Vault key and verifies the observable failure contains no key name, query, reason, request body, response body, or secret.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
-      "matrix_class": "A",
-      "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+      "known_gap": "Successful invocation requires an explicitly configured vendor Vault key and outbound HTTPS access; the base test profile verifies the credential-missing degradation. Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
+      "matrix_class": "D",
+      "classification_rationale": "Availability depends on container platform, runtime, credentials, or an external service."
     },
     {
       "id": "tool.VerifyPlanExecutionTool",
@@ -13199,11 +13245,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "command_type:local"
+        "command_type:local",
+        "harness:phase-6:context"
       ],
       "source_evidence": [
         {
@@ -13211,12 +13258,18 @@
           "line": 5,
           "detail": "local command definition",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Docker integration invokes /compact through ACP session/prompt, observes the vendor JSONL compact boundary, projects its metadata, and executes a subsequent prompt successfully.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": "ACP available_commands_update only publishes prompt commands.",
-      "last_test_result": "not_tested",
-      "matrix_class": "C",
-      "classification_rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+      "last_test_result": "passed",
+      "matrix_class": "B",
+      "classification_rationale": "Compact is non-interactive and requires a Harness ACP prompt adapter plus transcript projection."
     },
     {
       "id": "command.local.context",
@@ -14967,20 +15020,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-6:session"
+      ],
       "source_evidence": [
         {
           "path": "src/services/acp/agent/AcpAgent.ts",
           "line": 184,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Worker calls ACP session/list after session startup and projects only catalog count and current-session presence, without copying transcript titles or content.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The operation is a native ACP session capability."
     },
@@ -14995,7 +15056,8 @@
       "ui_supported": true,
       "tested": true,
       "conditions": [
-        "harness:phase-3:recovery"
+        "harness:phase-3:recovery",
+        "harness:phase-6:session"
       ],
       "source_evidence": [
         {
@@ -15008,6 +15070,12 @@
           "path": "tests/integration/phase-3-stack.test.ts",
           "line": 1,
           "detail": "Phase 3 Docker integration stops an Agent process, loads its persisted transcript through ACP session/load, and preserves the Agent session id.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Docker integration loads the compacted vendor transcript after stopping its isolated Agent process and preserves the Agent session identity.",
           "evidenceType": "runtime"
         }
       ],
@@ -15253,7 +15321,8 @@
       "ui_supported": true,
       "tested": true,
       "conditions": [
-        "harness:phase-3:recovery"
+        "harness:phase-3:recovery",
+        "harness:phase-6:session"
       ],
       "source_evidence": [
         {
@@ -15266,6 +15335,12 @@
           "path": "tests/integration/phase-3-stack.test.ts",
           "line": 1,
           "detail": "Phase 3 Docker integration forks a real ACP transcript into an isolated Git worktree and verifies a distinct Agent session id with parent linkage.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Docker integration forks the compacted transcript into an isolated Git worktree and completes a prompt in the fork.",
           "evidenceType": "runtime"
         }
       ],
@@ -15285,7 +15360,8 @@
       "ui_supported": true,
       "tested": true,
       "conditions": [
-        "harness:phase-3:recovery"
+        "harness:phase-3:recovery",
+        "harness:phase-6:session"
       ],
       "source_evidence": [
         {
@@ -15298,6 +15374,12 @@
           "path": "tests/integration/phase-3-stack.test.ts",
           "line": 1,
           "detail": "Phase 3 Docker integration kills an isolated Agent process and resumes the same transcript through ACP session/resume without replaying duplicate UI history.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Docker integration resumes a compacted transcript after simulating a prior vendor commit and records a successful cross-version compatibility result.",
           "evidenceType": "runtime"
         }
       ],
@@ -16581,6 +16663,86 @@
         }
       ],
       "upstream_strategy": "Add an upstream ACP command reload operation or emit available_commands_update after vendor command and Skill discovery invalidation; then add a same-session create/delete contract and remove the restart requirement."
+    },
+    {
+      "id": "gap.acp.structured-context-inspection",
+      "status": "expected_failure",
+      "summary": "The locked vendor has internal context analysis and CtxInspectTool, but CONTEXT_COLLAPSE is not compiled and ACP exposes only usage_update rather than a structured context inspection operation.",
+      "evidence": [
+        {
+          "path": "src/tools.ts",
+          "line": 126,
+          "detail": "CtxInspectTool is only assembled when CONTEXT_COLLAPSE is compiled.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "The real stack verifies CONTEXT_COLLAPSE is disabled and renders the status instead of exposing a substitute inspection control.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Expose a read-only ACP context inspection method with token categories and no transcript content, then replace the disabled status with the structured projection."
+    },
+    {
+      "id": "gap.acp.rewind-checkpoint",
+      "status": "expected_failure",
+      "summary": "Rewind and its checkpoint alias require the interactive vendor UI; supportsNonInteractive=false prevents ACP session/prompt invocation.",
+      "evidence": [
+        {
+          "path": "src/commands/rewind/index.ts",
+          "line": 9,
+          "detail": "The rewind command declares supportsNonInteractive=false.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "The Session Context API exposes rewind as blocked with its ACP reason and no callable endpoint.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Add an ACP rewind operation with explicit target message, diff preview, confirmation, and transcript branch semantics before enabling a Web control."
+    },
+    {
+      "id": "gap.acp.structured-compact-event",
+      "status": "expected_failure",
+      "summary": "ACP reduces compact_boundary to fixed assistant text and does not forward trigger, pre-token count, summarized-message count, or boundary identity.",
+      "evidence": [
+        {
+          "path": "src/services/acp/bridge/forwarding.ts",
+          "line": 105,
+          "detail": "The compact boundary is converted to the fixed text 'Compacting completed.' without structured metadata.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "The real stack suppresses the fixed text and recovers metadata from the vendor transcript as a clearly labeled secondary source.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Add a structured ACP compact notification carrying boundary id, trigger, preTokens, messagesSummarized, and completion status; then remove transcript reconciliation."
+    },
+    {
+      "id": "gap.acp.memory-housekeeping-status",
+      "status": "expected_failure",
+      "summary": "Memory extraction and Lodestone run inside vendor housekeeping but have no dedicated ACP lifecycle, result, or configuration status events.",
+      "evidence": [
+        {
+          "path": "src/utils/backgroundHousekeeping.ts",
+          "line": 7,
+          "detail": "Lodestone and extraction are scheduled internally by vendor housekeeping.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "apps/web/src/features/context/ContextPanel.tsx",
+          "line": 1,
+          "detail": "The Context Inspector renders these capabilities as kernel managed and includes the evidence-backed reason.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Expose privacy-preserving ACP housekeeping status events for scheduling, success/failure, and affected memory store identifiers without memory content."
     }
   ],
   "probe_environment": {
@@ -16610,15 +16772,15 @@
       "tool": 67
     },
     "by_matrix_class": {
-      "B": 79,
-      "A": 51,
-      "C": 156,
+      "B": 81,
+      "A": 49,
+      "C": 155,
       "E": 35,
-      "D": 68
+      "D": 69
     },
     "unclassified": 0,
     "unclassified_ids": [],
-    "expected_failure_gaps": 12
+    "expected_failure_gaps": 16
   },
   "capabilities": [
     {
@@ -17032,20 +17194,28 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": true,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
-      "conditions": [],
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
+      "conditions": [
+        "harness:phase-6:session"
+      ],
       "source_evidence": [
         {
           "path": "src/services/acp/agent/AcpAgent.ts",
           "line": 184,
           "detail": "ACP Agent method",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Worker calls ACP session/list after session startup and projects only catalog count and current-session presence, without copying transcript titles or content.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": null,
-      "last_test_result": "not_tested",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The operation is a native ACP session capability."
     },
@@ -17060,7 +17230,8 @@
       "ui_supported": true,
       "tested": true,
       "conditions": [
-        "harness:phase-3:recovery"
+        "harness:phase-3:recovery",
+        "harness:phase-6:session"
       ],
       "source_evidence": [
         {
@@ -17073,6 +17244,12 @@
           "path": "tests/integration/phase-3-stack.test.ts",
           "line": 1,
           "detail": "Phase 3 Docker integration stops an Agent process, loads its persisted transcript through ACP session/load, and preserves the Agent session id.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Docker integration loads the compacted vendor transcript after stopping its isolated Agent process and preserves the Agent session identity.",
           "evidenceType": "runtime"
         }
       ],
@@ -17318,7 +17495,8 @@
       "ui_supported": true,
       "tested": true,
       "conditions": [
-        "harness:phase-3:recovery"
+        "harness:phase-3:recovery",
+        "harness:phase-6:session"
       ],
       "source_evidence": [
         {
@@ -17331,6 +17509,12 @@
           "path": "tests/integration/phase-3-stack.test.ts",
           "line": 1,
           "detail": "Phase 3 Docker integration forks a real ACP transcript into an isolated Git worktree and verifies a distinct Agent session id with parent linkage.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Docker integration forks the compacted transcript into an isolated Git worktree and completes a prompt in the fork.",
           "evidenceType": "runtime"
         }
       ],
@@ -17350,7 +17534,8 @@
       "ui_supported": true,
       "tested": true,
       "conditions": [
-        "harness:phase-3:recovery"
+        "harness:phase-3:recovery",
+        "harness:phase-6:session"
       ],
       "source_evidence": [
         {
@@ -17363,6 +17548,12 @@
           "path": "tests/integration/phase-3-stack.test.ts",
           "line": 1,
           "detail": "Phase 3 Docker integration kills an isolated Agent process and resumes the same transcript through ACP session/resume without replaying duplicate UI history.",
+          "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Docker integration resumes a compacted transcript after simulating a prior vendor commit and records a successful cross-version compatibility result.",
           "evidenceType": "runtime"
         }
       ],
@@ -19989,11 +20180,12 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "invocable": true,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "command_type:local"
+        "command_type:local",
+        "harness:phase-6:context"
       ],
       "source_evidence": [
         {
@@ -20001,12 +20193,18 @@
           "line": 5,
           "detail": "local command definition",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Docker integration invokes /compact through ACP session/prompt, observes the vendor JSONL compact boundary, projects its metadata, and executes a subsequent prompt successfully.",
+          "evidenceType": "runtime"
         }
       ],
       "known_gap": "ACP available_commands_update only publishes prompt commands.",
-      "last_test_result": "not_tested",
-      "matrix_class": "C",
-      "classification_rationale": "ACP only advertises prompt commands; local and local-jsx commands are not invocable."
+      "last_test_result": "passed",
+      "matrix_class": "B",
+      "classification_rationale": "Compact is non-interactive and requires a Harness ACP prompt adapter plus transcript projection."
     },
     {
       "id": "command.local.context",
@@ -23618,10 +23816,11 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "compiled:default"
+        "compiled:default",
+        "harness:phase-6:memory"
       ],
       "source_evidence": [
         {
@@ -23647,10 +23846,16 @@
           "line": 31,
           "detail": "feature('EXTRACT_MEMORIES') reference",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 verifies the locked build compiles memory extraction and the Context Inspector labels it kernel managed because ACP publishes no extraction lifecycle or status event.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "The vendor runs extraction during internal housekeeping and exposes no dedicated ACP status, result, or configuration event.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
     },
@@ -25426,10 +25631,11 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "compiled:default"
+        "compiled:default",
+        "harness:phase-6:context"
       ],
       "source_evidence": [
         {
@@ -25467,12 +25673,18 @@
           "line": 42,
           "detail": "feature('LODESTONE') reference",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 verifies Lodestone is compiled and displays its kernel-managed status without inventing an ACP-visible anchor state.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
-      "matrix_class": "A",
-      "classification_rationale": "The feature is compiled into the kernel and is expected to be inherited through ACP."
+      "known_gap": "Lodestone is compiled into the kernel but its anchor lifecycle is not observable through ACP.",
+      "last_test_result": "passed",
+      "matrix_class": "B",
+      "classification_rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
     },
     {
       "id": "feature.MCP_RICH_OUTPUT",
@@ -26288,10 +26500,11 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "compiled:default"
+        "compiled:default",
+        "harness:phase-6:context"
       ],
       "source_evidence": [
         {
@@ -26353,10 +26566,16 @@
           "line": 531,
           "detail": "feature('PROMPT_CACHE_BREAK_DETECTION') reference",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Context projection preserves cache usage fields when the prompt response supplies them and otherwise displays them as unavailable; the internal cache-break state has no ACP event.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "ACP prompt usage may expose cache token counts, but prompt cache break detection state is not separately observable.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
     },
@@ -27224,10 +27443,11 @@
       "enabled": true,
       "advertised_by_acp": false,
       "invocable": null,
-      "ui_supported": false,
-      "tested": false,
+      "ui_supported": true,
+      "tested": true,
       "conditions": [
-        "compiled:default"
+        "compiled:default",
+        "harness:phase-6:context"
       ],
       "source_evidence": [
         {
@@ -27289,10 +27509,16 @@
           "line": 3911,
           "detail": "feature('TOKEN_BUDGET') reference",
           "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 consumes ACP usage_update used/size values, persists the context-window projection, and renders exact unavailable states for budget fields ACP omits.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "ACP exposes context utilization but no dedicated token-budget configuration or remaining-budget event.",
+      "last_test_result": "passed",
       "matrix_class": "B",
       "classification_rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
     },
@@ -31530,10 +31756,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-6:memory",
+        "fixture:[tool:local-memory]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -31546,10 +31775,16 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Docker integration invokes LocalMemoryRecall through the real ACP process, verifies a seeded cross-session Memory hit, and persists only source/result metadata with content redacted.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
+      "known_gap": "Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
       "matrix_class": "A",
       "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
@@ -32743,10 +32978,13 @@
       "compiled": true,
       "enabled": true,
       "advertised_by_acp": false,
-      "invocable": null,
+      "invocable": true,
       "ui_supported": true,
-      "tested": false,
-      "conditions": [],
+      "tested": true,
+      "conditions": [
+        "harness:phase-6:memory",
+        "fixture:[tool:vault-http]"
+      ],
       "source_evidence": [
         {
           "path": "src/tools.ts",
@@ -32759,12 +32997,18 @@
           "line": 247,
           "detail": "Schema-aware generic tool renderer preserves unknown tool input, output, and error state.",
           "evidenceType": "runtime"
+        },
+        {
+          "path": "tests/integration/phase-6-stack.test.ts",
+          "line": 1,
+          "detail": "Phase 6 Docker integration invokes VaultHttpFetch through ACP without a configured Vault key and verifies the observable failure contains no key name, query, reason, request body, response body, or secret.",
+          "evidenceType": "runtime"
         }
       ],
-      "known_gap": null,
-      "last_test_result": "not_tested",
-      "matrix_class": "A",
-      "classification_rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+      "known_gap": "Successful invocation requires an explicitly configured vendor Vault key and outbound HTTPS access; the base test profile verifies the credential-missing degradation. Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available.",
+      "last_test_result": "passed",
+      "matrix_class": "D",
+      "classification_rationale": "Availability depends on container platform, runtime, credentials, or an external service."
     },
     {
       "id": "tool.VerifyPlanExecutionTool",

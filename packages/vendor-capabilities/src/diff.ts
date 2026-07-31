@@ -8,6 +8,11 @@ type ManifestLike = {
 export function capabilityDiff(
   previous: ManifestLike | null,
   current: ManifestLike,
+  approvedRegressions: Array<{
+    id: string
+    from: string
+    to: string
+  }> = [],
 ): Record<string, unknown> {
   const previousById = new Map(
     (previous?.capabilities ?? []).map(capability => [capability.id, capability]),
@@ -45,6 +50,12 @@ export function capabilityDiff(
       ['C', 'D', 'E'].includes(String(change.after)),
     ),
   )
+  const approved = (item: (typeof regressions)[number]): boolean => item.changes.some(change =>
+    change.field === 'matrix_class'
+      && approvedRegressions.some(approval => approval.id === item.id
+        && approval.from === change.before
+        && approval.to === change.after),
+  )
 
   return {
     schema_version: 1,
@@ -60,7 +71,7 @@ export function capabilityDiff(
       unreviewed_additions: previous
         ? added.filter(id => currentById.get(id)?.matrix_class === 'unclassified')
         : [],
-      unapproved_regressions: regressions.map(item => item.id),
+      unapproved_regressions: regressions.filter(item => !approved(item)).map(item => item.id),
     },
   }
 }

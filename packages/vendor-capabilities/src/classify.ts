@@ -23,6 +23,7 @@ const D_TOOLS = new Set([
   'SuggestBackgroundPRTool',
   'TerminalCaptureTool',
   'WebBrowserTool',
+  'VaultHttpFetchTool',
 ])
 const E_TOOLS = new Set([
   'OverflowTestTool',
@@ -122,6 +123,7 @@ const B_FEATURES = new Set([
   'GOAL',
   'KAIROS_BRIEF',
   'MONITOR_TOOL',
+  'LODESTONE',
   'PROMPT_CACHE_BREAK_DETECTION',
   'SHOT_STATS',
   'TEMPLATES',
@@ -188,6 +190,9 @@ export function proposeClassification(
     case 'command':
       if (capability.id.startsWith('command.prompt.')) {
         return entry('A', 'Prompt commands can be advertised and invoked through the ACP command surface.')
+      }
+      if (capability.id === 'command.local.compact') {
+        return entry('B', 'Compact is non-interactive and requires a Harness ACP prompt adapter plus transcript projection.')
       }
       if (/theme|color|tui|stickers|keybindings|desktop|feedback/.test(capability.name)) {
         return entry('E', 'Terminal product-shell command is recorded but will not be reproduced by the Web Harness.')

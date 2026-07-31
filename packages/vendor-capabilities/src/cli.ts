@@ -286,7 +286,7 @@ async function main(): Promise<void> {
     capabilities,
   })
   const previous = await readOptionalJson<Record<string, unknown>>(options.previous)
-  const diff = capabilityDiff(previous, manifest)
+  const diff = capabilityDiff(previous, manifest, review?.approved_regressions)
 
   await Promise.all([
     writeJson(resolve(options.artifacts, 'vendor-static-audit-report.json'), staticReport),

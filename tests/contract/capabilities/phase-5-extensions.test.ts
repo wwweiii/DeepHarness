@@ -40,7 +40,7 @@ describe('phase 5 Commands, Skills, Plugins, Hooks, and MCP contract', () => {
 
   test('publishes the phase 5 transitions in the current gated diff', async () => {
     const [diff, lock] = await Promise.all([
-      json('artifacts/capabilities/vendor-capability-diff.json'),
+      json('artifacts/capabilities/vendor-capability-diff-phase-5.json'),
       json('config/vendor-lock.json'),
     ])
     expect(diff.previous_vendor_commit).toBe(lock.commit)

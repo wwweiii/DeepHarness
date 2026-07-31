@@ -333,6 +333,23 @@ function requestedTool(body: RequestBody, prompt: string): { name: string; input
       args: 'PHASE_FIVE_SKILL_TOOL_ARG',
     })
   }
+  if (normalized.includes('[tool:local-memory]')) {
+    return logicalTool(body, 'LocalMemoryRecall', {
+      action: 'fetch',
+      store: markerValue(prompt, 'memory-store', 'phase-six'),
+      key: markerValue(prompt, 'memory-key', 'verification'),
+      preview_only: true,
+    })
+  }
+  if (normalized.includes('[tool:vault-http]')) {
+    return logicalTool(body, 'VaultHttpFetch', {
+      url: 'https://api.example.test/private/items?source=phase-six#verification',
+      method: 'GET',
+      vault_auth_key: 'phase-six-missing-key',
+      auth_scheme: 'bearer',
+      reason: 'Verify the redacted Vault failure projection.',
+    })
+  }
   if (normalized.includes('[deepharness-control:stop-agent]')
     || normalized.includes('[deepharness-control:stop-task]')) {
     const taskId = prompt.match(/task_id\s+"([^"]+)"/i)?.[1]
@@ -466,6 +483,12 @@ const server = Bun.serve({
       if (String(latest?.name ?? '').toLowerCase() === 'searchextratools') {
         const requested = requestedTool(body, prompt)
         if (requested) return toolUseResponse(body, requested.name, requested.input)
+      }
+      if (prompt.toLowerCase().includes('[tool:local-memory]')) {
+        return textResponse(body, 'LOCAL_MEMORY_RECALL_OK', 20)
+      }
+      if (prompt.toLowerCase().includes('[tool:vault-http]')) {
+        return textResponse(body, 'VAULT_HTTP_FAILURE_OBSERVED', 20)
       }
       return textResponse(body, `Tool completed through ACP:\n${result}`, 20)
     }

@@ -116,16 +116,28 @@ describe('phase 2 Harness capability evidence', () => {
     }
   })
 
-  test('publishes a gated capability diff without regressions', async () => {
-    const [diff, lock] = await Promise.all([
+  test('publishes a gated capability diff without unapproved regressions', async () => {
+    const [diff, lock, review] = await Promise.all([
       json('artifacts/capabilities/vendor-capability-diff.json'),
       json('config/vendor-lock.json'),
+      json('config/vendor-capability-review.json'),
     ])
     expect(diff.status).toBe('compared')
     expect(diff.previous_vendor_commit).toMatch(/^[0-9a-f]{40}$/)
     expect(diff.current_vendor_commit).toBe(lock.commit)
     expect(diff.changed.length).toBeGreaterThan(0)
-    expect(diff.regressions).toEqual([])
+    for (const regression of diff.regressions) {
+      const matrix = regression.changes.find((change: any) => change.field === 'matrix_class')
+      expect(review.approved_regressions).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          id: regression.id,
+          from: matrix.before,
+          to: matrix.after,
+          reason: expect.any(String),
+          approved_at: expect.any(String),
+        }),
+      ]))
+    }
     expect(diff.gate).toEqual({
       unreviewed_additions: [],
       unapproved_regressions: [],
@@ -133,7 +145,10 @@ describe('phase 2 Harness capability evidence', () => {
   })
 
   test('keeps routine audits from overwriting the published phase diff', async () => {
-    const makefile = await readFile(`${root}/Makefile`, 'utf8')
+    const [makefile, compose] = await Promise.all([
+      readFile(`${root}/Makefile`, 'utf8'),
+      readFile(`${root}/compose.yaml`, 'utf8'),
+    ])
     const auditTarget = makefile.slice(
       makefile.indexOf('audit:'),
       makefile.indexOf('\n\nreview-draft:'),
@@ -142,5 +157,11 @@ describe('phase 2 Harness capability evidence', () => {
       '--previous artifacts/capabilities/vendor-capability-manifest.json',
     )
     expect(auditTarget).toContain('--artifacts /tmp/deepharness-capability-audit')
+    const auditService = compose.slice(
+      compose.indexOf('  capability-audit:'),
+      compose.indexOf('\n  e2e:'),
+    )
+    expect(auditService).toContain('- artifacts/capabilities/vendor-capability-manifest.json')
+    expect(auditService).toContain('- /tmp/deepharness-capability-audit')
   })
 })

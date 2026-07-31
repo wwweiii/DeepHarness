@@ -19,9 +19,21 @@ import {
   type PreparedWorkspace,
 } from './workspace.ts'
 import { unlink, writeFile } from 'node:fs/promises'
-import { findTranscript, inspectTranscript } from './transcript.ts'
+import {
+  findTranscript,
+  inspectTranscript,
+  inspectTranscriptContext,
+  type TranscriptContextState,
+} from './transcript.ts'
 import { ActivityTracker } from './activity.ts'
 import { readPersistedActivityState } from './activityState.ts'
+import {
+  isMemoryTool,
+  memoryObservationPayload,
+  safeMemoryInput,
+  safePermissionMemoryInput,
+  summarizeMemoryResult,
+} from './memory.ts'
 import {
   discoverExtensions,
   setExtensionEnabled,
@@ -105,6 +117,8 @@ class AgentSessionRuntime {
   private readOnly = false
   private ready = false
   private vendorSessionId: string | null = null
+  private pendingCompactSignal = false
+  private lastCompactBoundaryId: string | null = null
   private activity: ActivityTracker | null = null
   private activeControl: {
     kind: 'agent' | 'task'
@@ -312,6 +326,16 @@ class AgentSessionRuntime {
     const agentSessionId = String(session.sessionId)
     this.vendorSessionId = agentSessionId
     this.ready = true
+    const transcript = await this.readTranscriptContext()
+    this.lastCompactBoundaryId = transcript?.latestCompact?.boundaryId ?? null
+    const vendorSessionCatalog = await this.readVendorSessionCatalog(client, agentSessionId)
+    const currentVendorCommit = process.env.VENDOR_COMMIT ?? 'unknown'
+    const previousVendorCommit = command.payload.lastVendorCommit
+      ?? command.payload.createdVendorCommit
+      ?? null
+    const crossVersion = previousVendorCommit !== null
+      && previousVendorCommit !== 'unknown'
+      && previousVendorCommit !== currentVendorCommit
     await this.reconcileActivityState(null)
     this.event('session.status_changed', {
       status: 'idle',
@@ -327,6 +351,7 @@ class AgentSessionRuntime {
       availableModes: jsonValue(modes.availableModes ?? []),
       configOptions: jsonValue(session.configOptions ?? []),
       agentCapabilities: jsonValue(initialize.agentCapabilities ?? {}),
+      vendorCommit: currentVendorCommit,
       recoveryStrategy,
       worktreePath: this.prepared.worktreePath,
     }, null)
@@ -341,19 +366,54 @@ class AgentSessionRuntime {
       strategy: recoveryStrategy,
       agentSessionId,
     }, null)
+    const legacyCapabilities = {
+      load: Boolean(objectValue(initialize.agentCapabilities).loadSession),
+      resume: true,
+      fork: true,
+      compact: {
+        state: 'vendor_managed',
+        acpMethod: null,
+      },
+    }
     this.event('context.updated', {
       agentSessionId,
       recoveryStrategy,
       snapshotAt: new Date().toISOString(),
-      capabilities: {
-        load: Boolean(objectValue(initialize.agentCapabilities).loadSession),
-        resume: true,
-        fork: true,
+      operations: {
+        list: vendorSessionCatalog,
+        load: legacyCapabilities.load,
+        resume: legacyCapabilities.resume,
+        fork: legacyCapabilities.fork,
         compact: {
           state: 'vendor_managed',
           acpMethod: null,
+          invocation: 'session/prompt:/compact',
+          structuredAcpEvent: false,
+        },
+        rewind: {
+          state: 'blocked',
+          reason: 'The vendor rewind command is local and supportsNonInteractive=false.',
+        },
+        checkpoint: {
+          state: 'blocked',
+          reason: 'Checkpoint is an alias of the TUI-only rewind command.',
         },
       },
+      capabilities: legacyCapabilities,
+      compatibility: {
+        status: crossVersion ? 'compatible' : 'same_version',
+        crossVersion,
+        createdVendorCommit: command.payload.createdVendorCommit,
+        previousVendorCommit,
+        currentVendorCommit,
+        recoveryStrategy,
+      },
+      observability: {
+        contextUsage: 'acp.usage_update',
+        compactMetadata: 'vendor_transcript_metadata',
+        memoryContentPersisted: false,
+      },
+      ...(transcript ? { transcript: this.transcriptPayload(transcript) } : {}),
       activityLimits: jsonValue(this.activity.limits),
     }, null)
     this.onIdle(this)
@@ -392,6 +452,110 @@ class AgentSessionRuntime {
       modelId: payload.modelId,
       mcpServers: this.extensionState.acpMcpServers,
     })
+  }
+
+  private transcriptPayload(state: TranscriptContextState): Record<string, JsonValue> {
+    return {
+      recordCount: state.recordCount,
+      userCheckpointCount: state.userCheckpointCount,
+      compactCount: state.compactCount,
+      lastUserMessageId: state.lastUserMessageId,
+      latestCompactBoundaryId: state.latestCompact?.boundaryId ?? null,
+      updatedAt: state.updatedAt,
+    }
+  }
+
+  private async readTranscriptContext(): Promise<TranscriptContextState | null> {
+    if (!this.vendorSessionId) return null
+    try {
+      return await inspectTranscriptContext(this.vendorSessionId)
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('TRANSCRIPT_MISSING:')) return null
+      console.error(JSON.stringify({
+        service: 'worker',
+        event: 'transcript_context_inspection_failed',
+        sessionId: this.harnessSessionId,
+        error: error instanceof Error ? error.message : String(error),
+      }))
+      return null
+    }
+  }
+
+  private async readVendorSessionCatalog(
+    client: AcpClient,
+    agentSessionId: string,
+  ): Promise<Record<string, JsonValue>> {
+    try {
+      const result = await client.listSessions()
+      const sessions = Array.isArray(result.sessions) ? result.sessions : []
+      return {
+        state: 'supported',
+        count: sessions.length,
+        currentSessionPresent: sessions.some(value => objectValue(value).sessionId === agentSessionId),
+        contentProjected: false,
+      }
+    } catch (error) {
+      return {
+        state: 'error',
+        count: null,
+        currentSessionPresent: false,
+        errorCode: error instanceof Error && /method.*not found|not supported/i.test(error.message)
+          ? 'not_supported'
+          : 'probe_failed',
+        contentProjected: false,
+      }
+    }
+  }
+
+  private async reconcileTranscriptContext(): Promise<void> {
+    let transcript: TranscriptContextState | null = null
+    const attempts = this.pendingCompactSignal ? 4 : 1
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      transcript = await this.readTranscriptContext()
+      const boundaryId = transcript?.latestCompact?.boundaryId ?? null
+      if (!this.pendingCompactSignal || (boundaryId !== null && boundaryId !== this.lastCompactBoundaryId)) {
+        break
+      }
+      if (attempt + 1 < attempts) {
+        await new Promise(resolve => setTimeout(resolve, 50 * (attempt + 1)))
+      }
+    }
+    if (transcript) {
+      this.event('context.updated', {
+        transcript: this.transcriptPayload(transcript),
+        snapshotAt: new Date().toISOString(),
+      }, this.activeTurnId)
+    }
+    const compact = transcript?.latestCompact ?? null
+    const newBoundary = compact?.boundaryId != null
+      && compact?.boundaryId !== this.lastCompactBoundaryId
+    if (compact && (newBoundary || this.pendingCompactSignal)) {
+      this.event('context.compacted', {
+        kind: 'compact',
+        trigger: compact.trigger,
+        status: 'completed',
+        boundaryId: compact.boundaryId,
+        preTokens: compact.preTokens,
+        messagesSummarized: compact.messagesSummarized,
+        source: 'vendor_transcript_metadata',
+        transcript: this.transcriptPayload(transcript!),
+      }, this.activeTurnId)
+      this.lastCompactBoundaryId = compact.boundaryId
+      this.pendingCompactSignal = false
+      return
+    }
+    if (this.pendingCompactSignal) {
+      this.event('context.compacted', {
+        kind: 'compact',
+        trigger: 'unknown',
+        status: 'observed',
+        boundaryId: null,
+        preTokens: null,
+        messagesSummarized: null,
+        source: 'acp.compact_boundary_text',
+      }, this.activeTurnId)
+      this.pendingCompactSignal = false
+    }
   }
 
   private async handleExtensionControl(command: ExtensionControlCommand): Promise<void> {
@@ -493,8 +657,14 @@ class AgentSessionRuntime {
       this.finishOpenToolCalls()
       const usage = result.usage
       if (usage && typeof usage === 'object') {
-        this.event('usage.updated', jsonPayload(usage as Record<string, unknown>), this.activeTurnId)
+        const payload = jsonPayload(usage as Record<string, unknown>)
+        this.event('usage.updated', payload, this.activeTurnId)
+        this.event('context.usage_updated', {
+          ...payload,
+          updatedAt: new Date().toISOString(),
+        }, this.activeTurnId)
       }
+      await this.reconcileTranscriptContext()
       const continuation = this.questionContinuations.shift()
       if (!continuation || result.stopReason === 'cancelled') break
       promptText = continuation
@@ -669,12 +839,13 @@ class AgentSessionRuntime {
       }, timeoutMs),
     }
     this.pendingPermissions.set(permissionRequestId, pending)
+    const memoryPermission = safePermissionMemoryInput(toolName, pending.input)
     const payload: Record<string, JsonValue> = {
       permissionRequestId,
       acpRequestId: String(request.id),
       toolCallId,
-      toolName,
-      input: pending.input,
+      toolName: memoryPermission?.toolName ?? toolName,
+      input: memoryPermission?.input ?? pending.input,
       options: jsonValue(options),
       expiresAt,
     }
@@ -766,6 +937,12 @@ class AgentSessionRuntime {
     if (type === 'agent_message_chunk' || type === 'agent_thought_chunk') {
       const content = update.content as Record<string, unknown> | undefined
       if (content?.type !== 'text' || typeof content.text !== 'string') return
+      if (type === 'agent_message_chunk'
+        && parentToolUseId === null
+        && content.text.trim() === 'Compacting completed.') {
+        this.pendingCompactSignal = true
+        return
+      }
       if (this.activity?.observeChunk(
         parentToolUseId,
         type === 'agent_message_chunk' ? 'text' : 'reasoning',
@@ -787,31 +964,56 @@ class AgentSessionRuntime {
         ? update.toolCallId
         : crypto.randomUUID()
       const knownName = this.toolNames.get(toolCallId)
-      const name = typeof claudeCode?.toolName === 'string'
+      const advertisedName = typeof claudeCode?.toolName === 'string'
         ? claudeCode.toolName
         : knownName ?? (typeof update.title === 'string' ? update.title : 'UnknownTool')
-      this.toolNames.set(toolCallId, name)
+      const name = knownName && isMemoryTool(knownName) ? knownName : advertisedName
       const rawInput = objectValue(update.rawInput)
       const rawOutput = update.rawOutput === undefined ? undefined : jsonValue(update.rawOutput)
+      const memoryProjection = safePermissionMemoryInput(name, rawInput)
+      const effectiveName = memoryProjection?.toolName ?? name
+      this.toolNames.set(toolCallId, effectiveName)
+      const memoryTool = isMemoryTool(effectiveName)
+      const projectedInput = memoryProjection?.input
+        ?? (memoryTool ? safeMemoryInput(effectiveName, rawInput) : rawInput)
+      const projectedOutput = memoryTool && rawOutput !== undefined
+        ? jsonValue(summarizeMemoryResult(rawOutput))
+        : rawOutput
       const activityRoute = this.activity?.observeTool({
         toolCallId,
-        toolName: name,
+        toolName: effectiveName,
         status: typeof update.status === 'string' ? update.status : 'pending',
-        rawInput,
-        ...(rawOutput !== undefined ? { rawOutput } : {}),
+        rawInput: projectedInput,
+        ...(projectedOutput !== undefined ? { rawOutput: projectedOutput } : {}),
         parentToolUseId,
         turnId: this.activeTurnId,
       })
-      const payload = {
-        ...jsonPayload(update),
-        toolCallId,
-        toolName: activityRoute?.toolName ?? name,
-        rawInput: activityRoute?.rawInput ?? rawInput,
-        ...(activityRoute?.rawOutput !== undefined ? { rawOutput: activityRoute.rawOutput } : {}),
-        parentToolUseId,
-        parentAgentId: activityRoute?.parentAgentId ?? null,
-      }
-      const status = update.status
+      const status = typeof update.status === 'string' ? update.status : 'pending'
+      const payload: Record<string, JsonValue> = memoryTool
+        ? {
+            sessionUpdate: String(type),
+            status,
+            toolCallId,
+            toolName: activityRoute?.toolName ?? effectiveName,
+            rawInput: jsonValue(activityRoute?.rawInput ?? projectedInput),
+            ...(activityRoute?.rawOutput !== undefined
+              ? { rawOutput: activityRoute.rawOutput }
+              : projectedOutput !== undefined
+                ? { rawOutput: projectedOutput }
+                : {}),
+            parentToolUseId,
+            parentAgentId: activityRoute?.parentAgentId ?? null,
+            contentRedacted: true,
+          }
+        : {
+            ...jsonPayload(update),
+            toolCallId,
+            toolName: activityRoute?.toolName ?? name,
+            rawInput: activityRoute?.rawInput ?? rawInput,
+            ...(activityRoute?.rawOutput !== undefined ? { rawOutput: activityRoute.rawOutput } : {}),
+            parentToolUseId,
+            parentAgentId: activityRoute?.parentAgentId ?? null,
+          }
       if (status === 'completed' || status === 'failed') {
         this.openToolCalls.delete(toolCallId)
         this.deniedToolCalls.delete(toolCallId)
@@ -830,6 +1032,15 @@ class AgentSessionRuntime {
         payload,
         this.activeTurnId,
       )
+      if (memoryTool) {
+        this.event('memory.observed', memoryObservationPayload({
+          toolName: effectiveName,
+          toolCallId,
+          status,
+          rawInput: projectedInput,
+          ...(rawOutput !== undefined ? { rawOutput } : {}),
+        }), this.activeTurnId)
+      }
       if (status === 'completed' || status === 'failed') this.idleIfEligible()
       return
     }
@@ -852,6 +1063,20 @@ class AgentSessionRuntime {
       this.event('session.configuration_changed', {
         configOptions: jsonValue(update.configOptions ?? []),
       }, null)
+      return
+    }
+
+    if (type === 'usage_update') {
+      const usedTokens = typeof update.used === 'number' ? update.used : null
+      const sizeTokens = typeof update.size === 'number' ? update.size : null
+      this.event('context.usage_updated', {
+        usedTokens,
+        sizeTokens,
+        percentage: usedTokens !== null && sizeTokens !== null && sizeTokens > 0
+          ? Math.min(100, Math.max(0, usedTokens / sizeTokens * 100))
+          : null,
+        updatedAt: new Date().toISOString(),
+      }, this.activeTurnId)
     }
   }
 
@@ -889,15 +1114,27 @@ class AgentSessionRuntime {
             ...open.payload,
             sessionUpdate: 'tool_call_update',
             status: result.failed ? 'failed' : 'completed',
-            rawOutput: result.output,
+            rawOutput: isMemoryTool(String(open.payload.toolName ?? ''))
+              ? jsonValue(summarizeMemoryResult(result.output))
+              : result.output,
             inferred: true,
             reconciliationSource: 'vendor_transcript',
           }
           this.event('tool.call_completed', payload, open.turnId)
+          const toolName = String(open.payload.toolName ?? '')
+          if (isMemoryTool(toolName)) {
+            this.event('memory.observed', memoryObservationPayload({
+              toolName,
+              toolCallId,
+              status: result.failed ? 'failed' : 'completed',
+              rawInput: objectValue(open.payload.rawInput),
+              rawOutput: result.output,
+            }), open.turnId)
+          }
           this.openToolCalls.delete(toolCallId)
           this.deniedToolCalls.delete(toolCallId)
         }
-        if (!settleTranscript || this.openToolCalls.size === 0 || reconciledToolIds.size > 0) return
+        if (!settleTranscript || this.openToolCalls.size === 0) return
       } catch (error) {
         console.error(JSON.stringify({
           service: 'worker',
@@ -947,6 +1184,15 @@ class AgentSessionRuntime {
         turnId: open.turnId,
       })
       this.event('tool.call_completed', payload, open.turnId)
+      const toolName = String(payload.toolName ?? '')
+      if (isMemoryTool(toolName)) {
+        this.event('memory.observed', memoryObservationPayload({
+          toolName,
+          toolCallId,
+          status: denied ? 'failed' : 'completed',
+          rawInput: objectValue(payload.rawInput),
+        }), open.turnId)
+      }
       this.openToolCalls.delete(toolCallId)
       this.deniedToolCalls.delete(toolCallId)
     }

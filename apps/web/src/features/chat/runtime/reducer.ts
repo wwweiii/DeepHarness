@@ -304,9 +304,36 @@ export function projectHarnessEvents(events: HarnessEvent[]): HarnessProjection 
         : null
     }
     if (event.type === 'context.updated') {
-      contextState = event.payload
+      contextState = { ...(contextState ?? {}), ...event.payload }
       const limits = objectValue(event.payload.activityLimits)
       if (Object.keys(limits).length > 0) activityLimits = limits as unknown as ActivityLimits
+    }
+    if (event.type === 'context.usage_updated') {
+      contextState = {
+        ...(contextState ?? {}),
+        usage: {
+          ...objectValue(contextState?.usage),
+          ...event.payload,
+        },
+      }
+    }
+    if (event.type === 'context.compacted') {
+      const transcript = objectValue(event.payload.transcript)
+      contextState = {
+        ...(contextState ?? {}),
+        compact: event.payload,
+        ...(Object.keys(transcript).length > 0 ? { transcript } : {}),
+      }
+    }
+    if (event.type === 'memory.observed') {
+      const observations: Array<Record<string, unknown>> = Array.isArray(contextState?.memories)
+        ? contextState.memories.map(objectValue)
+        : []
+      const toolCallId = String(event.payload.toolCallId ?? event.id)
+      const next: Array<Record<string, unknown>> = observations
+        .filter(value => String(value.toolCallId ?? '') !== toolCallId)
+      next.unshift(event.payload)
+      contextState = { ...(contextState ?? {}), memories: next }
     }
     if (event.type === 'worker.disconnected') processState = 'stopped'
     if (event.type === 'session.closed') {

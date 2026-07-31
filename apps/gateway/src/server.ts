@@ -222,6 +222,12 @@ app.get('/api/sessions/:sessionId/activity', async c => {
   return c.json(await store.getActivity(sessionId))
 })
 
+app.get('/api/sessions/:sessionId/context', async c => {
+  const snapshot = await store.getContext(c.req.param('sessionId'))
+  if (!snapshot) return apiError('Session not found', 404)
+  return c.json(snapshot)
+})
+
 app.get('/api/sessions/:sessionId/extensions', async c => {
   const snapshot = await store.getExtensions(c.req.param('sessionId'))
   if (!snapshot) return apiError('Session not found', 404)
@@ -391,6 +397,14 @@ app.post('/api/sessions/:sessionId/prompts', async c => {
   const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
   const text = typeof body.text === 'string' ? body.text.trim() : ''
   return submitPrompt(c.req.raw, c.req.param('sessionId'), text)
+})
+
+app.post('/api/sessions/:sessionId/context/compact', async c => {
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const instructions = typeof body.instructions === 'string' ? body.instructions.trim() : ''
+  if (instructions.length > 2_000) return apiError('Compact instructions are too long', 422)
+  const prompt = `/compact${instructions ? ` ${instructions}` : ''}`
+  return submitPrompt(c.req.raw, c.req.param('sessionId'), prompt)
 })
 
 app.post('/api/sessions/:sessionId/commands/:commandName/invoke', async c => {

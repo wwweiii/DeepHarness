@@ -207,6 +207,59 @@ describe('Harness event projection', () => {
     expect(projection.messages[0]?.content).toHaveLength(2)
   })
 
+  test('merges Context usage, compact metadata, and redacted Memory observations', () => {
+    const projection = projectHarnessEvents([
+      event(1, 'context.updated', {
+        operations: { load: true, rewind: { state: 'blocked' } },
+        transcript: { recordCount: 2, compactCount: 0 },
+      }),
+      event(2, 'context.usage_updated', {
+        usedTokens: 40,
+        sizeTokens: 100,
+        percentage: 40,
+      }),
+      event(3, 'context.updated', {
+        transcript: { recordCount: 3, compactCount: 1 },
+      }),
+      event(4, 'context.compacted', {
+        status: 'completed',
+        boundaryId: 'compact-1',
+        transcript: { recordCount: 3, compactCount: 1 },
+      }),
+      event(5, 'memory.observed', {
+        toolCallId: 'memory-1',
+        sourceType: 'local_memory',
+        sourceLabel: 'project/preferences',
+        status: 'completed',
+        hit: true,
+        contentRedacted: true,
+      }),
+      event(6, 'memory.observed', {
+        toolCallId: 'memory-1',
+        sourceType: 'local_memory',
+        sourceLabel: 'project/preferences',
+        status: 'failed',
+        errorCode: 'not_found',
+        contentRedacted: true,
+      }),
+    ])
+
+    expect(projection.contextState).toMatchObject({
+      operations: { load: true, rewind: { state: 'blocked' } },
+      usage: { usedTokens: 40, sizeTokens: 100, percentage: 40 },
+      transcript: { recordCount: 3, compactCount: 1 },
+      compact: { status: 'completed', boundaryId: 'compact-1' },
+    })
+    expect((projection.contextState?.memories as Array<Record<string, unknown>>)).toEqual([
+      expect.objectContaining({
+        toolCallId: 'memory-1',
+        status: 'failed',
+        errorCode: 'not_found',
+        contentRedacted: true,
+      }),
+    ])
+  })
+
   test('preserves explicit recovery diagnostics from worker events', () => {
     const projection = projectHarnessEvents([
       event(1, 'session.recovery_changed', {

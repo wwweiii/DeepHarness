@@ -42,6 +42,13 @@ export type TeamActivityStatus = 'active' | 'deleting' | 'deleted' | 'error'
 export type ExtensionKind = 'skill' | 'plugin' | 'hook' | 'setting' | 'extra_tool'
 export type ExtensionStatus = 'ready' | 'disabled' | 'error' | 'blocked' | 'unknown'
 export type McpHealthStatus = 'configured' | 'disabled' | 'error' | 'blocked'
+export type ContextCapabilityState =
+  | 'supported'
+  | 'kernel_managed'
+  | 'conditional'
+  | 'blocked'
+  | 'disabled'
+  | 'not_observable'
 
 export type HarnessEventType =
   | 'session.created'
@@ -72,6 +79,9 @@ export type HarnessEventType =
   | 'session.interrupted'
   | 'worker.disconnected'
   | 'context.updated'
+  | 'context.usage_updated'
+  | 'context.compacted'
+  | 'memory.observed'
   | 'workspace.lock_changed'
   | 'agent.started'
   | 'agent.updated'
@@ -114,6 +124,9 @@ export const HARNESS_EVENT_TYPES: HarnessEventType[] = [
   'session.interrupted',
   'worker.disconnected',
   'context.updated',
+  'context.usage_updated',
+  'context.compacted',
+  'memory.observed',
   'workspace.lock_changed',
   'agent.started',
   'agent.updated',
@@ -153,6 +166,8 @@ export type WorkerCommand =
         recoveryStrategy: SessionRecoveryStrategy
         agentSessionId: string | null
         sourceAgentSessionId: string | null
+        createdVendorCommit: string | null
+        lastVendorCommit: string | null
       }
     }
   | {
@@ -281,12 +296,100 @@ export interface SessionRecord {
   recoveryStrategy: SessionRecoveryStrategy | null
   recoveryError: string | null
   contextState: Record<string, JsonValue>
+  createdVendorCommit: string | null
+  lastVendorCommit: string | null
   parentSessionId: string | null
   forkPointEventId: string | null
   worktreePath: string | null
   lastEventSeq: number
   createdAt: string
   updatedAt: string
+}
+
+export interface ContextUsageRecord {
+  usedTokens: number | null
+  sizeTokens: number | null
+  percentage: number | null
+  inputTokens: number | null
+  outputTokens: number | null
+  cacheReadTokens: number | null
+  cacheWriteTokens: number | null
+  totalTokens: number | null
+  updatedAt: string | null
+}
+
+export interface TranscriptContextRecord {
+  recordCount: number
+  userCheckpointCount: number
+  compactCount: number
+  lastUserMessageId: string | null
+  latestCompactBoundaryId: string | null
+  updatedAt: string | null
+}
+
+export interface MemoryObservationRecord {
+  sessionId: string
+  turnId: string | null
+  toolCallId: string
+  toolName: string
+  sourceType: 'local_memory' | 'vault_http'
+  sourceLabel: string
+  operation: string
+  status: string
+  hit: boolean | null
+  itemCount: number | null
+  bytes: number | null
+  truncated: boolean
+  errorCode: string | null
+  httpStatus: number | null
+  contentRedacted: true
+  updatedAt: string
+}
+
+export interface ContextCheckpointRecord {
+  id: string
+  sessionId: string
+  turnId: string | null
+  kind: 'compact'
+  trigger: 'manual' | 'auto' | 'unknown'
+  status: string
+  boundaryId: string | null
+  preTokens: number | null
+  messagesSummarized: number | null
+  source: string
+  createdAt: string
+}
+
+export interface ContextCapabilityRecord {
+  id: string
+  name: string
+  matrixClass: 'A' | 'B' | 'C' | 'D' | 'E'
+  compiled: boolean
+  enabled: boolean
+  tested: boolean
+  lastTestResult: 'passed' | 'expected_failure' | 'not_tested'
+  state: ContextCapabilityState
+  reason: string | null
+}
+
+export interface DataLifecycleBoundary {
+  dataClass: 'memory' | 'transcript' | 'artifact' | 'database_event'
+  sourceOfTruth: string
+  controlPlaneContent: 'metadata_only' | 'full_event' | 'registry_only'
+  backupScope: string
+  deleteBoundary: string
+}
+
+export interface SessionContextSnapshot {
+  sessionId: string
+  usage: ContextUsageRecord | null
+  transcript: TranscriptContextRecord | null
+  memories: MemoryObservationRecord[]
+  checkpoints: ContextCheckpointRecord[]
+  capabilities: ContextCapabilityRecord[]
+  operations: Record<string, JsonValue>
+  compatibility: Record<string, JsonValue>
+  lifecycle: DataLifecycleBoundary[]
 }
 
 export interface WorkspaceRecord {

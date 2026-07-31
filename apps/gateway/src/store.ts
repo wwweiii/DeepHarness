@@ -5,6 +5,10 @@ import type {
   AgentActivityRecord,
   AgentDefinitionSummary,
   AvailableCommand,
+  ContextCapabilityRecord,
+  ContextCheckpointRecord,
+  ContextUsageRecord,
+  DataLifecycleBoundary,
   EventPage,
   ExtensionAuditRecord,
   ExtensionEntry,
@@ -20,6 +24,8 @@ import type {
   TeamMessageRecord,
   TeamPeerRecord,
   McpServerStatus,
+  MemoryObservationRecord,
+  SessionContextSnapshot,
   WorkerCommand,
   WorkspaceRecord,
 } from '@deepharness/protocol'
@@ -86,6 +92,12 @@ function sessionFromRow(row: Record<string, unknown>): SessionRecord {
     contextState: row.context_state && typeof row.context_state === 'object'
       ? row.context_state as Record<string, JsonValue>
       : {},
+    createdVendorCommit: row.created_vendor_commit === null || row.created_vendor_commit === undefined
+      ? null
+      : String(row.created_vendor_commit),
+    lastVendorCommit: row.last_vendor_commit === null || row.last_vendor_commit === undefined
+      ? null
+      : String(row.last_vendor_commit),
     parentSessionId: row.parent_session_id === null || row.parent_session_id === undefined
       ? null
       : String(row.parent_session_id),
@@ -100,6 +112,81 @@ function sessionFromRow(row: Record<string, unknown>): SessionRecord {
     updatedAt: new Date(String(row.updated_at)).toISOString(),
   }
 }
+
+function numberOrNull(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string' && /^-?\d+(?:\.\d+)?$/.test(value)) {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  return null
+}
+
+function contextUsage(value: unknown): ContextUsageRecord | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+  const usage = value as Record<string, unknown>
+  return {
+    usedTokens: numberOrNull(usage.usedTokens),
+    sizeTokens: numberOrNull(usage.sizeTokens),
+    percentage: numberOrNull(usage.percentage),
+    inputTokens: numberOrNull(usage.inputTokens),
+    outputTokens: numberOrNull(usage.outputTokens),
+    cacheReadTokens: numberOrNull(usage.cachedReadTokens ?? usage.cacheReadTokens),
+    cacheWriteTokens: numberOrNull(usage.cachedWriteTokens ?? usage.cacheWriteTokens),
+    totalTokens: numberOrNull(usage.totalTokens),
+    updatedAt: typeof usage.updatedAt === 'string' ? usage.updatedAt : null,
+  }
+}
+
+const contextCapabilityIds = new Set([
+  'acp.listSessions',
+  'acp.loadSession',
+  'acp.unstable_forkSession',
+  'acp.unstable_resumeSession',
+  'command.local.compact',
+  'command.local.rewind',
+  'feature.CONTEXT_COLLAPSE',
+  'feature.EXTRACT_MEMORIES',
+  'feature.HISTORY_SNIP',
+  'feature.LODESTONE',
+  'feature.PROMPT_CACHE_BREAK_DETECTION',
+  'feature.TEAMMEM',
+  'feature.TOKEN_BUDGET',
+  'tool.CtxInspectTool',
+  'tool.LocalMemoryRecallTool',
+  'tool.VaultHttpFetchTool',
+])
+
+const lifecycleBoundaries: DataLifecycleBoundary[] = [
+  {
+    dataClass: 'memory',
+    sourceOfTruth: 'Agent state volume; DeepHarness persists source/status/result metadata only.',
+    controlPlaneContent: 'metadata_only',
+    backupScope: 'Back up the Agent state volume only when memory continuity is required.',
+    deleteBoundary: 'Delete Agent memory at its vendor-owned store, then remove projected metadata with the session.',
+  },
+  {
+    dataClass: 'transcript',
+    sourceOfTruth: 'Vendor JSONL transcript in the Agent state volume.',
+    controlPlaneContent: 'metadata_only',
+    backupScope: 'Back up the Agent state volume together with vendor commit metadata.',
+    deleteBoundary: 'Transcript deletion is a vendor session operation; database event deletion does not erase model context.',
+  },
+  {
+    dataClass: 'artifact',
+    sourceOfTruth: 'Workspace or future artifact volume; the database stores registry metadata.',
+    controlPlaneContent: 'registry_only',
+    backupScope: 'Back up artifact bytes and registry rows as one consistency set.',
+    deleteBoundary: 'Delete registry metadata only after the workspace-bounded artifact bytes are removed.',
+  },
+  {
+    dataClass: 'database_event',
+    sourceOfTruth: 'PostgreSQL control-plane event log.',
+    controlPlaneContent: 'full_event',
+    backupScope: 'Use a PostgreSQL-consistent backup; Memory tool content is excluded before insertion.',
+    deleteBoundary: 'Deleting a Harness session cascades control-plane events but does not delete vendor transcripts or workspace files.',
+  },
+]
 
 function workspaceFromRow(row: WorkspaceRow): WorkspaceRecord {
   return {
@@ -460,6 +547,154 @@ export class GatewayStore {
     }
   }
 
+  async getContext(sessionId: string): Promise<SessionContextSnapshot | null> {
+    const sessions = await this.database<Record<string, unknown>[]>`
+      SELECT * FROM sessions WHERE id = ${sessionId}
+    `
+    const session = sessions[0]
+    if (!session) return null
+    const [memoryRows, checkpointRows, capabilityRows] = await Promise.all([
+      this.database<Record<string, unknown>[]>`
+        SELECT * FROM memory_observations
+        WHERE session_id = ${sessionId}
+        ORDER BY updated_at DESC, tool_call_id ASC
+      `,
+      this.database<Record<string, unknown>[]>`
+        SELECT * FROM context_checkpoints
+        WHERE session_id = ${sessionId}
+        ORDER BY created_at DESC, event_id DESC
+      `,
+      this.database<Array<{
+        id: string
+        name: string
+        matrix_class: ContextCapabilityRecord['matrixClass']
+        compiled: boolean
+        enabled: boolean
+        tested: boolean
+        conditions: JsonValue[]
+        known_gap: string | null
+        last_test_result: ContextCapabilityRecord['lastTestResult']
+      }>>`
+        SELECT capability.id, capability.name, capability.matrix_class,
+          capability.compiled, capability.enabled, capability.tested,
+          capability.conditions, capability.known_gap, capability.last_test_result
+        FROM capabilities capability
+        JOIN capability_manifests manifest ON manifest.id = capability.manifest_id
+        WHERE manifest.status = 'ready'
+          AND manifest.generated_at = (
+            SELECT max(generated_at) FROM capability_manifests WHERE status = 'ready'
+          )
+        ORDER BY capability.kind ASC, capability.name ASC
+      `,
+    ])
+    const state = session.context_state && typeof session.context_state === 'object'
+      ? session.context_state as Record<string, JsonValue>
+      : {}
+    const transcriptValue = state.transcript && typeof state.transcript === 'object'
+      && !Array.isArray(state.transcript)
+      ? state.transcript as Record<string, JsonValue>
+      : null
+    const transcript: SessionContextSnapshot['transcript'] = transcriptValue
+      ? {
+          recordCount: numberOrNull(transcriptValue.recordCount) ?? 0,
+          userCheckpointCount: numberOrNull(transcriptValue.userCheckpointCount) ?? 0,
+          compactCount: numberOrNull(transcriptValue.compactCount) ?? 0,
+          lastUserMessageId: typeof transcriptValue.lastUserMessageId === 'string'
+            ? transcriptValue.lastUserMessageId
+            : null,
+          latestCompactBoundaryId: typeof transcriptValue.latestCompactBoundaryId === 'string'
+            ? transcriptValue.latestCompactBoundaryId
+            : null,
+          updatedAt: typeof transcriptValue.updatedAt === 'string' ? transcriptValue.updatedAt : null,
+        }
+      : null
+    const memories: MemoryObservationRecord[] = memoryRows.map(row => ({
+      sessionId: String(row.session_id),
+      turnId: row.turn_id === null ? null : String(row.turn_id),
+      toolCallId: String(row.tool_call_id),
+      toolName: String(row.tool_name),
+      sourceType: row.source_type as MemoryObservationRecord['sourceType'],
+      sourceLabel: String(row.source_label),
+      operation: String(row.operation),
+      status: String(row.status),
+      hit: typeof row.hit === 'boolean' ? row.hit : null,
+      itemCount: numberOrNull(row.item_count),
+      bytes: numberOrNull(row.result_bytes),
+      truncated: row.truncated === true,
+      errorCode: row.error_code === null ? null : String(row.error_code),
+      httpStatus: numberOrNull(row.http_status),
+      contentRedacted: true,
+      updatedAt: iso(row.updated_at),
+    }))
+    const checkpoints: ContextCheckpointRecord[] = checkpointRows.map(row => ({
+      id: String(row.event_id),
+      sessionId: String(row.session_id),
+      turnId: row.turn_id === null ? null : String(row.turn_id),
+      kind: 'compact',
+      trigger: row.trigger === 'manual' || row.trigger === 'auto' ? row.trigger : 'unknown',
+      status: String(row.status),
+      boundaryId: row.boundary_id === null ? null : String(row.boundary_id),
+      preTokens: numberOrNull(row.pre_tokens),
+      messagesSummarized: numberOrNull(row.messages_summarized),
+      source: String(row.source),
+      createdAt: iso(row.created_at),
+    }))
+    const capabilities: ContextCapabilityRecord[] = capabilityRows
+      .filter(row => contextCapabilityIds.has(row.id))
+      .map(row => {
+        let capabilityState: ContextCapabilityRecord['state'] = 'not_observable'
+        if (!row.compiled || !row.enabled) capabilityState = 'disabled'
+        else if (row.matrix_class === 'C') capabilityState = 'blocked'
+        else if (row.id === 'tool.VaultHttpFetchTool') capabilityState = 'conditional'
+        else if ([
+          'feature.EXTRACT_MEMORIES',
+          'feature.LODESTONE',
+          'feature.PROMPT_CACHE_BREAK_DETECTION',
+          'feature.TOKEN_BUDGET',
+        ].includes(row.id)) {
+          capabilityState = 'kernel_managed'
+        } else if (row.tested && row.last_test_result === 'passed') capabilityState = 'supported'
+        const reason = row.known_gap
+          ?? (!row.compiled ? 'Not compiled in the locked vendor build.' : null)
+          ?? (!row.enabled ? `Disabled by ${row.conditions.join(', ') || 'runtime conditions'}.` : null)
+          ?? (capabilityState === 'kernel_managed'
+            ? 'Runs inside the vendor kernel without a dedicated ACP status event.'
+            : capabilityState === 'not_observable'
+              ? 'No evidence-backed ACP status is currently observable.'
+              : null)
+        return {
+          id: row.id,
+          name: row.name,
+          matrixClass: row.matrix_class,
+          compiled: row.compiled,
+          enabled: row.enabled,
+          tested: row.tested,
+          lastTestResult: row.last_test_result,
+          state: capabilityState,
+          reason,
+        }
+      })
+    const operations = state.operations && typeof state.operations === 'object'
+      && !Array.isArray(state.operations)
+      ? state.operations as Record<string, JsonValue>
+      : {}
+    const compatibility = state.compatibility && typeof state.compatibility === 'object'
+      && !Array.isArray(state.compatibility)
+      ? state.compatibility as Record<string, JsonValue>
+      : {}
+    return {
+      sessionId,
+      usage: contextUsage(state.usage),
+      transcript,
+      memories,
+      checkpoints,
+      capabilities,
+      operations,
+      compatibility,
+      lifecycle: lifecycleBoundaries,
+    }
+  }
+
   async getExtensions(sessionId: string): Promise<SessionExtensionSnapshot | null> {
     if (!await this.getSession(sessionId)) return null
     const [commandRows, stateRows, auditRows, blockedRows] = await Promise.all([
@@ -610,12 +845,14 @@ export class GatewayStore {
         INSERT INTO sessions (
           id, agent_session_id, workspace_id, title, status, permission_mode,
           model_id, process_state, recovery_strategy, parent_session_id,
-          fork_point_event_id
+          fork_point_event_id, created_vendor_commit, last_vendor_commit
         ) VALUES (
           ${input.sessionId}, ${input.agentSessionId ?? null}, ${input.workspaceId},
           ${strategy === 'fork' ? 'Forked session' : 'New session'}, 'queued',
           ${input.permissionMode}, ${input.modelId}, 'queued', ${strategy},
-          ${input.parentSessionId ?? null}, ${input.forkPointEventId ?? null}
+          ${input.parentSessionId ?? null}, ${input.forkPointEventId ?? null},
+          (SELECT vendor_commit FROM workers WHERE status = 'online' ORDER BY last_heartbeat_at DESC LIMIT 1),
+          (SELECT vendor_commit FROM workers WHERE status = 'online' ORDER BY last_heartbeat_at DESC LIMIT 1)
         )
         RETURNING *
       `
@@ -633,6 +870,12 @@ export class GatewayStore {
         recoveryStrategy: strategy,
         agentSessionId: input.agentSessionId ?? null,
         sourceAgentSessionId: input.sourceAgentSessionId ?? null,
+        createdVendorCommit: rows[0].created_vendor_commit === null
+          ? null
+          : String(rows[0].created_vendor_commit),
+        lastVendorCommit: rows[0].last_vendor_commit === null
+          ? null
+          : String(rows[0].last_vendor_commit),
       }
       await this.insertCommand(transaction, {
         id: input.commandId,
@@ -714,6 +957,12 @@ export class GatewayStore {
           recoveryStrategy: 'resume',
           agentSessionId: String(session.agent_session_id),
           sourceAgentSessionId: null,
+          createdVendorCommit: session.created_vendor_commit === null
+            ? null
+            : String(session.created_vendor_commit),
+          lastVendorCommit: session.last_vendor_commit === null
+            ? null
+            : String(session.last_vendor_commit),
         }
         await this.insertCommand(transaction, {
           id: input.recoveryCommandId,
@@ -801,6 +1050,12 @@ export class GatewayStore {
         recoveryStrategy: input.strategy,
         agentSessionId: String(session.agent_session_id),
         sourceAgentSessionId: null,
+        createdVendorCommit: session.created_vendor_commit === null
+          ? null
+          : String(session.created_vendor_commit),
+        lastVendorCommit: session.last_vendor_commit === null
+          ? null
+          : String(session.last_vendor_commit),
       }
       await this.insertCommand(transaction, {
         id: input.commandId,
@@ -1211,6 +1466,8 @@ export class GatewayStore {
           model_id = COALESCE(${typeof event.payload.modelId === 'string' ? event.payload.modelId : null}, model_id),
           permission_mode = COALESCE(${typeof event.payload.permissionMode === 'string' ? event.payload.permissionMode : null}, permission_mode),
           provider_id = COALESCE(${typeof event.payload.providerId === 'string' ? event.payload.providerId : null}, provider_id),
+          created_vendor_commit = COALESCE(created_vendor_commit, ${typeof event.payload.vendorCommit === 'string' ? event.payload.vendorCommit : null}),
+          last_vendor_commit = COALESCE(${typeof event.payload.vendorCommit === 'string' ? event.payload.vendorCommit : null}, last_vendor_commit),
           recovery_strategy = COALESCE(${typeof event.payload.recoveryStrategy === 'string' ? event.payload.recoveryStrategy : null}, recovery_strategy),
           recovery_error = CASE WHEN ${status === 'recovery_required'} THEN ${String(event.payload.message ?? 'Recovery failed')} ELSE NULL END,
           worktree_path = COALESCE(${typeof event.payload.worktreePath === 'string' ? event.payload.worktreePath : null}, worktree_path),
@@ -1277,8 +1534,80 @@ export class GatewayStore {
     }
     if (event.type === 'context.updated') {
       await this.database`
-        UPDATE sessions SET context_state = ${this.database.json(event.payload)}, updated_at = now()
+        UPDATE sessions SET context_state = context_state || ${this.database.json(event.payload)}, updated_at = now()
         WHERE id = ${event.sessionId}
+      `
+    }
+    if (event.type === 'context.usage_updated') {
+      await this.database`
+        UPDATE sessions SET context_state = jsonb_set(
+          context_state,
+          '{usage}',
+          COALESCE(context_state->'usage', '{}'::jsonb) || ${this.database.json(event.payload)},
+          true
+        ), updated_at = now()
+        WHERE id = ${event.sessionId}
+      `
+    }
+    if (event.type === 'context.compacted') {
+      const transcript = event.payload.transcript
+      const transcriptValue = transcript && typeof transcript === 'object' && !Array.isArray(transcript)
+        ? transcript
+        : null
+      await this.database.begin(async transaction => {
+        await transaction`
+          INSERT INTO context_checkpoints (
+            event_id, session_id, turn_id, kind, trigger, status, boundary_id,
+            pre_tokens, messages_summarized, source, created_at
+          ) VALUES (
+            ${event.id}, ${event.sessionId}, ${event.turnId}, 'compact',
+            ${String(event.payload.trigger ?? 'unknown')}, ${String(event.payload.status ?? 'observed')},
+            ${typeof event.payload.boundaryId === 'string' ? event.payload.boundaryId : null},
+            ${numberOrNull(event.payload.preTokens)},
+            ${numberOrNull(event.payload.messagesSummarized)},
+            ${String(event.payload.source ?? 'acp')}, ${new Date(event.timestamp)}
+          ) ON CONFLICT (event_id) DO NOTHING
+        `
+        await transaction`
+          UPDATE sessions SET context_state = jsonb_set(
+            ${transcriptValue
+              ? transaction`jsonb_set(context_state, '{transcript}', ${transaction.json(transcriptValue)}, true)`
+              : transaction`context_state`},
+            '{compact}', ${transaction.json(event.payload)}, true
+          ), updated_at = now()
+          WHERE id = ${event.sessionId}
+        `
+      })
+    }
+    if (event.type === 'memory.observed') {
+      await this.database`
+        INSERT INTO memory_observations (
+          session_id, tool_call_id, last_event_id, turn_id, tool_name, source_type,
+          source_label, operation, status, hit, item_count, result_bytes, truncated,
+          error_code, http_status, content_redacted, updated_at
+        ) VALUES (
+          ${event.sessionId}, ${String(event.payload.toolCallId ?? event.id)}, ${event.id},
+          ${event.turnId}, ${String(event.payload.toolName ?? 'Memory')},
+          ${String(event.payload.sourceType ?? 'local_memory')},
+          ${String(event.payload.sourceLabel ?? 'Memory')},
+          ${String(event.payload.operation ?? 'unknown')}, ${String(event.payload.status ?? 'unknown')},
+          ${typeof event.payload.hit === 'boolean' ? event.payload.hit : null},
+          ${numberOrNull(event.payload.itemCount)}, ${numberOrNull(event.payload.bytes)},
+          ${event.payload.truncated === true},
+          ${typeof event.payload.errorCode === 'string' ? event.payload.errorCode : null},
+          ${numberOrNull(event.payload.httpStatus)}, true, ${new Date(event.timestamp)}
+        ) ON CONFLICT (session_id, tool_call_id) DO UPDATE SET
+          last_event_id = EXCLUDED.last_event_id,
+          turn_id = COALESCE(EXCLUDED.turn_id, memory_observations.turn_id),
+          status = EXCLUDED.status,
+          hit = COALESCE(EXCLUDED.hit, memory_observations.hit),
+          item_count = COALESCE(EXCLUDED.item_count, memory_observations.item_count),
+          result_bytes = COALESCE(EXCLUDED.result_bytes, memory_observations.result_bytes),
+          truncated = EXCLUDED.truncated,
+          error_code = COALESCE(EXCLUDED.error_code, memory_observations.error_code),
+          http_status = COALESCE(EXCLUDED.http_status, memory_observations.http_status),
+          content_redacted = true,
+          updated_at = EXCLUDED.updated_at
       `
     }
     if (event.type === 'commands.updated') {
