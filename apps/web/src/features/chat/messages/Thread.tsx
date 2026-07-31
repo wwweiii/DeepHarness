@@ -39,6 +39,10 @@ function ReasoningPart() {
   )
 }
 
+function ImagePart() {
+  return <MessagePartPrimitive.Image className="message-image" />
+}
+
 function safeJson(value: unknown): string {
   if (typeof value === 'string') return value
   try {
@@ -357,6 +361,7 @@ function AssistantMessage({ sessionId }: { sessionId: string }) {
       <div className="message-bubble message-bubble-assistant">
         <MessagePrimitive.Parts components={{
           Text: TextPart,
+          Image: ImagePart,
           Reasoning: ReasoningPart,
           tools: { Override: Tool },
         }} />

@@ -167,6 +167,15 @@ export type HarnessEventType =
   | 'background.output_delta'
   | 'background.attached'
   | 'background.stopped'
+  | 'artifact.created'
+  | 'artifact.updated'
+  | 'artifact.rejected'
+  | 'image.output'
+  | 'lsp.diagnostics_updated'
+  | 'lsp.location'
+  | 'web.source_observed'
+  | 'platform.updated'
+  | 'integration.updated'
 
 export const HARNESS_EVENT_TYPES: HarnessEventType[] = [
   'session.created',
@@ -232,6 +241,15 @@ export const HARNESS_EVENT_TYPES: HarnessEventType[] = [
   'background.output_delta',
   'background.attached',
   'background.stopped',
+  'artifact.created',
+  'artifact.updated',
+  'artifact.rejected',
+  'image.output',
+  'lsp.diagnostics_updated',
+  'lsp.location',
+  'web.source_observed',
+  'platform.updated',
+  'integration.updated',
 ]
 
 export interface HarnessEvent {
@@ -855,6 +873,115 @@ export interface BackgroundJobSnapshot {
   job: BackgroundJobRecord
   logs: HarnessEvent[]
   attached: boolean
+}
+
+export type ArtifactStatus = 'ready' | 'rejected' | 'expired'
+
+export interface ArtifactRecord {
+  id: string
+  sessionId: string
+  turnId: string | null
+  toolCallId: string | null
+  kind: 'file' | 'image' | 'notebook' | 'review' | 'unknown'
+  name: string
+  relativePath: string | null
+  workspaceRelativePath: string | null
+  storagePath: string | null
+  mimeType: string
+  sizeBytes: number
+  sha256: string | null
+  contentHash: string | null
+  source: 'workspace' | 'acp' | 'inline'
+  status: ArtifactStatus
+  previewStatus: 'available' | 'unavailable' | 'rejected' | 'pending'
+  previewable: boolean
+  downloadable: boolean
+  contentAvailable: boolean
+  rejectionReason: string | null
+  metadata: Record<string, JsonValue>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ArtifactSnapshot {
+  artifact: ArtifactRecord
+  content: string | null
+}
+
+export type LspSeverity = 'error' | 'warning' | 'information' | 'hint' | 'unknown'
+
+export interface LspDiagnosticRecord {
+  id: string
+  sessionId: string
+  turnId: string | null
+  toolCallId: string | null
+  uri: string
+  path: string | null
+  line: number | null
+  column: number | null
+  endLine: number | null
+  endColumn: number | null
+  severity: LspSeverity
+  message: string
+  code: string | null
+  source: string | null
+  related: JsonValue[]
+  createdAt: string
+}
+
+export interface LspLocationRecord {
+  id: string
+  sessionId: string
+  turnId: string | null
+  toolCallId: string | null
+  operation: 'definition' | 'references' | 'implementation' | 'type_definition' | 'unknown'
+  uri: string
+  path: string | null
+  line: number | null
+  column: number | null
+  endLine: number | null
+  endColumn: number | null
+  preview: string | null
+  metadata: Record<string, JsonValue>
+  createdAt: string
+}
+
+export interface WebSourceRecord {
+  id: string
+  sessionId: string
+  turnId: string | null
+  toolCallId: string | null
+  toolName: 'WebFetchTool' | 'WebSearchTool' | 'WebBrowserTool' | 'unknown'
+  title: string
+  url: string
+  snippet: string | null
+  sourceType: 'search' | 'fetch' | 'browser' | 'unknown'
+  position: number | null
+  metadata: Record<string, JsonValue>
+  createdAt: string
+}
+
+export type PlatformIntegrationKind =
+  | 'lsp'
+  | 'browser'
+  | 'terminal_capture'
+  | 'powershell'
+  | 'ssh'
+  | 'bridge'
+  | 'voice'
+  | 'notifications'
+  | 'scm'
+
+export interface PlatformIntegrationRecord {
+  id: string
+  kind: PlatformIntegrationKind
+  profile: string
+  status: 'available' | 'disabled' | 'blocked' | 'not_tested' | 'error'
+  enabled: boolean
+  conditions: string[]
+  capabilities: string[]
+  evidence: string | null
+  updatedAt: string
 }
 
 export interface GoalSnapshot {

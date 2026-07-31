@@ -1,9 +1,13 @@
 import type { Database } from '@deepharness/database'
 import type postgres from 'postgres'
+import { createHash } from 'node:crypto'
+import path from 'node:path'
 import type {
   ActivityLimits,
   AgentActivityRecord,
   AgentDefinitionSummary,
+  ArtifactRecord,
+  ArtifactSnapshot,
   AvailableCommand,
   ContextCapabilityRecord,
   ContextCheckpointRecord,
@@ -25,9 +29,13 @@ import type {
   TeamPeerRecord,
   McpServerStatus,
   MemoryObservationRecord,
+  LspDiagnosticRecord,
+  LspLocationRecord,
+  PlatformIntegrationRecord,
   SessionContextSnapshot,
   WorkerCommand,
   WorkspaceRecord,
+  WebSourceRecord,
 } from '@deepharness/protocol'
 import { applyAutomationEvent } from './automation.ts'
 
@@ -358,6 +366,100 @@ function commandFromRow(row: {
     type: row.type,
     payload: row.payload,
   } as WorkerCommand
+}
+
+function nullableNumber(value: unknown): number | null {
+  return value === null || value === undefined ? null : numberOrNull(value)
+}
+
+function artifactFromRow(row: Record<string, unknown>): ArtifactRecord {
+  return {
+    id: String(row.id),
+    sessionId: String(row.session_id),
+    turnId: row.turn_id === null ? null : String(row.turn_id),
+    toolCallId: row.tool_call_id === null ? null : String(row.tool_call_id),
+    kind: row.kind as ArtifactRecord['kind'],
+    name: String(row.name),
+    relativePath: row.relative_path === null ? null : String(row.relative_path),
+    workspaceRelativePath: row.workspace_relative_path === null ? null : String(row.workspace_relative_path),
+    // Absolute container paths are an internal registry concern and must not
+    // be exposed through the Gateway API.
+    storagePath: null,
+    mimeType: String(row.mime_type),
+    sizeBytes: Number(row.size_bytes ?? 0),
+    sha256: row.sha256 === null ? null : String(row.sha256),
+    contentHash: row.content_hash === null && row.sha256 === null
+      ? null
+      : String(row.content_hash ?? row.sha256),
+    source: row.source as ArtifactRecord['source'],
+    status: row.status as ArtifactRecord['status'],
+    previewStatus: row.preview_status as ArtifactRecord['previewStatus'],
+    previewable: row.previewable === true,
+    downloadable: row.downloadable === true,
+    contentAvailable: typeof row.content_base64 === 'string' && row.content_base64.length > 0,
+    rejectionReason: row.rejection_reason === null ? null : String(row.rejection_reason),
+    metadata: row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+      ? row.metadata as Record<string, JsonValue>
+      : {},
+    createdAt: iso(row.created_at),
+    updatedAt: iso(row.updated_at),
+  }
+}
+
+function lspDiagnosticFromRow(row: Record<string, unknown>): LspDiagnosticRecord {
+  return {
+    id: String(row.id), sessionId: String(row.session_id),
+    turnId: row.turn_id === null ? null : String(row.turn_id),
+    toolCallId: row.tool_call_id === null ? null : String(row.tool_call_id),
+    uri: String(row.uri), path: row.path === null ? null : String(row.path),
+    line: nullableNumber(row.line), column: nullableNumber(row.column_no),
+    endLine: nullableNumber(row.end_line), endColumn: nullableNumber(row.end_column),
+    severity: row.severity as LspDiagnosticRecord['severity'],
+    message: String(row.message), code: row.code === null ? null : String(row.code),
+    source: row.source === null ? null : String(row.source),
+    related: Array.isArray(row.related) ? row.related as JsonValue[] : [],
+    createdAt: iso(row.created_at),
+  }
+}
+
+function lspLocationFromRow(row: Record<string, unknown>): LspLocationRecord {
+  return {
+    id: String(row.id), sessionId: String(row.session_id),
+    turnId: row.turn_id === null ? null : String(row.turn_id),
+    toolCallId: row.tool_call_id === null ? null : String(row.tool_call_id),
+    operation: row.operation as LspLocationRecord['operation'], uri: String(row.uri),
+    path: row.path === null ? null : String(row.path), line: nullableNumber(row.line),
+    column: nullableNumber(row.column_no), endLine: nullableNumber(row.end_line),
+    endColumn: nullableNumber(row.end_column), preview: row.preview === null ? null : String(row.preview),
+    metadata: row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+      ? row.metadata as Record<string, JsonValue> : {},
+    createdAt: iso(row.created_at),
+  }
+}
+
+function webSourceFromRow(row: Record<string, unknown>): WebSourceRecord {
+  return {
+    id: String(row.id), sessionId: String(row.session_id),
+    turnId: row.turn_id === null ? null : String(row.turn_id),
+    toolCallId: row.tool_call_id === null ? null : String(row.tool_call_id),
+    toolName: row.tool_name as WebSourceRecord['toolName'], title: String(row.title),
+    url: String(row.url), snippet: row.snippet === null ? null : String(row.snippet),
+    sourceType: row.source_type as WebSourceRecord['sourceType'],
+    position: nullableNumber(row.position),
+    metadata: row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+      ? row.metadata as Record<string, JsonValue> : {},
+    createdAt: iso(row.created_at),
+  }
+}
+
+function platformIntegrationFromRow(row: Record<string, unknown>): PlatformIntegrationRecord {
+  return {
+    id: String(row.id), kind: row.kind as PlatformIntegrationRecord['kind'], profile: String(row.profile),
+    status: row.status as PlatformIntegrationRecord['status'], enabled: row.enabled === true,
+    conditions: Array.isArray(row.conditions) ? row.conditions.map(String) : [],
+    capabilities: Array.isArray(row.capabilities) ? row.capabilities.map(String) : [],
+    evidence: row.evidence === null ? null : String(row.evidence), updatedAt: iso(row.updated_at),
+  }
 }
 
 export class GatewayStore {
@@ -758,6 +860,77 @@ export class GatewayStore {
         : [],
       updatedAt: state ? iso(state.updated_at) : null,
     }
+  }
+
+  async listArtifacts(sessionId: string): Promise<ArtifactRecord[]> {
+    const rows = await this.database<Record<string, unknown>[]>`
+      SELECT * FROM artifacts WHERE session_id = ${sessionId}
+      ORDER BY created_at DESC, id DESC LIMIT 200
+    `
+    return rows.map(row => artifactFromRow(row))
+  }
+
+  async getArtifact(id: string): Promise<ArtifactSnapshot | null> {
+    const rows = await this.database<Record<string, unknown>[]>`
+      SELECT * FROM artifacts WHERE id = ${id}
+    `
+    const row = rows[0]
+    if (!row) return null
+    const artifact = artifactFromRow(row)
+    return {
+      artifact,
+      content: typeof row.content_base64 === 'string' && artifact.status === 'ready'
+        ? row.content_base64
+        : null,
+    }
+  }
+
+  async listLspDiagnostics(sessionId: string, uri?: string): Promise<LspDiagnosticRecord[]> {
+    const rows = uri
+      ? await this.database<Record<string, unknown>[]>`
+          SELECT * FROM lsp_diagnostics WHERE session_id = ${sessionId} AND uri = ${uri}
+          ORDER BY created_at DESC, id DESC LIMIT 500
+        `
+      : await this.database<Record<string, unknown>[]>`
+          SELECT * FROM lsp_diagnostics WHERE session_id = ${sessionId}
+          ORDER BY created_at DESC, id DESC LIMIT 500
+        `
+    return rows.map(row => lspDiagnosticFromRow(row))
+  }
+
+  async listLspLocations(sessionId: string, operation?: string): Promise<LspLocationRecord[]> {
+    const rows = operation
+      ? await this.database<Record<string, unknown>[]>`
+          SELECT * FROM lsp_locations WHERE session_id = ${sessionId} AND operation = ${operation}
+          ORDER BY created_at DESC, id DESC LIMIT 500
+        `
+      : await this.database<Record<string, unknown>[]>`
+          SELECT * FROM lsp_locations WHERE session_id = ${sessionId}
+          ORDER BY created_at DESC, id DESC LIMIT 500
+        `
+    return rows.map(row => lspLocationFromRow(row))
+  }
+
+  async listWebSources(sessionId: string): Promise<WebSourceRecord[]> {
+    const rows = await this.database<Record<string, unknown>[]>`
+      SELECT * FROM web_sources WHERE session_id = ${sessionId}
+      ORDER BY created_at DESC, position ASC NULLS LAST, id ASC LIMIT 500
+    `
+    return rows.map(row => webSourceFromRow(row))
+  }
+
+  async listPlatformIntegrations(sessionId?: string): Promise<PlatformIntegrationRecord[]> {
+    const rows = sessionId
+      ? await this.database<Record<string, unknown>[]>`
+          SELECT * FROM platform_integrations
+          WHERE session_id = ${sessionId} OR session_id IS NULL
+          ORDER BY kind ASC, profile ASC
+        `
+      : await this.database<Record<string, unknown>[]>`
+          SELECT * FROM platform_integrations WHERE session_id IS NULL
+          ORDER BY kind ASC, profile ASC
+        `
+    return rows.map(row => platformIntegrationFromRow(row))
   }
 
   async isPromptCommandAvailable(sessionId: string, name: string): Promise<boolean> {
@@ -1610,6 +1783,177 @@ export class GatewayStore {
           content_redacted = true,
           updated_at = EXCLUDED.updated_at
       `
+    }
+    if (event.type === 'artifact.created' || event.type === 'artifact.updated' || event.type === 'artifact.rejected') {
+      const payload = event.payload
+      const artifactId = typeof payload.artifactId === 'string' ? payload.artifactId : event.id
+      const sessionRows = await this.database<{ container_path: string }[]>`
+        SELECT workspace.container_path FROM sessions
+        JOIN workspaces workspace ON workspace.id = sessions.workspace_id
+        WHERE sessions.id = ${event.sessionId}
+      `
+      const workspaceRoot = sessionRows[0]?.container_path ?? ''
+      const storagePath = typeof payload.storagePath === 'string' ? payload.storagePath : null
+      const relativePath = typeof payload.relativePath === 'string' ? payload.relativePath : null
+      const pathWithinWorkspace = !storagePath || Boolean(workspaceRoot && (() => {
+        const relative = path.relative(workspaceRoot, path.resolve(storagePath))
+        return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative))
+      })())
+      const requestedStatus = String(payload.status ?? (event.type === 'artifact.rejected' ? 'rejected' : 'ready'))
+      const status = pathWithinWorkspace ? requestedStatus : 'rejected'
+      const rejectionReason = pathWithinWorkspace
+        ? (typeof payload.rejectionReason === 'string' ? payload.rejectionReason : null)
+        : 'ARTIFACT_PATH_OUTSIDE_WORKSPACE'
+      const encodedContent = typeof payload.contentBase64 === 'string' ? payload.contentBase64.replace(/\s/g, '') : null
+      const validBase64 = encodedContent !== null
+        && encodedContent.length <= 14 * 1024 * 1024
+        && /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encodedContent)
+      const decodedContent = validBase64 ? Buffer.from(encodedContent, 'base64') : null
+      const declaredSize = numberOrNull(payload.sizeBytes)
+      const declaredHash = typeof payload.sha256 === 'string' ? payload.sha256.toLowerCase() : null
+      const declaredContentHash = typeof payload.contentHash === 'string' ? payload.contentHash.toLowerCase() : null
+      const computedHash = decodedContent ? createHash('sha256').update(decodedContent).digest('hex') : null
+      const integrityFailure = status === 'ready' && encodedContent !== null
+        && (!validBase64 || decodedContent === null
+          || (declaredSize !== null && declaredSize !== decodedContent.byteLength)
+          || (declaredHash !== null && declaredHash !== computedHash)
+          || (declaredContentHash !== null && declaredContentHash !== computedHash))
+      const storedStatus = integrityFailure ? 'rejected' : status
+      const contentBase64 = storedStatus === 'ready' && decodedContent !== null ? encodedContent : null
+      const storedRejectionReason = integrityFailure
+        ? 'ARTIFACT_CONTENT_INTEGRITY_FAILED'
+        : rejectionReason
+      await this.database`
+        INSERT INTO artifacts (
+          id, session_id, turn_id, tool_call_id, kind, name, relative_path,
+          workspace_relative_path, storage_path, mime_type, size_bytes, sha256,
+          content_hash, source, status, preview_status, previewable, downloadable,
+          content_base64, rejection_reason, metadata, created_at, updated_at
+        ) VALUES (
+          ${artifactId}, ${event.sessionId}, ${event.turnId},
+          ${typeof payload.toolCallId === 'string' ? payload.toolCallId : null},
+          ${String(payload.kind ?? (String(payload.mimeType ?? '').startsWith('image/') ? 'image' : 'file'))},
+          ${String(payload.name ?? 'artifact')}, ${relativePath}, ${relativePath}, ${storagePath},
+          ${String(payload.mimeType ?? 'application/octet-stream')},
+          ${numberOrNull(payload.sizeBytes) ?? 0},
+          ${typeof payload.sha256 === 'string' ? payload.sha256 : null},
+          ${typeof payload.contentHash === 'string' ? payload.contentHash : typeof payload.sha256 === 'string' ? payload.sha256 : null},
+          ${String(payload.source ?? 'workspace')}, ${storedStatus},
+          ${storedStatus === 'ready' && contentBase64 !== null && payload.previewable === true ? 'available' : storedStatus === 'rejected' ? 'rejected' : 'unavailable'},
+          ${storedStatus === 'ready' && payload.previewable === true},
+          ${storedStatus === 'ready' && payload.downloadable !== false && contentBase64 !== null},
+          ${contentBase64}, ${storedRejectionReason}, ${this.database.json(payload.metadata ?? {})},
+          ${new Date(event.timestamp)}, ${new Date(event.timestamp)}
+        ) ON CONFLICT (id) DO UPDATE SET
+          status = EXCLUDED.status,
+          content_base64 = COALESCE(EXCLUDED.content_base64, artifacts.content_base64),
+          rejection_reason = EXCLUDED.rejection_reason,
+          updated_at = EXCLUDED.updated_at
+      `
+    }
+    if (event.type === 'lsp.diagnostics_updated') {
+      const diagnostics = Array.isArray(event.payload.diagnostics) ? event.payload.diagnostics : []
+      await this.database.begin(async transaction => {
+        for (const value of diagnostics) {
+          if (!value || typeof value !== 'object' || Array.isArray(value)) continue
+          const diagnostic = value as Record<string, JsonValue>
+          await transaction`
+            INSERT INTO lsp_diagnostics (
+              id, session_id, turn_id, tool_call_id, uri, path, line, column_no,
+              end_line, end_column, severity, message, code, source, related, created_at
+            ) VALUES (
+              ${typeof diagnostic.id === 'string' ? diagnostic.id : crypto.randomUUID()},
+              ${event.sessionId}, ${event.turnId},
+              ${typeof diagnostic.toolCallId === 'string' ? diagnostic.toolCallId : null},
+              ${String(diagnostic.uri ?? '')}, ${typeof diagnostic.path === 'string' ? diagnostic.path : null},
+              ${numberOrNull(diagnostic.line)}, ${numberOrNull(diagnostic.column)},
+              ${numberOrNull(diagnostic.endLine)}, ${numberOrNull(diagnostic.endColumn)},
+              ${String(diagnostic.severity ?? 'unknown')}, ${String(diagnostic.message ?? '')},
+              ${typeof diagnostic.code === 'string' ? diagnostic.code : null},
+              ${typeof diagnostic.source === 'string' ? diagnostic.source : null},
+              ${transaction.json(diagnostic.related ?? [])}, ${new Date(event.timestamp)}
+            ) ON CONFLICT (id) DO NOTHING
+          `
+        }
+      })
+    }
+    if (event.type === 'lsp.location') {
+      const locations = Array.isArray(event.payload.locations) ? event.payload.locations : []
+      await this.database.begin(async transaction => {
+        for (const value of locations) {
+          if (!value || typeof value !== 'object' || Array.isArray(value)) continue
+          const location = value as Record<string, JsonValue>
+          await transaction`
+            INSERT INTO lsp_locations (
+              id, session_id, turn_id, tool_call_id, operation, uri, path, line,
+              column_no, end_line, end_column, preview, metadata, created_at
+            ) VALUES (
+              ${typeof location.id === 'string' ? location.id : crypto.randomUUID()},
+              ${event.sessionId}, ${event.turnId},
+              ${typeof location.toolCallId === 'string' ? location.toolCallId : null},
+              ${String(location.operation ?? 'unknown')}, ${String(location.uri ?? '')},
+              ${typeof location.path === 'string' ? location.path : null},
+              ${numberOrNull(location.line)}, ${numberOrNull(location.column)},
+              ${numberOrNull(location.endLine)}, ${numberOrNull(location.endColumn)},
+              ${typeof location.preview === 'string' ? location.preview : null},
+              ${transaction.json(location.metadata ?? {})}, ${new Date(event.timestamp)}
+            ) ON CONFLICT (id) DO NOTHING
+          `
+        }
+      })
+    }
+    if (event.type === 'web.source_observed') {
+      const sources = Array.isArray(event.payload.sources) ? event.payload.sources : []
+      await this.database.begin(async transaction => {
+        for (const value of sources) {
+          if (!value || typeof value !== 'object' || Array.isArray(value)) continue
+          const source = value as Record<string, JsonValue>
+          const url = String(source.url ?? '')
+          if (!/^https?:\/\//i.test(url)) continue
+          await transaction`
+            INSERT INTO web_sources (
+              id, session_id, turn_id, tool_call_id, tool_name, title, url,
+              snippet, source_type, position, metadata, created_at
+            ) VALUES (
+              ${typeof source.id === 'string' ? source.id : crypto.randomUUID()},
+              ${event.sessionId}, ${event.turnId},
+              ${typeof source.toolCallId === 'string' ? source.toolCallId : null},
+              ${String(source.toolName ?? 'unknown')}, ${String(source.title ?? url)}, ${url},
+              ${typeof source.snippet === 'string' ? source.snippet : null},
+              ${String(source.sourceType ?? 'unknown')}, ${numberOrNull(source.position)},
+              ${transaction.json(source.metadata ?? {})}, ${new Date(event.timestamp)}
+            ) ON CONFLICT (id) DO NOTHING
+          `
+        }
+      })
+    }
+    if (event.type === 'platform.updated' || event.type === 'integration.updated') {
+      const integrations = Array.isArray(event.payload.integrations) ? event.payload.integrations : []
+      await this.database.begin(async transaction => {
+        for (const value of integrations) {
+          if (!value || typeof value !== 'object' || Array.isArray(value)) continue
+          const integration = value as Record<string, JsonValue>
+          const kind = String(integration.kind ?? 'unknown')
+          const profile = String(integration.profile ?? 'base')
+          const id = `${event.sessionId}:${kind}:${profile}`
+          await transaction`
+            INSERT INTO platform_integrations (
+              id, session_id, kind, profile, status, enabled, conditions,
+              capabilities, evidence, updated_at
+            ) VALUES (
+              ${id}, ${event.sessionId}, ${kind}, ${profile},
+              ${String(integration.status ?? 'not_tested')}, ${integration.enabled === true},
+              ${transaction.json(integration.conditions ?? [])},
+              ${transaction.json(integration.capabilities ?? [])},
+              ${typeof integration.evidence === 'string' ? integration.evidence : null},
+              ${new Date(event.timestamp)}
+            ) ON CONFLICT (id) DO UPDATE SET
+              status = EXCLUDED.status, enabled = EXCLUDED.enabled,
+              conditions = EXCLUDED.conditions, capabilities = EXCLUDED.capabilities,
+              evidence = EXCLUDED.evidence, updated_at = EXCLUDED.updated_at
+          `
+        }
+      })
     }
     if (event.type === 'commands.updated') {
       const commands = Array.isArray(event.payload.commands) ? event.payload.commands : []

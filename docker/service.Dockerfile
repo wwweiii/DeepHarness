@@ -71,6 +71,32 @@ ENV NODE_ENV=production \
 USER agent
 CMD ["bun", "run", "apps/worker/src/main.ts"]
 
+# Optional platform profiles. The base Worker intentionally has no language
+# server or browser runtime; these stages make the dependency boundary explicit.
+FROM worker AS worker-lsp
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nodejs npm \
+    && npm install --global --no-audit --no-fund typescript typescript-language-server \
+    && mkdir -p /opt/deepharness/typescript-lsp-plugin/.claude-plugin \
+    && rm -rf /var/lib/apt/lists/*
+COPY config/platforms/typescript-lsp /opt/deepharness/typescript-lsp-plugin
+RUN chown -R agent:agent /opt/deepharness/typescript-lsp-plugin
+USER agent
+ENV ENABLE_LSP_TOOL=1 \
+    AGENT_PLUGIN_DIRS=/opt/deepharness/typescript-lsp-plugin
+
+FROM worker AS worker-browser
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends chromium \
+    && rm -rf /var/lib/apt/lists/*
+USER agent
+ENV WEB_BROWSER_PROFILE=chromium \
+    WEB_BROWSER_ENABLED=1 \
+    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium \
+    VENDOR_WEB_BROWSER_COMPILED=0
+
 FROM workspace-deps AS test-model
 
 ENV NODE_ENV=test
@@ -109,7 +135,8 @@ COPY playwright.config.ts ./
 COPY tests ./tests
 COPY config ./config
 COPY docs ./docs
-COPY compose.yaml compose.test.yaml compose.providers.yaml .gitmodules Makefile ./
+COPY docker ./docker
+COPY compose.yaml compose.test.yaml compose.providers.yaml compose.platforms.yaml .gitmodules Makefile ./
 
 ENV NODE_ENV=test \
     HOME=/home/node \

@@ -42,6 +42,26 @@ describe('Harness event projection', () => {
     expect(projection.messages[1]?.status).toEqual({ type: 'complete', reason: 'stop' })
   })
 
+  test('projects image output as an assistant-ui data URL image part', () => {
+    const projection = projectHarnessEvents([
+      event(2, 'user.message_created', { text: 'Create an image' }),
+      event(3, 'turn.started'),
+      event(4, 'assistant.message_started'),
+      event(5, 'image.output', {
+        artifactId: '00000000-0000-4000-8000-000000000800',
+        mimeType: 'image/png',
+        contentBase64: 'iVBORw0KGgo=',
+      }),
+      event(6, 'assistant.message_completed', { stopReason: 'end_turn' }),
+      event(7, 'turn.completed', { stopReason: 'end_turn' }),
+    ])
+
+    expect(projection.messages[1]?.content).toEqual([
+      { type: 'image', image: 'data:image/png;base64,iVBORw0KGgo=' },
+    ])
+    expect(projection.messages[1]?.status).toEqual({ type: 'complete', reason: 'stop' })
+  })
+
   test('keeps cancellation and failures as message status instead of fake text', () => {
     const cancelled = projectHarnessEvents([
       event(2, 'user.message_created', { text: '[slow]' }),

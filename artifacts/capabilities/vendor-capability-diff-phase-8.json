@@ -1,0 +1,866 @@
+{
+  "schema_version": 1,
+  "status": "compared",
+  "previous_vendor_commit": "987e55034c38497e1081367fdbe2056a6603ebc7",
+  "current_vendor_commit": "987e55034c38497e1081367fdbe2056a6603ebc7",
+  "generated_at": "2026-07-31T07:12:18.540Z",
+  "added": [],
+  "removed": [],
+  "changed": [
+    {
+      "id": "acp.prompt.image",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": "ACP prompt conversion does not pass image blocks to the model.",
+          "after": "The Web input picker is intentionally disabled until a real image block reaches the model."
+        }
+      ]
+    },
+    {
+      "id": "command.local-jsx.brief",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": "ACP available_commands_update only publishes prompt commands.",
+          "after": "ACP available_commands_update does not expose local-jsx commands."
+        }
+      ]
+    },
+    {
+      "id": "command.local-jsx.goal",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": "ACP available_commands_update only publishes prompt commands.",
+          "after": "Goal command UI depends on the vendor terminal lifecycle; the Harness Goal API is a durable adapter, not a claim of ACP command parity."
+        }
+      ]
+    },
+    {
+      "id": "command.local-jsx.monitor",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": "ACP available_commands_update only publishes prompt commands.",
+          "after": "The terminal Monitor command is local-jsx and cannot be invoked through ACP available commands."
+        }
+      ]
+    },
+    {
+      "id": "command.local-jsx.triggers",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": "ACP available_commands_update only publishes prompt commands.",
+          "after": "ACP available_commands_update does not expose the local-jsx trigger registry command."
+        }
+      ]
+    },
+    {
+      "id": "command.local-jsx.workflows",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": "ACP available_commands_update only publishes prompt commands.",
+          "after": "ACP cannot invoke the vendor local-jsx Workflow browser."
+        }
+      ]
+    },
+    {
+      "id": "feature.AGENT_TRIGGERS",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Trigger registration is local-jsx and trigger delivery is mounted by a REPL hook rather than the ACP session service."
+        }
+      ]
+    },
+    {
+      "id": "feature.AGENT_TRIGGERS_REMOTE",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "No test credential, callback endpoint, or ACP trigger registry is available in the base Docker profile."
+        }
+      ]
+    },
+    {
+      "id": "feature.AWAY_SUMMARY",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "The vendor useAwaySummary hook is mounted by the REPL UI and has no ACP lifecycle event."
+        }
+      ]
+    },
+    {
+      "id": "feature.BG_SESSIONS",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "feature.BRIDGE_MODE",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Requires a separately authenticated remote control profile."
+        }
+      ]
+    },
+    {
+      "id": "feature.GOAL",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "feature.HISTORY_SNIP",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor feature must be compiled and exposed through ACP before enabling."
+        }
+      ]
+    },
+    {
+      "id": "feature.KAIROS",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "The vendor Kairos daemon lifecycle is platform-bound and is represented by the Harness scheduler rather than claimed as ACP-native."
+        }
+      ]
+    },
+    {
+      "id": "feature.KAIROS_BRIEF",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "The vendor Brief-only terminal presentation and daemon lifecycle are not exposed by ACP."
+        }
+      ]
+    },
+    {
+      "id": "feature.MONITOR_TOOL",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "feature.REVIEW_ARTIFACT",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Requires a vendor feature-enabled ACP review contract."
+        }
+      ]
+    },
+    {
+      "id": "feature.SSH_REMOTE",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Requires an authenticated, isolated remote profile."
+        }
+      ]
+    },
+    {
+      "id": "feature.TERMINAL_PANEL",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Terminal panel support requires a separate terminal-capable ACP profile."
+        }
+      ]
+    },
+    {
+      "id": "feature.VOICE_MODE",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Requires a browser voice adapter and explicit privacy/permission controls."
+        }
+      ]
+    },
+    {
+      "id": "feature.WEB_BROWSER_TOOL",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Rebuilding the vendor with WEB_BROWSER_TOOL is outside the locked-vendor Harness scope."
+        }
+      ]
+    },
+    {
+      "id": "feature.WORKFLOW_SCRIPTS",
+      "changes": [
+        {
+          "field": "ui_supported",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.ArtifactTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": true
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "The vendor cloud upload result may fail without its external token, but the ACP tool invocation and workspace-bounded Harness artifact transport are proven independently. Vendor ACP does not forward the user SDK message carrying tool_result as a live terminal update; DeepHarness recovers rawOutput after vendor transcript persistence when available."
+        }
+      ]
+    },
+    {
+      "id": "tool.BriefTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "BriefTool availability depends on terminal bootstrap state and is not directly advertised or invoked through ACP."
+        }
+      ]
+    },
+    {
+      "id": "tool.CronCreateTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.CronDeleteTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.CronListTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.GoalTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "ACP GoalTool lifecycle is not a durable service boundary; Harness state is authoritative for continuation and audit semantics."
+        }
+      ]
+    },
+    {
+      "id": "tool.LSPTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Requires an upstream ACP bootstrap that loads inline plugins and calls initializeLspServerManager without modifying the locked vendor."
+        }
+      ]
+    },
+    {
+      "id": "tool.MonitorTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.PowerShellTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "A Windows profile would require a separate supported Worker image and security boundary."
+        }
+      ]
+    },
+    {
+      "id": "tool.RemoteTriggerTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "RemoteTrigger requires an external authenticated callback, provider credentials, and an ACP-visible registration lifecycle."
+        }
+      ]
+    },
+    {
+      "id": "tool.ReviewArtifactTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "REVIEW_ARTIFACT is a vendor ACP gap; artifact preview and download do not imply review approval semantics."
+        }
+      ]
+    },
+    {
+      "id": "tool.ScheduleCronTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Vendor Kairos daemon and local trigger command are not relied on by the ACP Web session."
+        }
+      ]
+    },
+    {
+      "id": "tool.SendUserFileTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Requires Bridge/Direct Connect authentication; adapter coverage does not claim vendor upload support."
+        }
+      ]
+    },
+    {
+      "id": "tool.SleepTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        }
+      ]
+    },
+    {
+      "id": "tool.SnipTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "No ACP invocation is claimed until the vendor feature is compiled and a context contract exists."
+        }
+      ]
+    },
+    {
+      "id": "tool.TerminalCaptureTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "TTY panel capture is outside the standard ACP Web session boundary."
+        }
+      ]
+    },
+    {
+      "id": "tool.WebBrowserTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "A vendor build with WEB_BROWSER_TOOL compiled=true is required before a WebBrowser ACP invocation can be claimed."
+        }
+      ]
+    },
+    {
+      "id": "tool.WebFetchTool",
+      "changes": [
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Real outbound fetch requires an enabled network policy and provider credentials."
+        }
+      ]
+    },
+    {
+      "id": "tool.WebSearchTool",
+      "changes": [
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Search backend availability varies by provider and outbound network policy."
+        }
+      ]
+    },
+    {
+      "id": "tool.WorkflowTool",
+      "changes": [
+        {
+          "field": "invocable",
+          "before": null,
+          "after": false
+        },
+        {
+          "field": "tested",
+          "before": false,
+          "after": true
+        },
+        {
+          "field": "known_gap",
+          "before": null,
+          "after": "Workflow execution is represented by Harness-managed ACP prompts; vendor local command UI remains outside ACP."
+        }
+      ]
+    }
+  ],
+  "regressions": [],
+  "gate": {
+    "unreviewed_additions": [],
+    "unapproved_regressions": []
+  }
+}

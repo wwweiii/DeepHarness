@@ -1,0 +1,5 @@
+{
+  "name": "deepharness-typescript-lsp",
+  "version": "1.0.0",
+  "description": "DeepHarness optional TypeScript language-server profile"
+}

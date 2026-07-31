@@ -1,0 +1,36 @@
+name: deepharness-platforms
+
+# Optional profiles inherit the complete base Worker contract (provider
+# credentials, healthcheck, limits, volumes, and control network). Run one
+# profile at a time with the base worker scaled to zero.
+services:
+  worker-lsp:
+    extends:
+      file: compose.yaml
+      service: worker
+    profiles: [lsp]
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+      target: worker-lsp
+    environment:
+      WORKER_ID: ${WORKER_ID:-phase-8-lsp-worker}
+      ENABLE_LSP_TOOL: "1"
+      AGENT_PLUGIN_DIRS: /opt/deepharness/typescript-lsp-plugin
+      VENDOR_ACP_LSP_BOOTSTRAP: "0"
+
+  worker-browser:
+    extends:
+      file: compose.yaml
+      service: worker
+    profiles: [browser]
+    build:
+      context: .
+      dockerfile: docker/service.Dockerfile
+      target: worker-browser
+    environment:
+      WORKER_ID: ${WORKER_ID:-phase-8-browser-worker}
+      WEB_BROWSER_PROFILE: chromium
+      WEB_BROWSER_ENABLED: "1"
+      PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: /usr/bin/chromium
+      VENDOR_WEB_BROWSER_COMPILED: "0"

@@ -273,6 +273,94 @@ app.get('/api/sessions/:sessionId/extensions', async c => {
   return c.json(snapshot)
 })
 
+app.get('/api/sessions/:sessionId/artifacts', async c => {
+  if (!await store.getSession(c.req.param('sessionId'))) return apiError('Session not found', 404)
+  return c.json({ artifacts: await store.listArtifacts(c.req.param('sessionId')) })
+})
+
+app.get('/api/sessions/:sessionId/lsp/diagnostics', async c => {
+  if (!await store.getSession(c.req.param('sessionId'))) return apiError('Session not found', 404)
+  return c.json({ diagnostics: await store.listLspDiagnostics(c.req.param('sessionId'), c.req.query('uri')) })
+})
+
+app.get('/api/sessions/:sessionId/lsp/locations', async c => {
+  if (!await store.getSession(c.req.param('sessionId'))) return apiError('Session not found', 404)
+  return c.json({ locations: await store.listLspLocations(c.req.param('sessionId'), c.req.query('operation')) })
+})
+
+app.get('/api/sessions/:sessionId/web/sources', async c => {
+  if (!await store.getSession(c.req.param('sessionId'))) return apiError('Session not found', 404)
+  return c.json({ sources: await store.listWebSources(c.req.param('sessionId')) })
+})
+
+app.get('/api/sessions/:sessionId/platform', async c => {
+  if (!await store.getSession(c.req.param('sessionId'))) return apiError('Session not found', 404)
+  return c.json({ integrations: await store.listPlatformIntegrations(c.req.param('sessionId')) })
+})
+
+app.get('/api/platform/integrations', async c => c.json({ integrations: await store.listPlatformIntegrations() }))
+
+async function artifactContentResponse(
+  artifactId: string,
+  disposition: 'inline' | 'attachment',
+): Promise<Response> {
+  const snapshot = await store.getArtifact(artifactId)
+  if (!snapshot) return apiError('Artifact not found', 404)
+  if (snapshot.artifact.status !== 'ready') return apiError(snapshot.artifact.rejectionReason ?? 'Artifact is unavailable', 409)
+  if (!snapshot.content) return apiError('Artifact content is not available in the Gateway artifact registry', 503)
+  const mimeType = snapshot.artifact.mimeType.split(';', 1)[0]!.trim().toLowerCase()
+  const dangerousName = /\.(?:bat|cmd|com|command|exe|msi|php|ps1|sh|zsh)$/i.test(snapshot.artifact.name)
+  if (dangerousName || [
+    'application/x-sh', 'application/x-executable', 'application/x-msdownload',
+    'application/x-httpd-php', 'application/vnd.microsoft.portable-executable',
+  ].includes(mimeType)) {
+    return apiError('Artifact MIME type is blocked by the platform policy', 422)
+  }
+  const content = Buffer.from(snapshot.content, 'base64')
+  const safeName = snapshot.artifact.name.replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 180) || 'artifact'
+  const headers = new Headers({
+    'content-type': mimeType,
+    'content-length': String(content.byteLength),
+    'cache-control': 'private, no-store',
+    'x-content-type-options': 'nosniff',
+    'content-disposition': `${disposition}; filename="${safeName}"`,
+  })
+  if (disposition === 'inline') {
+    headers.set('content-security-policy', "sandbox; default-src 'none'; img-src data:; style-src 'unsafe-inline'")
+  }
+  return new Response(content, { headers })
+}
+
+app.get('/api/sessions/:sessionId/artifacts/:artifactId', async c => {
+  const session = await store.getSession(c.req.param('sessionId'))
+  const snapshot = await store.getArtifact(c.req.param('artifactId'))
+  if (!session || !snapshot || snapshot.artifact.sessionId !== session.id) return apiError('Artifact not found', 404)
+  return c.json({ artifact: snapshot.artifact })
+})
+
+app.get('/api/sessions/:sessionId/artifacts/:artifactId/preview', async c => {
+  const session = await store.getSession(c.req.param('sessionId'))
+  const snapshot = await store.getArtifact(c.req.param('artifactId'))
+  if (!session || !snapshot || snapshot.artifact.sessionId !== session.id) return apiError('Artifact not found', 404)
+  if (!snapshot.artifact.previewable) return apiError('Artifact preview is disabled for this MIME type', 422)
+  return artifactContentResponse(snapshot.artifact.id, 'inline')
+})
+
+app.get('/api/sessions/:sessionId/artifacts/:artifactId/download', async c => {
+  const session = await store.getSession(c.req.param('sessionId'))
+  const snapshot = await store.getArtifact(c.req.param('artifactId'))
+  if (!session || !snapshot || snapshot.artifact.sessionId !== session.id) return apiError('Artifact not found', 404)
+  if (!snapshot.artifact.downloadable) return apiError('Artifact download is disabled', 422)
+  return artifactContentResponse(snapshot.artifact.id, 'attachment')
+})
+
+// Artifact identifiers are deliberately not addressable without a session
+// scope. Keep explicit API 404s so the SPA fallback cannot turn a forbidden
+// alias into a misleading 200/index.html response.
+app.get('/api/artifacts/:artifactId', async () => apiError('Artifact route requires a session scope', 404))
+app.get('/api/artifacts/:artifactId/preview', async () => apiError('Artifact route requires a session scope', 404))
+app.get('/api/artifacts/:artifactId/download', async () => apiError('Artifact route requires a session scope', 404))
+
 app.get('/api/workspaces', async c => c.json({ workspaces: await store.listWorkspaces() }))
 
 app.post('/api/workspaces', async c => {

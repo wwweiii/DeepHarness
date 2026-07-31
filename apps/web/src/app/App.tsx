@@ -13,6 +13,7 @@ import {
   Box,
   CirclePlus,
   Clock3,
+  FileCode2,
   GitFork,
   MessagesSquare,
   Network,
@@ -28,6 +29,7 @@ import { CapabilityPage } from '../features/capabilities/CapabilityPage.tsx'
 import { ExtensionsPage } from '../features/extensions/ExtensionsPage.tsx'
 import { ContextPanel } from '../features/context/ContextPanel.tsx'
 import { AutomationPanel } from '../features/automation/AutomationPanel.tsx'
+import { PlatformPanel } from '../features/platform/PlatformPanel.tsx'
 import { Thread } from '../features/chat/messages/Thread.tsx'
 import { HarnessRuntimeProvider } from '../features/chat/runtime/HarnessRuntimeProvider.tsx'
 import type { HarnessProjection } from '../features/chat/runtime/reducer.ts'
@@ -332,7 +334,7 @@ function Shell({
     projection: projectionFromSession(session),
     connected: false,
   })
-  const [view, setView] = useState<'chat' | 'capabilities' | 'extensions' | 'automation' | 'activity'>('chat')
+  const [view, setView] = useState<'chat' | 'capabilities' | 'extensions' | 'automation' | 'platform' | 'activity'>('chat')
   const [definitions, setDefinitions] = useState<AgentDefinitionSummary[]>([])
   const [workspaceId, setWorkspaceId] = useState(workspaces[0]?.id ?? '')
   const [busy, setBusy] = useState(false)
@@ -444,6 +446,9 @@ function Shell({
           <button className={view === 'automation' ? 'view-item active' : 'view-item'} onClick={() => setView('automation')}>
             <Clock3 size={16} /> Automation
           </button>
+          <button className={view === 'platform' ? 'view-item active' : 'view-item'} onClick={() => setView('platform')}>
+            <FileCode2 size={16} /> Artifacts
+          </button>
           <div className="rail-footer">
             <Box size={16} aria-hidden="true" />
             <span>{workspace?.name ?? 'Workspace unavailable'}<small>{workspace?.mode ?? 'unknown'}</small></span>
@@ -457,6 +462,7 @@ function Shell({
             <button className={view === 'extensions' ? 'active' : ''} onClick={() => setView('extensions')}>Extensions</button>
             <button className={view === 'capabilities' ? 'active' : ''} onClick={() => setView('capabilities')}>Capabilities</button>
             <button className={view === 'automation' ? 'active' : ''} onClick={() => setView('automation')}>Automation</button>
+            <button className={view === 'platform' ? 'active' : ''} onClick={() => setView('platform')}>Artifacts</button>
           </div>
           {view === 'chat' ? <>
             <header className="workbench-header">
@@ -530,6 +536,7 @@ function Shell({
               mutableState={live.projection.status === 'idle' && live.projection.processState === 'running'}
             />
             : view === 'automation' ? <AutomationPanel sessionId={session.id} />
+            : view === 'platform' ? <PlatformPanel sessionId={session.id} />
             : <div className="mobile-activity">
             <ActivityInspector
               session={session}

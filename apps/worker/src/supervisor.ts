@@ -40,6 +40,14 @@ import {
   type DiscoveredExtensions,
 } from './extensions.ts'
 import { discoverWorkflows, workflowDefinitionId } from './workflows.ts'
+import {
+  artifactFromToolResult,
+  imageArtifact,
+  isArtifactTool,
+  lspPayloads,
+  webSourcePayload,
+} from './artifacts.ts'
+import { evaluateOutboundRequest, outboundAllowlist, outboundNetworkPolicy } from './network.ts'
 
 type SendMessage = (message: WorkerToGatewayMessage) => void
 type PromptCommand = Extract<WorkerCommand, { type: 'prompt' }>
@@ -253,6 +261,10 @@ class AgentSessionRuntime {
     const runtime = process.env.AGENT_RUNTIME ?? 'bun'
     const entrypoint = process.env.AGENT_ENTRYPOINT ?? '/opt/claude-code/dist/cli-bun.js'
     const client = new AcpClient({
+      // The locked vendor recognizes ACP only when --acp is argv[2]. Its ACP
+      // fast path does not parse --plugin-dir or initialize the LSP manager;
+      // inserting plugin arguments here would silently select the normal CLI
+      // and fail with "unknown option --acp".
       command: [runtime, entrypoint, '--acp'],
       cwd: this.prepared.cwd,
       env: agentEnvironment(),
@@ -420,7 +432,114 @@ class AgentSessionRuntime {
       ...(transcript ? { transcript: this.transcriptPayload(transcript) } : {}),
       activityLimits: jsonValue(this.activity.limits),
     }, null)
+    this.emitPlatformStatus(initialize)
     this.onIdle(this)
+  }
+
+  private emitPlatformStatus(initialize: Record<string, unknown>): void {
+    const lspEnabled = process.env.ENABLE_LSP_TOOL === '1' || process.env.ENABLE_LSP_TOOL === 'true'
+    const lspBinary = Boolean(Bun.which('typescript-language-server'))
+    const lspPluginConfigured = (process.env.AGENT_PLUGIN_DIRS ?? '')
+      .split(',')
+      .some(value => value.trim().length > 0)
+    const lspAcpBootstrap = process.env.VENDOR_ACP_LSP_BOOTSTRAP === '1'
+      || process.env.VENDOR_ACP_LSP_BOOTSTRAP === 'true'
+    const lspAvailable = lspEnabled && lspBinary && lspPluginConfigured && lspAcpBootstrap
+    const browserProfileEnabled = process.env.WEB_BROWSER_PROFILE === 'chromium'
+      || process.env.WEB_BROWSER_ENABLED === '1'
+    const hasBrowserBinary = Boolean(Bun.which('chromium') || Bun.which('google-chrome')
+      || process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH)
+    const browserFeatureCompiled = process.env.VENDOR_WEB_BROWSER_COMPILED === '1'
+      || process.env.VENDOR_WEB_BROWSER_COMPILED === 'true'
+    const browserAvailable = browserProfileEnabled && hasBrowserBinary && browserFeatureCompiled
+    const outboundPolicy = outboundNetworkPolicy()
+    const integrations: Record<string, JsonValue>[] = [
+      {
+        kind: 'lsp', profile: lspEnabled ? 'typescript' : 'base', enabled: lspAvailable,
+        status: lspAvailable ? 'available' : 'blocked',
+        conditions: lspAvailable
+          ? ['ENABLE_LSP_TOOL=1', 'typescript-language-server detected', 'inline LSP plugin configured']
+          : [
+              ...(lspEnabled ? [] : ['ENABLE_LSP_TOOL is not enabled']),
+              ...(lspBinary ? [] : ['typescript-language-server is missing']),
+              ...(lspPluginConfigured ? [] : ['No LSP plugin directory is configured']),
+              ...(lspAcpBootstrap ? [] : [
+                'Locked vendor ACP fast path does not parse --plugin-dir or initialize the LSP manager',
+              ]),
+            ],
+        capabilities: lspAvailable ? ['diagnostics', 'definition', 'references'] : [],
+        evidence: lspAvailable
+          ? 'Optional Worker profile prerequisites are present; actual invocability is recorded from ACP LSP tool events.'
+          : lspEnabled && lspBinary && lspPluginConfigured
+            ? 'The optional runtime prerequisites are installed, but the locked vendor ACP entry never bootstraps plugin LSP servers.'
+            : 'The base image deliberately omits the language-server binary and inline plugin.',
+      },
+      {
+        kind: 'browser', profile: browserProfileEnabled ? 'chromium' : 'base', enabled: browserAvailable,
+        status: browserAvailable ? 'available' : 'blocked',
+        conditions: [
+          ...(browserProfileEnabled ? [] : ['WEB_BROWSER_PROFILE=chromium is not enabled']),
+          ...(hasBrowserBinary ? [] : ['Chromium executable is missing']),
+          ...(browserFeatureCompiled ? [] : ['Locked vendor build has WEB_BROWSER_TOOL compiled=false']),
+        ],
+        capabilities: browserAvailable ? ['WebBrowser'] : [],
+        evidence: browserAvailable
+          ? 'Optional Chromium profile and vendor feature are both available.'
+          : 'A Chromium runtime alone cannot enable a tool removed by the locked vendor build.',
+      },
+      {
+        kind: 'terminal_capture', profile: 'base', enabled: false, status: 'blocked',
+        conditions: ['Locked vendor build has TERMINAL_PANEL compiled=false', 'ACP clientCapabilities.terminal=false'],
+        capabilities: [], evidence: 'TerminalCapture is a TTY panel adapter, not a file Artifact transport.',
+      },
+      {
+        kind: 'powershell', profile: 'base', enabled: false, status: 'blocked',
+        conditions: ['PowerShellTool is Windows-only', 'Worker image is Linux'], capabilities: [],
+        evidence: 'No host PowerShell runtime is mounted; Bash remains the Linux shell boundary.',
+      },
+      {
+        kind: 'ssh', profile: 'base', enabled: false, status: 'blocked',
+        conditions: ['SSH_REMOTE is outside the standard ACP Web session boundary'], capabilities: [],
+        evidence: 'No host SSH credentials or remote transport is mounted.',
+      },
+      {
+        kind: 'bridge', profile: 'base', enabled: false, status: 'blocked',
+        conditions: ['Bridge/Direct Connect requires a separately authenticated remote-control transport'],
+        capabilities: [], evidence: 'ACP stdio does not expose the vendor Bridge lifecycle.',
+      },
+      {
+        kind: 'voice', profile: 'base', enabled: false, status: 'blocked',
+        conditions: ['ACP stdio does not expose a browser voice transport'], capabilities: [],
+        evidence: 'Voice input remains an explicit ACP/platform gap.',
+      },
+      {
+        kind: 'notifications', profile: 'base', enabled: false, status: 'not_tested',
+        conditions: ['External notification provider credentials required'], capabilities: [],
+        evidence: 'No credentials are accepted by the base profile.',
+      },
+      {
+        kind: 'scm', profile: 'base', enabled: false, status: 'not_tested',
+        conditions: ['SCM/PR integration requires explicit opt-in credentials'], capabilities: [],
+        evidence: 'SCM operations are not enabled by default.',
+      },
+    ]
+    this.event('platform.updated', {
+      integrations,
+      agentCapabilities: jsonValue(initialize.agentCapabilities ?? {}),
+      outboundNetwork: {
+        policy: outboundPolicy,
+        allowed: outboundPolicy !== 'deny',
+        allowHosts: outboundAllowlist(),
+        blockedTargets: [
+          'loopback', 'RFC1918', 'link-local', '169.254.169.254',
+          'gateway', 'worker', 'postgres', 'test-model', '.local', '.internal',
+        ],
+      },
+    }, null)
+    this.event('integration.updated', {
+      integrations,
+      source: 'worker.platform_probe',
+    }, null)
   }
 
   private async openSession(
@@ -672,7 +791,7 @@ class AgentSessionRuntime {
     do {
       result = await this.client.prompt(promptText, crypto.randomUUID())
       await this.reconcileActivityState(this.activeTurnId, true)
-      this.finishOpenToolCalls()
+      await this.finishOpenToolCalls()
       const usage = result.usage
       if (usage && typeof usage === 'object') {
         const payload = jsonPayload(usage as Record<string, unknown>)
@@ -782,7 +901,7 @@ class AgentSessionRuntime {
       ].join('\n')
       const result = await this.client.prompt(prompt, crypto.randomUUID())
       await this.reconcileActivityState(this.activeTurnId, true)
-      this.finishOpenToolCalls()
+      await this.finishOpenToolCalls()
       if (this.activity.isStopping(kind, id)) {
         this.activity.controlFailed(
           kind,
@@ -869,6 +988,13 @@ class AgentSessionRuntime {
     }
     this.pendingPermissions.set(permissionRequestId, pending)
     const memoryPermission = safePermissionMemoryInput(toolName, pending.input)
+    const logicalInput = toolName === 'ExecuteExtraTool'
+      ? objectValue(pending.input.params)
+      : pending.input
+    const logicalToolName = toolName === 'ExecuteExtraTool'
+      ? String(pending.input.tool_name ?? '')
+      : toolName
+    const networkDecision = evaluateOutboundRequest(logicalToolName, logicalInput)
     const payload: Record<string, JsonValue> = {
       permissionRequestId,
       acpRequestId: String(request.id),
@@ -877,14 +1003,14 @@ class AgentSessionRuntime {
       input: memoryPermission?.input ?? pending.input,
       options: jsonValue(options),
       expiresAt,
+      ...(networkDecision.host ? { networkHost: networkDecision.host } : {}),
+      networkPolicy: networkDecision.policy,
+      ...(networkDecision.allowed ? {} : {
+        networkPolicyDecision: 'blocked',
+        networkPolicyReason: networkDecision.reason,
+      }),
     }
     this.event('permission.requested', payload, this.activeTurnId)
-    const logicalInput = toolName === 'ExecuteExtraTool'
-      ? objectValue(pending.input.params)
-      : pending.input
-    const logicalToolName = toolName === 'ExecuteExtraTool'
-      ? String(pending.input.tool_name ?? '')
-      : toolName
     const requestedTaskId = String(logicalInput.task_id ?? logicalInput.shell_id ?? '')
     const controlAllow = options.find(option => /allow/i.test(`${option.kind} ${option.optionId}`))
     if (this.activeControl
@@ -895,6 +1021,20 @@ class AgentSessionRuntime {
         outcome: { outcome: 'selected', optionId: controlAllow.optionId },
       })
       this.finishPermission(pending, 'approved', controlAllow.optionId)
+      return
+    }
+    if (!networkDecision.allowed) {
+      const rejectOption = options.find(option => /reject|deny|block/i.test(
+        `${option.kind} ${option.optionId} ${option.name}`,
+      ))
+      if (rejectOption) {
+        this.client?.respond(pending.rpcId, {
+          outcome: { outcome: 'selected', optionId: rejectOption.optionId },
+        })
+      } else {
+        this.client?.reject(pending.rpcId, -32001, networkDecision.reason)
+      }
+      this.finishPermission(pending, 'denied', rejectOption?.optionId ?? 'network-policy-deny')
       return
     }
     if (pending.question) {
@@ -936,6 +1076,63 @@ class AgentSessionRuntime {
     this.event('assistant.message_started', {}, this.activeTurnId)
   }
 
+  private async projectToolOutput(
+    toolName: string,
+    toolCallId: string,
+    rawInput: Record<string, JsonValue>,
+    rawOutput: JsonValue,
+    turnId: string | null,
+  ): Promise<void> {
+    try {
+      const artifact = await artifactFromToolResult({
+        toolName,
+        toolCallId,
+        rawInput,
+        rawOutput,
+        workspaceRoot: this.prepared.cwd,
+      })
+      if (artifact) {
+        const artifactId = crypto.randomUUID()
+        this.event(artifact.status === 'ready' ? 'artifact.created' : 'artifact.rejected', {
+          artifactId,
+          ...artifact,
+        }, turnId)
+      }
+      const webSources = webSourcePayload(toolName, toolCallId, rawOutput)
+      if (webSources.length > 0) {
+        this.event('web.source_observed', { sources: webSources }, turnId)
+      }
+      const lsp = lspPayloads(toolName, toolCallId, rawOutput, this.prepared.cwd)
+      if (lsp.diagnostics.length > 0) {
+        this.event('lsp.diagnostics_updated', { diagnostics: lsp.diagnostics }, turnId)
+      }
+      if (lsp.locations.length > 0) {
+        this.event('lsp.location', { locations: lsp.locations }, turnId)
+      }
+    } catch (error) {
+      if (isArtifactTool(toolName)) {
+        this.event('artifact.rejected', {
+          artifactId: crypto.randomUUID(),
+          toolCallId,
+          toolName,
+          status: 'rejected',
+          rejectionReason: 'ARTIFACT_PROJECTION_FAILED',
+          error: error instanceof Error ? error.message : String(error),
+        }, turnId)
+      } else {
+        console.error(JSON.stringify({
+          service: 'worker',
+          event: 'phase_8_projection_failed',
+          sessionId: this.harnessSessionId,
+          turnId,
+          toolCallId,
+          toolName,
+          error: error instanceof Error ? error.message : String(error),
+        }))
+      }
+    }
+  }
+
   private handleUpdate(notification: AcpUpdate): void {
     const update = notification.update
     const type = update.sessionUpdate
@@ -965,6 +1162,23 @@ class AgentSessionRuntime {
     }
     if (type === 'agent_message_chunk' || type === 'agent_thought_chunk') {
       const content = update.content as Record<string, unknown> | undefined
+      if (type === 'agent_message_chunk' && content?.type === 'image') {
+        const source = content.source && typeof content.source === 'object'
+          ? content.source as Record<string, unknown> : {}
+        const data = typeof content.data === 'string' ? content.data
+          : typeof source.data === 'string' ? source.data : null
+        const mimeType = typeof content.mimeType === 'string' ? content.mimeType
+          : typeof content.mediaType === 'string' ? content.mediaType
+            : typeof source.mediaType === 'string' ? source.mediaType : 'image/png'
+        if (!data) return
+        const artifactId = crypto.randomUUID()
+        const artifact = imageArtifact({ toolCallId: artifactId, data, mimeType })
+        this.event('image.output', { artifactId, ...artifact }, this.activeTurnId)
+        this.event(artifact.status === 'ready' ? 'artifact.created' : 'artifact.rejected', {
+          artifactId, ...artifact,
+        }, this.activeTurnId)
+        return
+      }
       if (content?.type !== 'text' || typeof content.text !== 'string') return
       if (type === 'agent_message_chunk'
         && parentToolUseId === null
@@ -1070,6 +1284,16 @@ class AgentSessionRuntime {
           ...(rawOutput !== undefined ? { rawOutput } : {}),
         }), this.activeTurnId)
       }
+      if ((status === 'completed' || status === 'failed') && rawOutput !== undefined) {
+        const projectionTurnId = this.activeTurnId
+        void this.projectToolOutput(
+          effectiveName,
+          toolCallId,
+          projectedInput,
+          rawOutput,
+          projectionTurnId,
+        )
+      }
       if (status === 'completed' || status === 'failed') this.idleIfEligible()
       return
     }
@@ -1160,6 +1384,13 @@ class AgentSessionRuntime {
               rawOutput: result.output,
             }), open.turnId)
           }
+          await this.projectToolOutput(
+            toolName,
+            toolCallId,
+            objectValue(open.payload.rawInput),
+            result.output,
+            open.turnId,
+          )
           this.openToolCalls.delete(toolCallId)
           this.deniedToolCalls.delete(toolCallId)
         }
@@ -1190,7 +1421,7 @@ class AgentSessionRuntime {
     }, null)
   }
 
-  private finishOpenToolCalls(): void {
+  private async finishOpenToolCalls(): Promise<void> {
     for (const [toolCallId, open] of this.openToolCalls) {
       if (open.turnId !== this.activeTurnId) continue
       const denied = this.deniedToolCalls.has(toolCallId)
@@ -1221,6 +1452,18 @@ class AgentSessionRuntime {
           status: denied ? 'failed' : 'completed',
           rawInput: objectValue(payload.rawInput),
         }), open.turnId)
+      } else if (!denied) {
+        // Some ACP builds omit the terminal tool_result from live updates and
+        // transcript reconciliation.  Artifact projection can still safely
+        // derive a workspace file from the tool input; other projections need
+        // an actual result and are intentionally left as a no-op.
+        await this.projectToolOutput(
+          toolName,
+          toolCallId,
+          objectValue(payload.rawInput),
+          null,
+          open.turnId,
+        )
       }
       this.openToolCalls.delete(toolCallId)
       this.deniedToolCalls.delete(toolCallId)

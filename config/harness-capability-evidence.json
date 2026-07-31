@@ -589,9 +589,231 @@
       "evidence_path": "docs/upstream/phase-7-acp-gaps.md",
       "evidence": "The trigger management command is retained as an explicit expected failure and is not replaced by prompt text invocation.",
       "known_gap": "ACP available_commands_update does not expose the local-jsx trigger registry command."
+    },
+    {
+      "id": "tool.ArtifactTool",
+      "phase": 8,
+      "workflow": "artifact",
+      "invocable": true,
+      "scenario": "[tool:artifact]",
+      "evidence_path": "tests/integration/phase-8-stack.test.ts",
+      "evidence": "The Phase 8 Docker integration invokes the real deferred artifact tool through ACP and projects its workspace file into the session-scoped registry with digest, MIME, preview, and download state.",
+      "known_gap": "The vendor cloud upload result may fail without its external token, but the ACP tool invocation and workspace-bounded Harness artifact transport are proven independently."
+    },
+    {
+      "id": "tool.SendUserFileTool",
+      "phase": 8,
+      "workflow": "artifact",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
+      "evidence": "The Worker accepts the runtime SendUserFile name as an Artifact adapter alias, but the locked ACP session has no authenticated Bridge transport for the vendor upload path.",
+      "known_gap": "Requires Bridge/Direct Connect authentication; adapter coverage does not claim vendor upload support."
+    },
+    {
+      "id": "tool.ReviewArtifactTool",
+      "phase": 8,
+      "workflow": "artifact",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
+      "evidence": "ReviewArtifact remains separately classified because the vendor feature is disabled and its schema/API is not ACP-compatible.",
+      "known_gap": "REVIEW_ARTIFACT is a vendor ACP gap; artifact preview and download do not imply review approval semantics."
+    },
+    {
+      "id": "tool.SnipTool",
+      "phase": 8,
+      "workflow": "context",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
+      "evidence": "Snip is separately classified as a Context operation and the locked HISTORY_SNIP feature is compiled=false; it is not projected as an Artifact.",
+      "known_gap": "No ACP invocation is claimed until the vendor feature is compiled and a context contract exists."
+    },
+    {
+      "id": "tool.TerminalCaptureTool",
+      "phase": 8,
+      "workflow": "platform_gap",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
+      "evidence": "TerminalCapture is blocked by TERMINAL_PANEL compiled=false and ACP terminal capability=false; the Worker reports this condition explicitly.",
+      "known_gap": "TTY panel capture is outside the standard ACP Web session boundary."
+    },
+    {
+      "id": "tool.PowerShellTool",
+      "phase": 8,
+      "workflow": "platform_gap",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
+      "evidence": "PowerShellTool is Windows-only and the production Worker image is Linux; the base platform record remains blocked.",
+      "known_gap": "A Windows profile would require a separate supported Worker image and security boundary."
+    },
+    {
+      "id": "feature.TERMINAL_PANEL",
+      "phase": 8,
+      "workflow": "platform_gap",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
+      "evidence": "The locked vendor build manifest marks TERMINAL_PANEL compiled=false and ACP initialize advertises terminal=false.",
+      "known_gap": "Terminal panel support requires a separate terminal-capable ACP profile."
+    },
+    {
+      "id": "feature.WEB_BROWSER_TOOL",
+      "phase": 8,
+      "workflow": "browser_profile",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-8-browser-profile.test.ts",
+      "evidence": "Chromium is present in the optional profile, while the locked vendor feature remains compiled=false and is reported blocked.",
+      "known_gap": "Rebuilding the vendor with WEB_BROWSER_TOOL is outside the locked-vendor Harness scope."
+    },
+    {
+      "id": "feature.HISTORY_SNIP",
+      "phase": 8,
+      "workflow": "context",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
+      "evidence": "HISTORY_SNIP is compiled=false; Snip is not treated as an Artifact.",
+      "known_gap": "Vendor feature must be compiled and exposed through ACP before enabling."
+    },
+    {
+      "id": "feature.REVIEW_ARTIFACT",
+      "phase": 8,
+      "workflow": "artifact",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
+      "evidence": "REVIEW_ARTIFACT is compiled=false in the locked build and review semantics are not part of the registry contract.",
+      "known_gap": "Requires a vendor feature-enabled ACP review contract."
+    },
+    {
+      "id": "acp.prompt.image",
+      "phase": 8,
+      "workflow": "image_input",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
+      "evidence": "Image input remains an expected ACP failure because prompt conversion drops image blocks before the model query.",
+      "known_gap": "The Web input picker is intentionally disabled until a real image block reaches the model."
+    },
+    {
+      "id": "tool.LSPTool",
+      "phase": 8,
+      "workflow": "lsp",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-8-lsp-profile.test.ts",
+      "evidence": "The optional TypeScript LSP profile installs the binary and inline plugin, but the real ACP definition attempt produces no location because the locked ACP fast path does not parse plugin arguments or initialize the LSP manager.",
+      "known_gap": "Requires an upstream ACP bootstrap that loads inline plugins and calls initializeLspServerManager without modifying the locked vendor."
+    },
+    {
+      "id": "tool.WebFetchTool",
+      "phase": 8,
+      "workflow": "web_provenance",
+      "invocable": null,
+      "evidence_path": "apps/worker/src/artifacts.ts",
+      "evidence": "WebFetch results are normalized into URL/title/snippet provenance records and rendered by the platform panel.",
+      "known_gap": "Real outbound fetch requires an enabled network policy and provider credentials."
+    },
+    {
+      "id": "tool.WebSearchTool",
+      "phase": 8,
+      "workflow": "web_provenance",
+      "invocable": null,
+      "evidence_path": "apps/worker/src/artifacts.ts",
+      "evidence": "WebSearch result URLs are normalized into durable source records with source ordering.",
+      "known_gap": "Search backend availability varies by provider and outbound network policy."
+    },
+    {
+      "id": "tool.WebBrowserTool",
+      "phase": 8,
+      "workflow": "browser_profile",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-8-browser-profile.test.ts",
+      "evidence": "The optional Chromium profile builds and detects Chromium but the locked vendor manifest reports WEB_BROWSER_TOOL compiled=false, so the platform record stays blocked.",
+      "known_gap": "A vendor build with WEB_BROWSER_TOOL compiled=true is required before a WebBrowser ACP invocation can be claimed."
+    },
+    {
+      "id": "feature.SSH_REMOTE",
+      "phase": 8,
+      "workflow": "platform_gap",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
+      "evidence": "SSH remote execution has no host credentials or ACP-visible transport in the base profile.",
+      "known_gap": "Requires an authenticated, isolated remote profile."
+    },
+    {
+      "id": "feature.VOICE_MODE",
+      "phase": 8,
+      "workflow": "platform_gap",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
+      "evidence": "Voice remains outside ACP stdio and is shown as a blocked platform integration.",
+      "known_gap": "Requires a browser voice adapter and explicit privacy/permission controls."
+    },
+    {
+      "id": "feature.BRIDGE_MODE",
+      "phase": 8,
+      "workflow": "platform_gap",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
+      "evidence": "Bridge/Direct Connect is not mounted into the Web session boundary.",
+      "known_gap": "Requires a separately authenticated remote control profile."
     }
   ],
   "known_gaps": [
+    {
+      "id": "gap.acp.lsp-bootstrap",
+      "status": "expected_failure",
+      "summary": "The locked ACP fast path neither parses inline plugin directories nor initializes the LSP manager, so an installed language server cannot make LSPTool invocable.",
+      "evidence": [
+        { "path": "vendor/claude-code/src/entrypoints/cli.tsx", "line": 123, "detail": "ACP mode is selected only when process.argv[2] is exactly --acp and immediately calls runAcpAgent.", "evidenceType": "source" },
+        { "path": "vendor/claude-code/src/services/acp/entry.ts", "line": 27, "detail": "runAcpAgent does not parse --plugin-dir or invoke initializeLspServerManager.", "evidenceType": "source" },
+        { "path": "tests/integration/phase-8-lsp-profile.test.ts", "line": 45, "detail": "The optional image contains the binary and plugin but reports blocked and preserves a failed real ACP definition attempt.", "evidenceType": "runtime" }
+      ],
+      "upstream_strategy": "Add an upstream ACP bootstrap API for inline plugins and the LSP manager, then change the profile expected-failure test into a location-producing E2E."
+    },
+    {
+      "id": "gap.acp.image-input",
+      "status": "expected_failure",
+      "summary": "ACP prompt conversion does not deliver image content blocks to the model even though image output blocks are supported.",
+      "evidence": [
+        { "path": "vendor/claude-code/src/services/acp/agent/AcpAgent.ts", "line": 118, "detail": "The locked vendor explicitly disables promptCapabilities.image until multimodal input is wired.", "evidenceType": "source" },
+        { "path": "docs/upstream/phase-8-platform-gaps.md", "line": 8, "detail": "Harness input controls remain disabled and preserve the expected failure.", "evidenceType": "runtime" }
+      ],
+      "upstream_strategy": "Enable the input control only after ACP passes a real image block through prompt conversion and a model contract test."
+    },
+    {
+      "id": "gap.platform.ssh-remote",
+      "status": "expected_failure",
+      "summary": "SSH remote execution requires host credentials and transport outside the standard ACP Web session.",
+      "evidence": [
+        { "path": "compose.platforms.yaml", "line": 1, "detail": "Only isolated LSP and Chromium profiles are provided; SSH is not mounted.", "evidenceType": "configuration" },
+        { "path": "docs/upstream/phase-8-platform-gaps.md", "line": 27, "detail": "SSH is explicitly represented as blocked.", "evidenceType": "documentation" }
+      ],
+      "upstream_strategy": "Add an authenticated remote profile with a scoped workspace and ACP-visible lifecycle before enabling."
+    },
+    {
+      "id": "gap.platform.bridge-direct-connect",
+      "status": "expected_failure",
+      "summary": "Bridge and Direct Connect are TTY/remote-control integrations rather than standard ACP session operations.",
+      "evidence": [
+        { "path": "docs/upstream/phase-8-platform-gaps.md", "line": 29, "detail": "No bridge transport is exposed by the base stack.", "evidenceType": "documentation" }
+      ],
+      "upstream_strategy": "Keep the capability blocked until a separately authenticated Web transport and audit contract exists."
+    },
+    {
+      "id": "gap.platform.voice",
+      "status": "expected_failure",
+      "summary": "Voice mode requires a browser/media adapter and is not available through ACP stdio.",
+      "evidence": [
+        { "path": "docs/upstream/phase-8-platform-gaps.md", "line": 29, "detail": "Voice is retained as an explicit platform gap.", "evidenceType": "documentation" }
+      ],
+      "upstream_strategy": "Implement a browser voice adapter with explicit permission and retention controls."
+    },
+    {
+      "id": "gap.platform.notifications-scm",
+      "status": "expected_failure",
+      "summary": "Notifications and SCM/PR callbacks require external credentials and opt-in integration profiles.",
+      "evidence": [
+        { "path": "apps/worker/src/supervisor.ts", "line": 392, "detail": "Platform status reports these integrations as not_tested without credentials.", "evidenceType": "runtime" },
+        { "path": "docs/upstream/phase-8-platform-gaps.md", "line": 29, "detail": "Base Docker does not accept external callback credentials.", "evidenceType": "documentation" }
+      ],
+      "upstream_strategy": "Add provider-specific opt-in profiles with callback authentication and end-to-end audit tests."
+    },
     {
       "id": "gap.acp.tool-result-terminal-update",
       "status": "expected_failure",

@@ -350,6 +350,35 @@ function requestedTool(body: RequestBody, prompt: string): { name: string; input
       reason: 'Verify the redacted Vault failure projection.',
     })
   }
+  if (normalized.includes('[tool:artifact]')) {
+    return logicalTool(body, 'artifact', {
+      file_path: '/workspace/source/tests/fixtures/workspace-a/phase-eight.md',
+      ttl: 7,
+    })
+  }
+  if (normalized.includes('[tool:lsp]')) {
+    return logicalTool(body, 'LSP', {
+      operation: 'goToDefinition',
+      filePath: '/workspace/source/tests/fixtures/workspace-a/phase-eight.ts',
+      line: 2,
+      character: 33,
+    })
+  }
+  if (normalized.includes('[tool:web-search]')) {
+    return logicalTool(body, 'WebSearch', { query: 'DeepHarness phase 8 source' })
+  }
+  if (normalized.includes('[tool:web-fetch-private]')) {
+    return logicalTool(body, 'WebFetch', {
+      url: 'http://gateway:8080/health/ready',
+      prompt: 'Return the response status.',
+    })
+  }
+  if (normalized.includes('[tool:web-fetch]')) {
+    return logicalTool(body, 'WebFetch', {
+      url: 'https://example.com/deepharness-phase-8',
+      prompt: 'Return the page title.',
+    })
+  }
   if (normalized.includes('[deepharness-control:stop-agent]')
     || normalized.includes('[deepharness-control:stop-task]')) {
     const taskId = prompt.match(/task_id\s+"([^"]+)"/i)?.[1]

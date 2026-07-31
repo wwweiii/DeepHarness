@@ -423,6 +423,14 @@ export function projectHarnessEvents(events: HarnessEvent[]): HarnessProjection 
       const text = event.payload.text
       if (typeof text === 'string') appendPart(getAssistant(messages, turnId), 'reasoning', text)
     }
+    if (event.type === 'image.output' && turnId
+      && typeof event.payload.contentBase64 === 'string'
+      && typeof event.payload.mimeType === 'string') {
+      getAssistant(messages, turnId).content.push({
+        type: 'image',
+        image: `data:${event.payload.mimeType};base64,${event.payload.contentBase64}`,
+      })
+    }
     if (event.type.startsWith('tool.call_') && turnId && typeof event.payload.parentAgentId !== 'string') {
       applyToolEvent(getAssistant(messages, turnId), event)
     }

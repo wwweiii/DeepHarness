@@ -29,6 +29,10 @@ const migrations = [
     version: '0007_phase_7',
     url: new URL('../migrations/0007_phase_7.sql', import.meta.url),
   },
+  {
+    version: '0008_phase_8',
+    url: new URL('../migrations/0008_phase_8.sql', import.meta.url),
+  },
 ] as const
 
 export type Database = ReturnType<typeof postgres>

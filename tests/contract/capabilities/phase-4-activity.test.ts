@@ -102,7 +102,8 @@ describe('phase 4 Agent, Task, Team, and Coordinator capability contract', () =>
     expect(coordinator).toMatchObject({ compiled: true, tested: false })
     const triggers = manifest.capabilities.find((item: any) =>
       item.id === 'command.local-jsx.triggers')
-    expect(triggers).toMatchObject({ tested: false, invocable: null })
+    expect(triggers).toMatchObject({ tested: true, invocable: false, last_test_result: 'passed' })
+    expect(triggers.known_gap).toContain('does not expose')
     const listPeers = manifest.capabilities.find((item: any) => item.id === 'tool.ListPeersTool')
     expect(listPeers).toMatchObject({ enabled: false, tested: false })
     const teamDelete = manifest.capabilities.find((item: any) => item.id === 'tool.TeamDeleteTool')

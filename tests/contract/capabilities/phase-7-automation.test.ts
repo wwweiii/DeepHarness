@@ -60,7 +60,12 @@ describe('phase 7 Goal, Workflow, Cron, and background capability contract', () 
       json('config/harness-capability-evidence.json'),
     ])
     const trigger = manifest.capabilities.find((entry: any) => entry.id === 'command.local-jsx.triggers')
-    expect(trigger).toMatchObject({ advertised_by_acp: false, tested: false, invocable: null })
+    expect(trigger).toMatchObject({
+      advertised_by_acp: false,
+      tested: true,
+      invocable: false,
+      last_test_result: 'passed',
+    })
     expect(gaps.known_gaps.some((gap: any) => gap.id === 'gap.acp.agent-triggers' && gap.status === 'expected_failure')).toBe(true)
     expect(gaps.known_gaps.some((gap: any) => gap.id === 'gap.platform.remote-trigger' && gap.status === 'expected_failure')).toBe(true)
   })

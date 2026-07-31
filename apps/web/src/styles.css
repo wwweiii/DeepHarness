@@ -186,6 +186,7 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .message-bubble { font-size: 14px; line-height: 1.65; }
 .message-bubble-user { width: fit-content; max-width: min(620px, 90%); padding: 10px 13px; border-radius: 6px; background: #e9eee8; }
 .message-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.message-image { max-width: min(100%, 560px); max-height: 520px; object-fit: contain; border: 1px solid #dce2dc; border-radius: 5px; background: #fff; }
 .reasoning-block { margin: 0 0 12px; padding: 9px 11px; border-left: 2px solid #bdc4ba; color: #686f66; background: #f0f2ee; }
 .reasoning-block summary { cursor: pointer; color: #4f574e; font-size: 12px; font-weight: 700; }
 .reasoning-block p { margin: 8px 0 0; white-space: pre-wrap; }
@@ -358,6 +359,50 @@ button:disabled { cursor: not-allowed; opacity: .48; }
 .team-message code, .team-message span { overflow-wrap: anywhere; }
 .team-message code { color: #316749; }
 .team-message small { color: #777e76; text-transform: capitalize; }
+
+.platform-page { padding: 28px clamp(18px, 4vw, 56px) 48px; overflow: auto; min-height: 100%; }
+.platform-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 24px; }
+.platform-header h1 { margin: 0; font-size: 26px; letter-spacing: 0; }
+.platform-header p { margin: 7px 0 0; color: #687168; }
+.platform-section { border-top: 1px solid #dce2dc; padding: 20px 0; }
+.platform-section-title { display: flex; align-items: center; gap: 8px; font-weight: 700; color: #27332b; margin-bottom: 12px; }
+.platform-empty { color: #7b857c; margin: 0; }
+.platform-error { color: #9b3030; background: #fff1f0; border: 1px solid #f2caca; padding: 9px 11px; margin-bottom: 12px; border-radius: 5px; }
+.artifact-list, .diagnostic-list, .location-list, .source-list, .integration-list { display: grid; gap: 8px; }
+.artifact-row, .diagnostic-row, .location-row, .integration-row { display: flex; align-items: center; gap: 12px; border: 1px solid #e0e6e0; background: #fff; padding: 10px 12px; border-radius: 6px; min-width: 0; }
+.artifact-main, .integration-row > div { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.artifact-main small, .integration-row small, .diagnostic-row small, .location-row small { color: #778078; }
+.artifact-actions { display: flex; gap: 7px; }
+.artifact-actions a { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; color: #345c46; border: 1px solid #ccd9ce; border-radius: 4px; }
+.artifact-actions a:hover { background: #edf5ee; }
+.artifact-rejection { color: #a04831; display: inline-flex; align-items: center; gap: 5px; font-size: 12px; }
+.diagnostic-row { align-items: flex-start; flex-wrap: wrap; }
+.diagnostic-row > span { text-transform: uppercase; font-size: 10px; font-weight: 700; padding: 3px 5px; border-radius: 3px; background: #eef1ee; color: #5e685f; }
+.severity-error > span { background: #fce8e6; color: #a3322b; }
+.severity-warning > span { background: #fff4d6; color: #8f6710; }
+.diagnostic-row strong { flex: 1 1 240px; min-width: 0; }
+.diagnostic-row small { flex: 0 0 100%; padding-left: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.location-row { font-size: 13px; }
+.location-row span { color: #3b5f73; font-size: 11px; text-transform: uppercase; font-weight: 700; }
+.location-row code { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.source-row { display: grid; gap: 3px; text-decoration: none; border: 1px solid #e0e6e0; background: #fff; padding: 11px 12px; border-radius: 6px; color: inherit; }
+.source-row:hover { border-color: #a7c4ab; background: #f8fbf8; }
+.source-row small { color: #3d6b4a; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.source-row span { color: #6f786f; font-size: 13px; }
+.integration-row { flex-wrap: wrap; }
+.integration-row > div { flex: 0 0 150px; }
+.integration-status { font-size: 11px; text-transform: uppercase; font-weight: 700; color: #6c756d; }
+.status-available { color: #2d7141; }
+.status-blocked { color: #a64832; }
+.integration-row code { flex: 1 1 240px; color: #747c75; white-space: normal; }
+
+@media (max-width: 740px) {
+  .platform-page { padding: 22px 16px 36px; }
+  .platform-header h1 { font-size: 22px; }
+  .platform-header p { font-size: 13px; }
+  .artifact-row { align-items: flex-start; }
+  .integration-row > div { flex-basis: 120px; }
+}
 .context-panel { min-width: 0; margin-top: 12px; }
 .context-panel-state { padding: 28px 0; color: #747b73; font-size: 11px; text-align: center; }
 .context-error { margin: 8px 0; padding: 7px 0; border-bottom: 1px solid #d99e92; color: #923d30; font-size: 10px; overflow-wrap: anywhere; }
