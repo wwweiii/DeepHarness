@@ -49,6 +49,7 @@ interface WorkspaceCatalog {
 }
 
 const selectedSessionStorageKey = 'deepharness.selectedSessionId'
+let csrfToken: string | null = null
 
 function initialSelectedSessionId(): string | null {
   const fromUrl = new URLSearchParams(window.location.search).get('sessionId')
@@ -99,7 +100,20 @@ function projectionFromSession(session: SessionRecord): HarnessProjection {
 }
 
 async function json<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, init)
+  const method = (init?.method ?? 'GET').toUpperCase()
+  const headers = new Headers(init?.headers)
+  if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS' && path.startsWith('/api/')
+    && !path.startsWith('/api/auth/')) {
+    if (!csrfToken) {
+      const csrf = await fetch('/api/auth/csrf', { credentials: 'same-origin' })
+      if (csrf.ok) {
+        const body = await csrf.json() as { csrfToken?: string | null }
+        csrfToken = body.csrfToken ?? null
+      }
+    }
+    if (csrfToken) headers.set('x-csrf-token', csrfToken)
+  }
+  const response = await fetch(path, { ...init, headers, credentials: 'same-origin' })
   const body = await response.json().catch(() => ({})) as T & { error?: string }
   if (!response.ok) throw new Error(body.error ?? `Request failed with status ${response.status}`)
   return body
@@ -564,7 +578,37 @@ function Shell({
   )
 }
 
+function LoginScreen({ onLogin }: { onLogin: (username: string, password: string) => Promise<void> }) {
+  const [username, setUsername] = useState('admin')
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  return (
+    <main className="login-screen">
+      <form className="login-form" onSubmit={event => {
+        event.preventDefault()
+        setBusy(true)
+        setError(null)
+        void onLogin(username, password)
+          .catch(cause => setError(cause instanceof Error ? cause.message : String(cause)))
+          .finally(() => setBusy(false))
+      }}>
+        <div className="setup-brand">DH</div>
+        <h1>DeepHarness</h1>
+        <p>Sign in to the private Agent control plane.</p>
+        <label>Username<input autoComplete="username" value={username} onChange={event => setUsername(event.target.value)} /></label>
+        <label>Password<input type="password" autoComplete="current-password" value={password} onChange={event => setPassword(event.target.value)} /></label>
+        {error && <div className="setup-error" role="alert">{error}</div>}
+        <button className="primary-command" disabled={busy || !username || !password} type="submit">
+          {busy ? 'Signing in...' : 'Sign in'}
+        </button>
+      </form>
+    </main>
+  )
+}
+
 export function App() {
+  const [auth, setAuth] = useState<{ enabled: boolean; authenticated: boolean; username: string | null } | null>(null)
   const [snapshot, setSnapshot] = useState<SessionSnapshot | null>(null)
   const [sessions, setSessions] = useState<SessionRecord[]>([])
   const [workspaces, setWorkspaces] = useState<WorkspaceRecord[]>([])
@@ -592,11 +636,52 @@ export function App() {
   }, [selectedSessionId])
 
   useEffect(() => {
-    void load().catch(cause => setError(cause instanceof Error ? cause.message : String(cause)))
+    let active = true
+    void fetch('/api/auth/session', { credentials: 'same-origin' })
+      .then(async response => {
+        const body = await response.json() as {
+          enabled?: boolean; authenticated?: boolean; user?: { username?: string } | null
+        }
+        if (!active) return
+        const nextAuth = {
+          enabled: body.enabled === true,
+          authenticated: body.authenticated === true,
+          username: body.user?.username ?? null,
+        }
+        setAuth(nextAuth)
+        if (nextAuth.authenticated) {
+          await load().catch(cause => {
+            if (active) setError(cause instanceof Error ? cause.message : String(cause))
+          })
+        }
+      })
+      .catch(cause => {
+        if (active) setError(cause instanceof Error ? cause.message : String(cause))
+      })
+    return () => { active = false }
   }, [])
 
   const initialEvents = useMemo(() => snapshot?.events ?? [], [snapshot?.events])
 
+  if (!auth) return <div className="loading-screen">{error ?? 'Loading DeepHarness...'}</div>
+  if (auth.enabled && !auth.authenticated) {
+    return <LoginScreen onLogin={async (username, password) => {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ username, password }),
+      })
+      const body = await response.json().catch(() => ({})) as {
+        error?: string; csrfToken?: string
+        user?: { username?: string }
+      }
+      if (!response.ok) throw new Error(body.error ?? 'Login failed')
+      csrfToken = body.csrfToken ?? null
+      setAuth({ enabled: true, authenticated: true, username: body.user?.username ?? username })
+      await load()
+    }} />
+  }
   if (!snapshot) return <div className="loading-screen">{error ?? 'Loading DeepHarness...'}</div>
   if (!snapshot.session) {
     return (

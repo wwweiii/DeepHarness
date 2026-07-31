@@ -9,6 +9,41 @@
       "to": "D",
       "reason": "Successful execution depends on a configured local Vault key and outbound HTTPS access; Phase 6 corrects the prior unconditional classification and verifies the missing-credential degradation.",
       "approved_at": "2026-07-31T00:00:00.000Z"
+    },
+    {
+      "id": "agent.claudeCodeGuideAgent",
+      "from": "A",
+      "to": "C",
+      "reason": "The definition is loaded by the kernel, but the locked ACP profile has no direct invocation contract for this bundled guide Agent; Phase 9 stops claiming native reachability until an ACP test exists.",
+      "approved_at": "2026-07-31T00:00:00.000Z"
+    },
+    {
+      "id": "feature.COORDINATOR_MODE",
+      "from": "B",
+      "to": "C",
+      "reason": "The feature is compiled, but activation remains a local-jsx/REPL path that ACP does not advertise; Harness Team controls are not reported as native coordinator parity.",
+      "approved_at": "2026-07-31T00:00:00.000Z"
+    },
+    {
+      "id": "feature.POOR",
+      "from": "A",
+      "to": "C",
+      "reason": "The cost-mode feature is compiled but its /poor activation and behavior are not independently observable or invocable through the locked ACP session.",
+      "approved_at": "2026-07-31T00:00:00.000Z"
+    },
+    {
+      "id": "feature.ULTRAPLAN",
+      "from": "B",
+      "to": "C",
+      "reason": "The feature is compiled, but ACP exposes neither its local activation command nor a distinct mode/state contract that can be verified without terminal UI semantics.",
+      "approved_at": "2026-07-31T00:00:00.000Z"
+    },
+    {
+      "id": "feature.ULTRATHINK",
+      "from": "B",
+      "to": "C",
+      "reason": "The feature is compiled, but ACP exposes neither its local activation command nor a distinct reasoning-state contract that can be verified independently.",
+      "approved_at": "2026-07-31T00:00:00.000Z"
     }
   ],
   "entries": {
@@ -125,8 +160,8 @@
       "rationale": "The ACP capability needs normalization, persistence, or a Harness control surface."
     },
     "agent.claudeCodeGuideAgent": {
-      "matrix_class": "A",
-      "rationale": "Agent definitions are loaded during ACP session creation and execute inside the vendor kernel."
+      "matrix_class": "C",
+      "rationale": "The bundled guide Agent is present in the kernel, but the locked ACP profile has no direct invocation contract for it."
     },
     "agent.custom-agent-definitions": {
       "matrix_class": "A",
@@ -785,8 +820,8 @@
       "rationale": "The feature is disabled or has a confirmed ACP reachability gap."
     },
     "feature.COORDINATOR_MODE": {
-      "matrix_class": "B",
-      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+      "matrix_class": "C",
+      "rationale": "Coordinator mode is compiled, but its activation remains in local-jsx/REPL paths that ACP does not advertise."
     },
     "feature.COWORKER_TYPE_TELEMETRY": {
       "matrix_class": "E",
@@ -929,8 +964,8 @@
       "rationale": "The feature is a vendor shell, internal, diagnostic, or superseded capability."
     },
     "feature.POOR": {
-      "matrix_class": "A",
-      "rationale": "The feature is compiled into the kernel and is expected to be inherited through ACP."
+      "matrix_class": "C",
+      "rationale": "The cost mode is compiled, but ACP exposes no independently testable activation or status contract."
     },
     "feature.POWERSHELL_AUTO_MODE": {
       "matrix_class": "D",
@@ -1025,12 +1060,12 @@
       "rationale": "The feature is disabled or has a confirmed ACP reachability gap."
     },
     "feature.ULTRAPLAN": {
-      "matrix_class": "B",
-      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+      "matrix_class": "C",
+      "rationale": "The feature is compiled, but ACP exposes neither its terminal activation path nor a distinct mode state."
     },
     "feature.ULTRATHINK": {
-      "matrix_class": "B",
-      "rationale": "The feature is inherited from the kernel but requires Harness adaptation or verification."
+      "matrix_class": "C",
+      "rationale": "The feature is compiled, but ACP exposes neither its terminal activation path nor a distinct reasoning state."
     },
     "feature.UNATTENDED_RETRY": {
       "matrix_class": "C",
@@ -1349,8 +1384,8 @@
       "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
     },
     "tool.EnterWorktreeTool": {
-      "matrix_class": "A",
-      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+      "matrix_class": "B",
+      "rationale": "DeepHarness owns worktree creation, isolation, recovery, and cleanup before starting the ACP session."
     },
     "tool.ExecuteExtraTool": {
       "matrix_class": "A",
@@ -1361,16 +1396,16 @@
       "rationale": "The kernel capability requires Harness protocol, persistence, or dedicated UI adaptation."
     },
     "tool.ExitPlanModeTool": {
-      "matrix_class": "A",
-      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+      "matrix_class": "B",
+      "rationale": "Plan exit requires Harness approval, persistence, session-mode control, and dedicated UI adaptation."
     },
     "tool.ExitPlanModeV2Tool": {
-      "matrix_class": "A",
-      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+      "matrix_class": "B",
+      "rationale": "The duplicate vendor symbol shares the ExitPlanMode runtime name and is represented by the tested Harness Plan adapter."
     },
     "tool.ExitWorktreeTool": {
-      "matrix_class": "A",
-      "rationale": "The tool is assembled by the vendor tool registry and is intended to run natively through ACP sessions."
+      "matrix_class": "B",
+      "rationale": "DeepHarness owns bounded worktree cleanup and dirty-worktree retention through the Worker lifecycle adapter."
     },
     "tool.FileEditTool": {
       "matrix_class": "A",

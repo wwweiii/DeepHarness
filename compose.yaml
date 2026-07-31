@@ -27,6 +27,14 @@ services:
       target: gateway
     environment:
       PORT: "8080"
+      # Local/test Compose keeps the auth boundary explicit without forcing
+      # credentials into the repository. Production operators set AUTH_ENABLED=1
+      # together with ADMIN_PASSWORD in their private environment.
+      AUTH_ENABLED: ${AUTH_ENABLED:-0}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-0}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
       DATABASE_URL: postgres://deepharness:${POSTGRES_PASSWORD:-deepharness-local-only}@postgres:5432/deepharness
       WORKER_SHARED_TOKEN: ${WORKER_SHARED_TOKEN:-phase-1-local-token}
       WORKSPACE_ROOTS: /workspace/source,/workspace/non-git

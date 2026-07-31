@@ -18,6 +18,22 @@ import { GatewayStore } from './store.ts'
 import { appendAutomationEvent, applyAutomationEvent, AutomationStore } from './automation.ts'
 import { AutomationScheduler } from './scheduler.ts'
 import { nextCronOccurrence } from './cron.ts'
+import {
+  csrfCookieName,
+  constantTimeEqual,
+  FixedWindowRateLimiter,
+  clientIp,
+  cookieValue,
+  hasCsrfToken,
+  isSafeMethod,
+  parseCookies,
+  randomToken,
+  readAuthConfig,
+  redact,
+  sessionCookieName,
+  shouldSkipAuthentication,
+  tokenHash,
+} from './auth.ts'
 
 const port = Number.parseInt(process.env.PORT ?? '8080', 10)
 const databaseUrl = process.env.DATABASE_URL
@@ -32,9 +48,55 @@ const manifestPath = process.env.CAPABILITY_MANIFEST_PATH
   ?? '/app/artifacts/capabilities/vendor-capability-manifest.json'
 const providerProfilesPath = process.env.PROVIDER_PROFILES_PATH
   ?? '/app/config/provider-profiles.json'
+const authConfig = readAuthConfig()
+const loginRateLimiter = new FixedWindowRateLimiter(authConfig.loginWindowMs, authConfig.loginMaxAttempts)
+const writeRateLimiter = new FixedWindowRateLimiter(authConfig.writeWindowMs, authConfig.writeMaxRequests)
+
+type GatewayMetrics = {
+  requests: number
+  responses: number
+  errors: number
+  authLogins: number
+  authFailures: number
+  authRejected: number
+  rateLimited: number
+  workerEvents: number
+  workerConnections: number
+  databaseErrors: number
+}
+
+const metrics: GatewayMetrics = {
+  requests: 0, responses: 0, errors: 0, authLogins: 0, authFailures: 0,
+  authRejected: 0, rateLimited: 0, workerEvents: 0, workerConnections: 0,
+  databaseErrors: 0,
+}
 
 const database = createDatabase(databaseUrl)
 await migrate(database)
+
+async function ensureAdminUser(): Promise<void> {
+  if (!authConfig.enabled) return
+  const username = (process.env.ADMIN_USERNAME ?? 'admin').trim()
+  const password = process.env.ADMIN_PASSWORD ?? ''
+  if (!/^[A-Za-z0-9][A-Za-z0-9._-]{1,63}$/.test(username)) {
+    throw new Error('ADMIN_USERNAME must contain 2-64 ASCII username characters')
+  }
+  if (password.length < 12) {
+    throw new Error('ADMIN_PASSWORD must be set and contain at least 12 characters when AUTH_ENABLED=1')
+  }
+  const existing = await database<{ id: string }[]>`
+    SELECT id FROM users WHERE username = ${username} LIMIT 1
+  `
+  if (existing.length > 0) return
+  const passwordHash = await Bun.password.hash(password, { algorithm: 'argon2id' })
+  await database`
+    INSERT INTO users (id, username, password_hash)
+    VALUES (${crypto.randomUUID()}, ${username}, ${passwordHash})
+    ON CONFLICT (username) DO NOTHING
+  `
+}
+
+await ensureAdminUser()
 const store = new GatewayStore(database)
 const automation = new AutomationStore(database)
 
@@ -211,6 +273,169 @@ function validWorkspacePath(value: string): string | null {
 
 const app = new Hono()
 
+type AuthenticatedUser = { id: string; username: string; sessionId: string; csrfTokenHash: string }
+
+async function authenticatedUser(request: Request): Promise<AuthenticatedUser | null> {
+  if (!authConfig.enabled) return {
+    id: 'local', username: 'local', sessionId: 'local', csrfTokenHash: '',
+  }
+  const cookies = parseCookies(request.headers.get('cookie'))
+  const rawToken = cookies[sessionCookieName]
+  if (!rawToken) return null
+  const rows = await database<AuthenticatedUser[]>`
+    SELECT auth_sessions.id AS "sessionId", auth_sessions.csrf_token_hash AS "csrfTokenHash",
+           users.id, users.username
+    FROM auth_sessions
+    JOIN users ON users.id = auth_sessions.user_id
+    WHERE auth_sessions.token_hash = ${tokenHash(rawToken)}
+      AND auth_sessions.revoked_at IS NULL
+      AND auth_sessions.expires_at > now()
+    LIMIT 1
+  `
+  const user = rows[0] ?? null
+  if (user) {
+    await database`
+      UPDATE auth_sessions SET last_seen_at = now() WHERE id = ${user.sessionId}
+    `.catch(() => {
+      metrics.databaseErrors += 1
+    })
+  }
+  return user
+}
+
+function rateLimitedResponse(retryAfterSeconds: number): Response {
+  metrics.rateLimited += 1
+  return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
+    status: 429,
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'retry-after': String(retryAfterSeconds),
+      'cache-control': 'no-store',
+    },
+  })
+}
+
+function authCookieHeaders(token: string, csrfToken: string): Headers {
+  const headers = new Headers({ 'cache-control': 'no-store' })
+  headers.append('set-cookie', cookieValue(sessionCookieName, token, {
+    httpOnly: true,
+    secure: authConfig.secureCookies,
+    maxAge: Math.floor(authConfig.sessionTtlMs / 1_000),
+  }))
+  headers.append('set-cookie', cookieValue(csrfCookieName, csrfToken, {
+    httpOnly: false,
+    secure: authConfig.secureCookies,
+    maxAge: Math.floor(authConfig.sessionTtlMs / 1_000),
+  }))
+  return headers
+}
+
+function clearAuthCookieHeaders(): Headers {
+  const headers = new Headers({ 'cache-control': 'no-store' })
+  headers.append('set-cookie', cookieValue(sessionCookieName, '', {
+    httpOnly: true, secure: authConfig.secureCookies, maxAge: 0,
+  }))
+  headers.append('set-cookie', cookieValue(csrfCookieName, '', {
+    httpOnly: false, secure: authConfig.secureCookies, maxAge: 0,
+  }))
+  return headers
+}
+
+function metricsText(): string {
+  const lines = [
+    '# HELP deepharness_gateway_requests_total HTTP requests received by the Gateway.',
+    '# TYPE deepharness_gateway_requests_total counter',
+    `deepharness_gateway_requests_total ${metrics.requests}`,
+    '# HELP deepharness_gateway_responses_total HTTP responses completed by the Gateway.',
+    '# TYPE deepharness_gateway_responses_total counter',
+    `deepharness_gateway_responses_total ${metrics.responses}`,
+    '# HELP deepharness_gateway_errors_total Gateway errors and 5xx responses.',
+    '# TYPE deepharness_gateway_errors_total counter',
+    `deepharness_gateway_errors_total ${metrics.errors}`,
+    '# TYPE deepharness_gateway_auth_logins_total counter',
+    `deepharness_gateway_auth_logins_total ${metrics.authLogins}`,
+    '# TYPE deepharness_gateway_auth_failures_total counter',
+    `deepharness_gateway_auth_failures_total ${metrics.authFailures}`,
+    '# TYPE deepharness_gateway_auth_rejected_total counter',
+    `deepharness_gateway_auth_rejected_total ${metrics.authRejected}`,
+    '# TYPE deepharness_gateway_rate_limited_total counter',
+    `deepharness_gateway_rate_limited_total ${metrics.rateLimited}`,
+    '# TYPE deepharness_gateway_worker_events_total counter',
+    `deepharness_gateway_worker_events_total ${metrics.workerEvents}`,
+    '# TYPE deepharness_gateway_worker_connections gauge',
+    `deepharness_gateway_worker_connections ${workerSocket?.readyState === WebSocket.OPEN ? 1 : 0}`,
+    '# TYPE deepharness_gateway_database_errors_total counter',
+    `deepharness_gateway_database_errors_total ${metrics.databaseErrors}`,
+  ]
+  return `${lines.join('\n')}\n`
+}
+
+app.use('*', async (c, next) => {
+  const startedAt = Date.now()
+  const requestId = c.req.header('x-request-id')?.trim() || crypto.randomUUID()
+  c.header('x-request-id', requestId)
+  metrics.requests += 1
+  const pathname = new URL(c.req.url).pathname
+  const method = c.req.method.toUpperCase()
+  let status = 500
+  try {
+    if (authConfig.enabled && !shouldSkipAuthentication(pathname)) {
+      const user = await authenticatedUser(c.req.raw)
+      if (!user) {
+        metrics.authRejected += 1
+        return c.json({ error: 'Authentication required', requestId }, 401, {
+          'www-authenticate': 'Cookie',
+          'cache-control': 'no-store',
+        })
+      }
+      if (!isSafeMethod(method) && !hasCsrfToken(
+        c.req.raw,
+        parseCookies(c.req.header('cookie') ?? null),
+        user.csrfTokenHash,
+      )) {
+        metrics.authRejected += 1
+        return c.json({ error: 'CSRF token required', requestId }, 403, {
+          'cache-control': 'no-store',
+        })
+      }
+    }
+    if (authConfig.enabled && pathname === '/api/auth/logout') {
+      const logoutUser = await authenticatedUser(c.req.raw)
+      if (!hasCsrfToken(
+        c.req.raw,
+        parseCookies(c.req.header('cookie') ?? null),
+        logoutUser?.csrfTokenHash,
+      )) {
+        metrics.authRejected += 1
+        return c.json({ error: 'CSRF token required', requestId }, 403, { 'cache-control': 'no-store' })
+      }
+    }
+    if (authConfig.enabled && pathname.startsWith('/api/') && !pathname.startsWith('/api/auth/') && !isSafeMethod(method)) {
+      const decision = writeRateLimiter.consume(clientIp(c.req.raw))
+      c.header('x-ratelimit-remaining', String(decision.remaining))
+      if (!decision.allowed) return rateLimitedResponse(decision.retryAfterSeconds)
+    }
+    await next()
+    status = c.res.status
+    return c.res
+  } catch (error) {
+    metrics.errors += 1
+    console.error(JSON.stringify({
+      service: 'gateway', event: 'request_failed', requestId,
+      method, path: pathname, error: redact(error instanceof Error ? error.message : String(error)),
+    }))
+    throw error
+  } finally {
+    metrics.responses += 1
+    status = c.res.status || status
+    if (status >= 500) metrics.errors += 1
+    console.log(JSON.stringify({
+      service: 'gateway', event: 'request_completed', requestId,
+      method, path: pathname, status, durationMs: Date.now() - startedAt,
+    }))
+  }
+})
+
 app.get('/healthz', c => c.json({ service: 'gateway', status: 'ok' }))
 app.get('/health/live', c => c.json({ service: 'gateway', status: 'ok' }))
 app.get('/readyz', async c => {
@@ -225,8 +450,112 @@ app.get('/readyz', async c => {
   })
 })
 app.get('/health/ready', async c => {
-  await database`SELECT 1`
-  return c.json({ service: 'gateway', status: 'ok', database: 'ready' })
+  try {
+    await database`SELECT 1`
+    return c.json({
+      service: 'gateway', status: 'ok', database: 'ready',
+      authEnabled: authConfig.enabled,
+      workerOnline: workerSocket?.readyState === WebSocket.OPEN,
+      vendorAccess: false,
+      dockerSocketMounted: false,
+    })
+  } catch {
+    metrics.databaseErrors += 1
+    return c.json({ service: 'gateway', status: 'degraded', database: 'unavailable' }, 503)
+  }
+})
+
+app.get('/metrics', c => {
+  const configuredToken = authConfig.metricsToken
+  if (configuredToken && c.req.header('authorization') !== `Bearer ${configuredToken}`) {
+    return new Response('Unauthorized\n', { status: 401, headers: { 'www-authenticate': 'Bearer' } })
+  }
+  return new Response(metricsText(), {
+    headers: { 'content-type': 'text/plain; version=0.0.4; charset=utf-8', 'cache-control': 'no-store' },
+  })
+})
+
+app.get('/api/auth/session', async c => {
+  if (!authConfig.enabled) return c.json({ enabled: false, authenticated: true, user: { username: 'local' } })
+  const user = await authenticatedUser(c.req.raw)
+  return c.json({
+    enabled: true,
+    authenticated: Boolean(user),
+    user: user ? { id: user.id, username: user.username } : null,
+  }, user ? 200 : 401, { 'cache-control': 'no-store' })
+})
+
+app.get('/api/auth/csrf', async c => {
+  if (!authConfig.enabled) return c.json({ enabled: false, csrfToken: null })
+  const user = await authenticatedUser(c.req.raw)
+  if (!user) return c.json({ error: 'Authentication required' }, 401)
+  const cookies = parseCookies(c.req.header('cookie') ?? null)
+  const existingToken = cookies[csrfCookieName]
+  const csrfToken = existingToken
+    && constantTimeEqual(tokenHash(existingToken), user.csrfTokenHash)
+    ? existingToken
+    : randomToken()
+  if (csrfToken !== existingToken) {
+    await database`
+      UPDATE auth_sessions SET csrf_token_hash = ${tokenHash(csrfToken)}
+      WHERE id = ${user.sessionId} AND revoked_at IS NULL
+    `
+    const response = c.json({ enabled: true, csrfToken }, 200, { 'cache-control': 'no-store' })
+    response.headers.append('set-cookie', cookieValue(csrfCookieName, csrfToken, {
+      httpOnly: false, secure: authConfig.secureCookies,
+      maxAge: Math.floor(authConfig.sessionTtlMs / 1_000),
+    }))
+    return response
+  }
+  return c.json({ enabled: true, csrfToken }, 200, { 'cache-control': 'no-store' })
+})
+
+app.post('/api/auth/login', async c => {
+  const decision = loginRateLimiter.consume(clientIp(c.req.raw))
+  if (!decision.allowed) return rateLimitedResponse(decision.retryAfterSeconds)
+  if (!authConfig.enabled) return c.json({ enabled: false, authenticated: true, user: { username: 'local' } })
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const username = typeof body.username === 'string' ? body.username.trim() : ''
+  const password = typeof body.password === 'string' ? body.password : ''
+  const users = username ? await database<{ id: string; username: string; password_hash: string }[]>`
+    SELECT id, username, password_hash FROM users WHERE username = ${username} LIMIT 1
+  ` : []
+  const candidate = users[0]
+  const valid = candidate ? await Bun.password.verify(password, candidate.password_hash) : false
+  if (!candidate || !valid) {
+    metrics.authFailures += 1
+    return c.json({ error: 'Invalid username or password' }, 401, {
+      'cache-control': 'no-store',
+      'www-authenticate': 'Cookie',
+    })
+  }
+  const rawSessionToken = randomToken()
+  const csrfToken = randomToken()
+  const expiresAt = new Date(Date.now() + authConfig.sessionTtlMs)
+  await database`
+    INSERT INTO auth_sessions (id, user_id, token_hash, csrf_token_hash, expires_at)
+    VALUES (${crypto.randomUUID()}, ${candidate.id}, ${tokenHash(rawSessionToken)}, ${tokenHash(csrfToken)}, ${expiresAt})
+  `
+  await database`UPDATE users SET last_login_at = now() WHERE id = ${candidate.id}`
+  metrics.authLogins += 1
+  const response = c.json({ authenticated: true, user: { id: candidate.id, username: candidate.username }, csrfToken }, 200)
+  for (const value of authCookieHeaders(rawSessionToken, csrfToken).getSetCookie()) response.headers.append('set-cookie', value)
+  return response
+})
+
+app.post('/api/auth/logout', async c => {
+  if (authConfig.enabled) {
+    const cookies = parseCookies(c.req.header('cookie') ?? null)
+    if (cookies[sessionCookieName]) {
+      await database`
+        UPDATE auth_sessions SET revoked_at = now()
+        WHERE token_hash = ${tokenHash(cookies[sessionCookieName])} AND revoked_at IS NULL
+      `
+    }
+  }
+  const headers = clearAuthCookieHeaders()
+  headers.set('content-type', 'application/json; charset=utf-8')
+  return new Response(JSON.stringify({ authenticated: false }), { status: 200, headers })
 })
 
 app.get('/api/session', async c => {
@@ -1201,6 +1530,7 @@ const server = Bun.serve<{ workerId: string | null }>({
     open(socket) {
       if (workerSocket && workerSocket !== socket) workerSocket.close(1012, 'Worker replaced')
       workerSocket = socket
+      metrics.workerConnections = 1
     },
     message(socket, raw) {
       workerMessageQueue = workerMessageQueue.then(async () => {
@@ -1218,6 +1548,7 @@ const server = Bun.serve<{ workerId: string | null }>({
           return
         }
         if (message.kind === 'event') {
+          metrics.workerEvents += 1
           const result = await store.appendEvent({
             ...message.event,
             source: 'worker',
@@ -1236,7 +1567,10 @@ const server = Bun.serve<{ workerId: string | null }>({
       })
     },
     async close(socket) {
-      if (workerSocket === socket) workerSocket = null
+      if (workerSocket === socket) {
+        workerSocket = null
+        metrics.workerConnections = 0
+      }
       if (socket.data.workerId) {
         const affected = await store.workerOffline(socket.data.workerId)
         for (const sessionId of affected) {

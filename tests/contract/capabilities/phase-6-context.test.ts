@@ -81,7 +81,7 @@ describe('phase 6 Memory, Context, and advanced session contract', () => {
       expect(gap?.upstream_strategy).toBeTruthy()
     }
     expect(manifest.capabilities.find((item: any) => item.id === 'tool.CtxInspectTool'))
-      .toMatchObject({ matrix_class: 'C', enabled: false, tested: false })
+      .toMatchObject({ matrix_class: 'C', enabled: false, tested: true, last_test_result: 'expected_failure' })
     expect(manifest.capabilities.find((item: any) => item.id === 'feature.CONTEXT_COLLAPSE'))
       .toMatchObject({ matrix_class: 'C', compiled: false, enabled: false })
     expect(manifest.capabilities.find((item: any) => item.id === 'feature.HISTORY_SNIP'))
@@ -89,7 +89,7 @@ describe('phase 6 Memory, Context, and advanced session contract', () => {
     expect(manifest.capabilities.find((item: any) => item.id === 'feature.TEAMMEM'))
       .toMatchObject({ matrix_class: 'C', compiled: false, enabled: false })
     expect(manifest.capabilities.find((item: any) => item.id === 'command.local.rewind'))
-      .toMatchObject({ matrix_class: 'C', enabled: true, tested: false })
+      .toMatchObject({ matrix_class: 'C', enabled: true, tested: true, last_test_result: 'expected_failure' })
   })
 
   test('defines durable redacted projections, UI, and lifecycle boundaries', async () => {

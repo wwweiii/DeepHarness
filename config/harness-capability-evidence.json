@@ -752,6 +752,116 @@
       "evidence_path": "docs/upstream/phase-8-platform-gaps.md",
       "evidence": "Bridge/Direct Connect is not mounted into the Web session boundary.",
       "known_gap": "Requires a separately authenticated remote control profile."
+    },
+    {
+      "id": "agent.statusline-setup",
+      "phase": 9,
+      "workflow": "agent",
+      "invocable": null,
+      "evidence_path": "tests/integration/phase-5-stack.test.ts",
+      "evidence": "The real ACP command catalog invokes /statusline and completes the built-in statusline setup flow through the vendor session."
+    },
+    {
+      "id": "feature.ACP",
+      "phase": 9,
+      "workflow": "session",
+      "invocable": null,
+      "evidence_path": "tests/integration/phase-1-stack.test.ts",
+      "evidence": "The Phase 1 vertical contract initializes the real ccb-bun ACP process, opens a session, streams a prompt, cancels a turn, and reconnects through the Harness boundary."
+    },
+    {
+      "id": "feature.CONNECTOR_TEXT",
+      "phase": 9,
+      "workflow": "session",
+      "invocable": null,
+      "evidence_path": "tests/integration/phase-1-stack.test.ts",
+      "evidence": "The real ACP prompt contract sends and receives text content blocks without importing vendor internals."
+    },
+    {
+      "id": "feature.EXPERIMENTAL_SEARCH_EXTRA_TOOLS",
+      "phase": 9,
+      "workflow": "extension-projection",
+      "invocable": null,
+      "evidence_path": "tests/integration/phase-4-stack.test.ts",
+      "evidence": "The real ACP Agent flow searches deferred tools and executes the selected extension tool before projecting the result."
+    },
+    {
+      "id": "feature.EXPERIMENTAL_SKILL_SEARCH",
+      "phase": 9,
+      "workflow": "extension-projection",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-5-stack.test.ts",
+      "evidence": "The extension projection verifies Skill execution and reports the separate runtime search opt-in without claiming it is enabled in the base profile.",
+      "known_gap": "Skill execution is covered, while DiscoverSkills remains conditional on SKILL_SEARCH_ENABLED and is not enabled in the base profile."
+    },
+    {
+      "id": "feature.SHOT_STATS",
+      "phase": 9,
+      "workflow": "context",
+      "invocable": null,
+      "evidence_path": "tests/integration/phase-6-stack.test.ts",
+      "evidence": "The Context projection persists and renders ACP usage updates while keeping vendor-internal shot statistics unavailable when no ACP field exists.",
+      "known_gap": "ACP exposes normalized usage but no distinct internal shot-stat lifecycle."
+    },
+    {
+      "id": "feature.TEMPLATES",
+      "phase": 9,
+      "workflow": "extension-projection",
+      "invocable": null,
+      "evidence_path": "tests/integration/phase-5-stack.test.ts",
+      "evidence": "The real ACP available_commands_update publishes workspace prompt templates and the Harness invokes a project command with arguments."
+    },
+    {
+      "id": "tool.ExecuteTool",
+      "phase": 9,
+      "workflow": "tool",
+      "invocable": true,
+      "evidence_path": "tests/integration/phase-4-stack.test.ts",
+      "evidence": "The real ACP process invokes the first-class Execute tool behind the ExecuteExtraTool event alias and preserves its terminal result."
+    },
+    {
+      "id": "tool.ExitPlanModeTool",
+      "phase": 9,
+      "workflow": "configuration",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-2-stack.test.ts",
+      "evidence": "Plan mode, approval, persistence, and UI are exercised through the ACP mode adapter; the Harness does not claim a direct ExitPlanMode tool invocation.",
+      "known_gap": "The tested Harness boundary exits Plan through session configuration and approval state rather than invoking this duplicate vendor symbol directly."
+    },
+    {
+      "id": "tool.ExitPlanModeV2Tool",
+      "phase": 9,
+      "workflow": "configuration",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-2-stack.test.ts",
+      "evidence": "Plan mode, approval, persistence, and UI are exercised through the ACP mode adapter; the Harness does not claim a direct ExitPlanModeV2 symbol invocation.",
+      "known_gap": "The two vendor symbols share the ExitPlanMode runtime name; the tested Harness adapter owns the Web transition."
+    },
+    {
+      "id": "tool.EnterWorktreeTool",
+      "phase": 9,
+      "workflow": "recovery",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-3-stack.test.ts",
+      "evidence": "The Harness creates isolated Git worktrees before ACP session startup and verifies queueing, fork, cleanup, and recovery boundaries.",
+      "known_gap": "Worktree lifecycle is a Worker/Gateway adapter; direct mid-session EnterWorktree invocation is not claimed."
+    },
+    {
+      "id": "tool.ExitWorktreeTool",
+      "phase": 9,
+      "workflow": "recovery",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-3-stack.test.ts",
+      "evidence": "The Harness removes its own clean worktrees on close and retains dirty worktrees with an auditable reason.",
+      "known_gap": "Worktree cleanup is a Worker/Gateway adapter; direct mid-session ExitWorktree invocation is not claimed."
+    },
+    {
+      "id": "integration.package:workflow-engine",
+      "phase": 9,
+      "workflow": "extension-projection",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-7-stack.test.ts",
+      "evidence": "The Harness workflow adapter persists definitions, ordered steps, retries, cancellation, output, and audit state without importing the vendor workflow package."
     }
   ],
   "known_gaps": [

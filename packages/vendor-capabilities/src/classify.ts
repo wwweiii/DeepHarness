@@ -37,7 +37,11 @@ const B_TOOLS = new Set([
   'BriefTool',
   'ConfigTool',
   'DiscoverSkillsTool',
+  'EnterWorktreeTool',
   'ExecuteTool',
+  'ExitPlanModeTool',
+  'ExitPlanModeV2Tool',
+  'ExitWorktreeTool',
   'GoalTool',
   'ListMcpResourcesTool',
   'ListPeersTool',
@@ -58,13 +62,17 @@ const B_TOOLS = new Set([
 ])
 
 const C_FEATURES = new Set([
+  'COORDINATOR_MODE',
   'CONTEXT_COLLAPSE',
   'HISTORY_SNIP',
   'LAN_PIPES',
+  'POOR',
   'REVIEW_ARTIFACT',
   'SKILL_LEARNING',
   'TEAMMEM',
   'UDS_INBOX',
+  'ULTRAPLAN',
+  'ULTRATHINK',
 ])
 const D_FEATURES = new Set([
   'AGENT_TRIGGERS_REMOTE',
@@ -116,7 +124,6 @@ const B_FEATURES = new Set([
   'AWAY_SUMMARY',
   'BG_SESSIONS',
   'CONNECTOR_TEXT',
-  'COORDINATOR_MODE',
   'EXPERIMENTAL_SEARCH_EXTRA_TOOLS',
   'EXPERIMENTAL_SKILL_SEARCH',
   'EXTRACT_MEMORIES',
@@ -128,8 +135,6 @@ const B_FEATURES = new Set([
   'SHOT_STATS',
   'TEMPLATES',
   'TOKEN_BUDGET',
-  'ULTRAPLAN',
-  'ULTRATHINK',
   'VERIFICATION_AGENT',
   'WORKFLOW_SCRIPTS',
 ])
@@ -199,6 +204,9 @@ export function proposeClassification(
       }
       return entry('C', 'ACP only advertises prompt commands; local and local-jsx commands are not invocable.')
     case 'agent':
+      if (capability.name === 'claudeCodeGuideAgent') {
+        return entry('C', 'The bundled guide Agent has no direct invocation contract in the locked ACP profile.')
+      }
       return entry('A', 'Agent definitions are loaded during ACP session creation and execute inside the vendor kernel.')
     case 'provider':
       return entry('D', 'Provider support is conditional on credentials, endpoint configuration, and a provider contract test.')

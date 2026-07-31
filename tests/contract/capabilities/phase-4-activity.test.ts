@@ -99,13 +99,18 @@ describe('phase 4 Agent, Task, Team, and Coordinator capability contract', () =>
 
     const coordinator = manifest.capabilities.find((item: any) =>
       item.id === 'feature.COORDINATOR_MODE')
-    expect(coordinator).toMatchObject({ compiled: true, tested: false })
+    expect(coordinator).toMatchObject({
+      matrix_class: 'C',
+      compiled: true,
+      tested: true,
+      last_test_result: 'expected_failure',
+    })
     const triggers = manifest.capabilities.find((item: any) =>
       item.id === 'command.local-jsx.triggers')
     expect(triggers).toMatchObject({ tested: true, invocable: false, last_test_result: 'passed' })
     expect(triggers.known_gap).toContain('does not expose')
     const listPeers = manifest.capabilities.find((item: any) => item.id === 'tool.ListPeersTool')
-    expect(listPeers).toMatchObject({ enabled: false, tested: false })
+    expect(listPeers).toMatchObject({ enabled: false, invocable: false, tested: true, last_test_result: 'passed' })
     const teamDelete = manifest.capabilities.find((item: any) => item.id === 'tool.TeamDeleteTool')
     expect(teamDelete).toMatchObject({ tested: true, last_test_result: 'passed' })
     expect(teamDelete.known_gap).toContain('gap.vendor.in-process-team-shutdown')

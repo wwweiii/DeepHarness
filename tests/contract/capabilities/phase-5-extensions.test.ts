@@ -71,13 +71,16 @@ describe('phase 5 Commands, Skills, Plugins, Hooks, and MCP contract', () => {
     for (const id of ['tool.MCPTool', 'tool.McpAuthTool']) {
       expect(manifest.capabilities.find((item: any) => item.id === id)).toMatchObject({
         matrix_class: 'C',
-        tested: false,
+        tested: true,
+        last_test_result: 'expected_failure',
       })
     }
     for (const id of ['tool.ListMcpResourcesTool', 'tool.ReadMcpResourceTool']) {
       expect(manifest.capabilities.find((item: any) => item.id === id)).toMatchObject({
         enabled: false,
-        tested: false,
+        invocable: false,
+        tested: true,
+        last_test_result: 'passed',
       })
     }
   })

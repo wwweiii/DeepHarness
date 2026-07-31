@@ -135,6 +135,10 @@ export async function runAcpProbe(options: {
   let promptTextUpdates = 0
   let cancelResponse: Record<string, unknown> = {}
   let observedCancelStreamUpdate = false
+  let authenticateResponse: Record<string, unknown> = {}
+  let configOptionResponse: Record<string, unknown> = {}
+  let closeSessionResponse: Record<string, unknown> = {}
+  let deleteSessionResponse: Record<string, unknown> = {}
   try {
     send(1, 'initialize', {
       protocolVersion: 1,
@@ -142,11 +146,20 @@ export async function runAcpProbe(options: {
       clientInfo: { name: 'deepharness-vendor-audit', version: '0.0.0' },
     })
     initialize = await response(1)
+    send(10, 'authenticate', { methodId: 'deepharness-self-hosted' })
+    authenticateResponse = await response(10)
     send(2, 'session/new', { cwd: workspace, mcpServers: [] })
     newSession = await response(2)
     await wait(1_000)
     const sessionId = newSession.sessionId
     if (typeof sessionId !== 'string') throw new Error('ACP session/new returned no sessionId')
+
+    send(11, 'session/set_config_option', {
+      sessionId,
+      configId: 'mode',
+      value: 'default',
+    })
+    configOptionResponse = await response(11)
 
     const promptStart = notifications.length
     send(3, 'session/prompt', {
@@ -198,6 +211,10 @@ export async function runAcpProbe(options: {
     if (cancelResponse.stopReason !== 'cancelled') {
       throw new Error(`ACP cancel returned ${String(cancelResponse.stopReason)}`)
     }
+    send(12, 'session/close', { sessionId })
+    closeSessionResponse = await response(12)
+    send(13, 'session/delete', { sessionId })
+    deleteSessionResponse = await response(13)
   } finally {
     child.stdin.end()
     if (child.exitCode === null) child.kill('SIGTERM')
@@ -249,6 +266,12 @@ export async function runAcpProbe(options: {
     cancel: {
       response: cancelResponse,
       observed_stream_update: observedCancelStreamUpdate,
+    },
+    lifecycle: {
+      authenticate: authenticateResponse,
+      set_session_config_option: configOptionResponse,
+      close_session: closeSessionResponse,
+      delete_session: deleteSessionResponse,
     },
     stdout_protocol_errors: notifications
       .filter(message => message.method === 'probe/non-json-stdout')
@@ -469,6 +492,10 @@ export function dynamicAcpCapabilities(
     ['newSession', 'acp.session.new', false],
     ['prompt', 'acp.session.prompt', true],
     ['cancel', 'acp.session.cancel', true],
+    ['authenticate', 'acp.authenticate', false],
+    ['setSessionConfigOption', 'acp.session.set_config_option', true],
+    ['unstable_closeSession', 'acp.session.close', false],
+    ['unstable_deleteSession', 'acp.session.delete', false],
   ] as const) {
     capabilities.push({
       id: `acp.${name}`,

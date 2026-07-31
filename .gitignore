@@ -35,3 +35,4 @@ output/playwright/*
 *.log
 tmp/
 temp/
+artifacts/capabilities/rehearsal/

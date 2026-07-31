@@ -19,6 +19,8 @@ export type Evidence = {
 
 export type Capability = {
   id: string
+  /** Team responsible for keeping this capability evidence and adapter current. */
+  owner?: string
   kind: CapabilityKind
   name: string
   matrix_class: MatrixClass | 'unclassified'
@@ -32,6 +34,8 @@ export type Capability = {
   conditions: string[]
   source_evidence: Evidence[]
   known_gap: string | null
+  /** Reviewable follow-up path for an ACP gap; required for matrix class C. */
+  upstream_strategy?: string | null
   last_test_result: 'passed' | 'expected_failure' | 'not_tested'
 }
 
@@ -100,6 +104,12 @@ export type DynamicReport = {
   cancel: {
     response: Record<string, unknown>
     observed_stream_update: boolean
+  }
+  lifecycle: {
+    authenticate: Record<string, unknown>
+    set_session_config_option: Record<string, unknown>
+    close_session: Record<string, unknown>
+    delete_session: Record<string, unknown>
   }
   stdout_protocol_errors: string[]
   available_commands: Array<Record<string, unknown>>
