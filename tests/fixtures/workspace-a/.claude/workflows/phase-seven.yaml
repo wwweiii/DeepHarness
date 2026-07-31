@@ -1,0 +1,6 @@
+steps:
+  - name: Inspect
+    prompt: Reply with phase-seven-workflow-step-one.
+    maxAttempts: 2
+  - name: Verify
+    prompt: Reply with phase-seven-workflow-step-two.

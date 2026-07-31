@@ -382,6 +382,213 @@
       "workflow": "context",
       "evidence": "Phase 6 consumes ACP usage_update used/size values, persists the context-window projection, and renders exact unavailable states for budget fields ACP omits.",
       "known_gap": "ACP exposes context utilization but no dedicated token-budget configuration or remaining-budget event."
+    },
+    {
+      "id": "feature.GOAL",
+      "phase": 7,
+      "workflow": "goal",
+      "invocable": null,
+      "evidence_path": "tests/integration/phase-7-stack.test.ts",
+      "evidence": "Phase 7 persists Goal status, continuation count, token budget, completion evidence, blocked audit, and idempotent background intent records."
+    },
+    {
+      "id": "tool.GoalTool",
+      "phase": 7,
+      "workflow": "goal",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-7-stack.test.ts",
+      "evidence": "Goal completion and blocked transitions are exposed through the durable Harness API; missing completion evidence is rejected and continuation limits produce a blocked audit.",
+      "known_gap": "ACP GoalTool lifecycle is not a durable service boundary; Harness state is authoritative for continuation and audit semantics."
+    },
+    {
+      "id": "command.local-jsx.goal",
+      "phase": 7,
+      "workflow": "goal",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-7-acp-gaps.md",
+      "evidence": "The terminal Goal command is catalogued as blocked because ACP available_commands_update does not advertise local-jsx commands.",
+      "known_gap": "Goal command UI depends on the vendor terminal lifecycle; the Harness Goal API is a durable adapter, not a claim of ACP command parity."
+    },
+    {
+      "id": "feature.WORKFLOW_SCRIPTS",
+      "phase": 7,
+      "workflow": "workflow",
+      "invocable": null,
+      "evidence_path": "apps/worker/src/workflows.ts",
+      "evidence": "Worker discovers .claude/workflows files inside the mounted workspace, hashes source content, and emits definitions through the existing ACP-bound Worker channel."
+    },
+    {
+      "id": "tool.WorkflowTool",
+      "phase": 7,
+      "workflow": "workflow",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-7-stack.test.ts",
+      "evidence": "Workflow runs persist definitions, ordered steps, attempts, retry state, output, cancellation, and terminal audit state.",
+      "known_gap": "Workflow execution is represented by Harness-managed ACP prompts; vendor local command UI remains outside ACP."
+    },
+    {
+      "id": "command.local-jsx.workflows",
+      "phase": 7,
+      "workflow": "workflow",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-7-acp-gaps.md",
+      "evidence": "The terminal Workflow browser is not advertised through ACP; Worker-side workspace discovery and the Harness run API preserve the executable definition boundary.",
+      "known_gap": "ACP cannot invoke the vendor local-jsx Workflow browser."
+    },
+    {
+      "id": "tool.CronCreateTool",
+      "phase": 7,
+      "workflow": "cron",
+      "invocable": false,
+      "evidence_path": "tests/unit/scheduler.test.ts",
+      "evidence": "Cron schedules persist explicit IANA timezone, misfire policy, catch-up bound, next run, and lifecycle timestamps."
+    },
+    {
+      "id": "tool.CronDeleteTool",
+      "phase": 7,
+      "workflow": "cron",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-7-stack.test.ts",
+      "evidence": "Cancelling a Cron schedule atomically cancels its background job and records a cron.cancelled audit event."
+    },
+    {
+      "id": "tool.CronListTool",
+      "phase": 7,
+      "workflow": "cron",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-7-stack.test.ts",
+      "evidence": "Cron list state is read from PostgreSQL and remains available independently of browser/SSE connections."
+    },
+    {
+      "id": "tool.ScheduleCronTool",
+      "phase": 7,
+      "workflow": "cron",
+      "invocable": false,
+      "evidence_path": "tests/unit/scheduler.test.ts",
+      "evidence": "The scheduler computes fixed interval and five-field occurrences with explicit timezone and deterministic misfire semantics.",
+      "known_gap": "Vendor Kairos daemon and local trigger command are not relied on by the ACP Web session."
+    },
+    {
+      "id": "feature.KAIROS",
+      "phase": 7,
+      "workflow": "cron",
+      "invocable": null,
+      "evidence_path": "tests/unit/scheduler.test.ts",
+      "evidence": "Harness scheduler owns durable clock, timezone, missed-run, and restart recovery behavior; vendor daemon is not double-managed.",
+      "known_gap": "The vendor Kairos daemon lifecycle is platform-bound and is represented by the Harness scheduler rather than claimed as ACP-native."
+    },
+    {
+      "id": "feature.KAIROS_BRIEF",
+      "phase": 7,
+      "workflow": "background",
+      "invocable": null,
+      "evidence_path": "tests/integration/phase-7-stack.test.ts",
+      "evidence": "Brief work can be submitted as a one-shot durable background job with owner, token budget, output cursor, attach, and stop state.",
+      "known_gap": "The vendor Brief-only terminal presentation and daemon lifecycle are not exposed by ACP."
+    },
+    {
+      "id": "feature.AWAY_SUMMARY",
+      "phase": 7,
+      "workflow": "background",
+      "invocable": null,
+      "evidence_path": "tests/integration/phase-7-stack.test.ts",
+      "evidence": "Away-summary work uses the same persisted one-shot background boundary and remains independent of browser connectivity.",
+      "known_gap": "The vendor useAwaySummary hook is mounted by the REPL UI and has no ACP lifecycle event."
+    },
+    {
+      "id": "tool.BriefTool",
+      "phase": 7,
+      "workflow": "background",
+      "invocable": false,
+      "evidence_path": "apps/web/src/features/automation/AutomationPanel.tsx",
+      "evidence": "The Automation panel and Background API expose a durable Brief adapter through ordinary ACP prompts.",
+      "known_gap": "BriefTool availability depends on terminal bootstrap state and is not directly advertised or invoked through ACP."
+    },
+    {
+      "id": "command.local-jsx.brief",
+      "phase": 7,
+      "workflow": "background",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-7-acp-gaps.md",
+      "evidence": "The local-jsx Brief mode command remains visible as an ACP-blocked terminal command.",
+      "known_gap": "ACP available_commands_update does not expose local-jsx commands."
+    },
+    {
+      "id": "feature.BG_SESSIONS",
+      "phase": 7,
+      "workflow": "background",
+      "invocable": null,
+      "evidence_path": "tests/integration/phase-7-stack.test.ts",
+      "evidence": "Background jobs persist owner session, worker, log cursor, budget, heartbeat, orphan state, attach and stop metadata."
+    },
+    {
+      "id": "tool.SleepTool",
+      "phase": 7,
+      "workflow": "background",
+      "invocable": false,
+      "evidence_path": "tests/unit/scheduler.test.ts",
+      "evidence": "Sleeping background jobs use next_run_at and resume through the durable scheduler after a process or Gateway restart."
+    },
+    {
+      "id": "tool.MonitorTool",
+      "phase": 7,
+      "workflow": "background",
+      "invocable": false,
+      "evidence_path": "tests/integration/phase-7-stack.test.ts",
+      "evidence": "Background job logs are cursor-addressable and can be re-attached without depending on an active SSE subscriber."
+    },
+    {
+      "id": "feature.MONITOR_TOOL",
+      "phase": 7,
+      "workflow": "background",
+      "invocable": null,
+      "evidence_path": "apps/web/src/features/automation/AutomationPanel.tsx",
+      "evidence": "The Web Automation panel exposes durable background status, log cursor, attach, and stop controls."
+    },
+    {
+      "id": "command.local-jsx.monitor",
+      "phase": 7,
+      "workflow": "background",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-7-acp-gaps.md",
+      "evidence": "The vendor Monitor shortcut remains catalogued but blocked; Harness monitor jobs use the durable background API.",
+      "known_gap": "The terminal Monitor command is local-jsx and cannot be invoked through ACP available commands."
+    },
+    {
+      "id": "tool.RemoteTriggerTool",
+      "phase": 7,
+      "workflow": "remote_trigger",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-7-acp-gaps.md",
+      "evidence": "The Background API returns a deterministic 501 until an authenticated external callback profile is configured; it does not create a misleading runnable job.",
+      "known_gap": "RemoteTrigger requires an external authenticated callback, provider credentials, and an ACP-visible registration lifecycle."
+    },
+    {
+      "id": "feature.AGENT_TRIGGERS",
+      "phase": 7,
+      "workflow": "agent_trigger",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-7-acp-gaps.md",
+      "evidence": "Agent trigger registration and delivery remain an expected ACP failure backed by vendor source evidence.",
+      "known_gap": "Trigger registration is local-jsx and trigger delivery is mounted by a REPL hook rather than the ACP session service."
+    },
+    {
+      "id": "feature.AGENT_TRIGGERS_REMOTE",
+      "phase": 7,
+      "workflow": "remote_trigger",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-7-acp-gaps.md",
+      "evidence": "Remote Agent triggers remain disabled without an external authenticated provider profile and callback contract.",
+      "known_gap": "No test credential, callback endpoint, or ACP trigger registry is available in the base Docker profile."
+    },
+    {
+      "id": "command.local-jsx.triggers",
+      "phase": 7,
+      "workflow": "agent_trigger",
+      "invocable": false,
+      "evidence_path": "docs/upstream/phase-7-acp-gaps.md",
+      "evidence": "The trigger management command is retained as an explicit expected failure and is not replaced by prompt text invocation.",
+      "known_gap": "ACP available_commands_update does not expose the local-jsx trigger registry command."
     }
   ],
   "known_gaps": [
@@ -530,6 +737,26 @@
         }
       ],
       "upstream_strategy": "Expose trigger registry operations and trigger-fired prompt events through ACP; then implement the durable scheduler and remote-provider profile in Phase 7."
+    },
+    {
+      "id": "gap.platform.remote-trigger",
+      "status": "expected_failure",
+      "summary": "RemoteTrigger cannot be enabled in the base profile without an authenticated callback provider, credentials, and an ACP-visible registration lifecycle.",
+      "evidence": [
+        {
+          "path": "src/tools.ts",
+          "line": 39,
+          "detail": "RemoteTriggerTool is conditionally assembled behind AGENT_TRIGGERS_REMOTE rather than exposed as an ACP operation.",
+          "evidenceType": "source"
+        },
+        {
+          "path": "tests/integration/phase-7-stack.test.ts",
+          "line": 1,
+          "detail": "The real Gateway stack rejects remote_trigger creation with HTTP 501 instead of claiming support without credentials or callback ownership.",
+          "evidenceType": "runtime"
+        }
+      ],
+      "upstream_strategy": "Define an authenticated remote-trigger Docker profile and expose trigger registration, delivery identity, and acknowledgement through ACP before marking this capability invocable."
     },
     {
       "id": "gap.acp.command-hot-reload",

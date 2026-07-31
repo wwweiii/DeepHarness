@@ -1,7 +1,9 @@
 import { createDatabase, migrate } from '@deepharness/database'
 import {
   WORKSPACE_ID,
+  type BackgroundJobRecord,
   type CapabilityView,
+  type GoalSnapshot,
   type GatewayToWorkerMessage,
   type HarnessEvent,
   type JsonValue,
@@ -13,6 +15,9 @@ import {
 import { Hono } from 'hono'
 import path from 'node:path'
 import { GatewayStore } from './store.ts'
+import { appendAutomationEvent, applyAutomationEvent, AutomationStore } from './automation.ts'
+import { AutomationScheduler } from './scheduler.ts'
+import { nextCronOccurrence } from './cron.ts'
 
 const port = Number.parseInt(process.env.PORT ?? '8080', 10)
 const databaseUrl = process.env.DATABASE_URL
@@ -31,6 +36,7 @@ const providerProfilesPath = process.env.PROVIDER_PROFILES_PATH
 const database = createDatabase(databaseUrl)
 await migrate(database)
 const store = new GatewayStore(database)
+const automation = new AutomationStore(database)
 
 async function persistManifest(): Promise<void> {
   const file = Bun.file(manifestPath)
@@ -151,13 +157,46 @@ async function deliver(command: WorkerCommand): Promise<boolean> {
   return sent
 }
 
+const scheduler = new AutomationScheduler(database, automation, store, {
+  createPrompt: input => store.createPrompt(input),
+  deliver,
+  broadcast: event => broadcast(event),
+})
+
+async function emitAutomationEvent(input: {
+  sessionId: string
+  turnId?: string | null
+  type: HarnessEvent['type']
+  payload: Record<string, JsonValue>
+}): Promise<HarnessEvent> {
+  const event = await appendAutomationEvent(database, { ...input, id: crypto.randomUUID(), source: 'gateway' })
+  await applyAutomationEvent(database, event)
+  broadcast(event)
+  return event
+}
+
 function idempotencyKey(request: Request): string | null {
   const value = request.headers.get('idempotency-key')?.trim()
   return value && value.length <= 200 ? value : null
 }
 
-function apiError(message: string, status: 400 | 404 | 409 | 422 | 503) {
+function apiError(message: string, status: 400 | 404 | 409 | 422 | 501 | 503) {
   return Response.json({ error: message }, { status })
+}
+
+function jobTurnId(job: BackgroundJobRecord | null): string | null {
+  if (!job?.input || typeof job.input !== 'object' || Array.isArray(job.input)) return null
+  const value = (job.input as Record<string, JsonValue>).currentTurnId
+  return typeof value === 'string' ? value : null
+}
+
+function stopWorkerJob(job: BackgroundJobRecord | null, reason: string): void {
+  if (!job?.ownerSessionId || workerSocket?.readyState !== WebSocket.OPEN) return
+  const command: WorkerCommand = {
+    id: crypto.randomUUID(), type: 'stop_background_job', sessionId: job.ownerSessionId,
+    payload: { jobId: job.id, turnId: jobTurnId(job), reason },
+  }
+  sendWorker({ kind: 'command', command })
 }
 
 function validWorkspacePath(value: string): string | null {
@@ -276,6 +315,255 @@ app.get('/api/capabilities', async c => {
     providers: await providerProfiles(),
   }
   return c.json(view)
+})
+
+app.get('/api/goals', async c => c.json({ goals: await automation.listGoals(c.req.query('sessionId')) }))
+app.get('/api/sessions/:sessionId/goals', async c => c.json({ goals: await automation.listGoals(c.req.param('sessionId')) }))
+
+app.post('/api/goals', async c => {
+  const key = idempotencyKey(c.req.raw)
+  if (!key) return apiError('Idempotency-Key header is required', 400)
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const sessionId = typeof body.sessionId === 'string' ? body.sessionId : ''
+  const session = sessionId ? await store.getSession(sessionId) : await store.getActiveSession()
+  if (!session) return apiError('Session not found', 404)
+  const objective = typeof body.objective === 'string' ? body.objective.trim() : ''
+  if (!objective) return apiError('Goal objective is required', 400)
+  if (objective.length > 20_000) return apiError('Goal objective is too long', 422)
+  const goalId = typeof body.id === 'string' ? body.id : crypto.randomUUID()
+  const created = await automation.createGoal({
+    id: goalId, sessionId: session.id, objective,
+    tokenBudget: typeof body.tokenBudget === 'number' ? body.tokenBudget : null,
+    continuationLimit: typeof body.continuationLimit === 'number' ? body.continuationLimit : 3,
+    permissionMode: session.permissionMode, workspaceId: session.workspaceId, idempotencyKey: key,
+  })
+  if (created.created) {
+    await emitAutomationEvent({ sessionId: session.id, type: 'goal.created', payload: {
+      goalId: created.goal.id, jobId: created.job.id, objective, status: created.goal.status,
+      continuationLimit: created.goal.continuationLimit,
+    } })
+    await emitAutomationEvent({ sessionId: session.id, type: 'background.created', payload: {
+      jobId: created.job.id, goalId: created.goal.id, status: created.job.status, type: 'goal', title: objective,
+    } })
+  }
+  return c.json({ goal: created.goal, job: created.job }, created.created ? 201 : 200)
+})
+
+app.get('/api/goals/:goalId', async c => {
+  const goal = await automation.getGoal(c.req.param('goalId'))
+  if (!goal) return apiError('Goal not found', 404)
+  const job = (await automation.listBackgroundJobs(goal.sessionId)).find(candidate => candidate.goalId === goal.id) ?? null
+  return c.json({ goal, job, events: await store.listEvents(goal.sessionId) } satisfies GoalSnapshot)
+})
+
+app.post('/api/goals/:goalId/complete', async c => {
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const evidence = body.evidence === undefined ? null : body.evidence as JsonValue
+  try {
+    const goal = await automation.completeGoal(c.req.param('goalId'), evidence)
+    await emitAutomationEvent({ sessionId: goal.sessionId, type: 'goal.completed', payload: {
+      goalId: goal.id, status: goal.status, completionEvidence: evidence,
+    } })
+    stopWorkerJob((await automation.listBackgroundJobs(goal.sessionId)).find(candidate => candidate.goalId === goal.id) ?? null, 'goal_completed')
+    return c.json({ goal })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message === 'COMPLETION_EVIDENCE_REQUIRED') return apiError('Completion evidence is required', 422)
+    if (message === 'GOAL_NOT_FOUND') return apiError('Goal not found', 404)
+    throw error
+  }
+})
+
+app.post('/api/goals/:goalId/block', async c => {
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const audit = body.audit ?? body.reason ?? null
+  try {
+    const goal = await automation.blockGoal(c.req.param('goalId'), audit as JsonValue)
+    await emitAutomationEvent({ sessionId: goal.sessionId, type: 'goal.blocked', payload: {
+      goalId: goal.id, status: goal.status, blockedAudit: audit as JsonValue,
+    } })
+    stopWorkerJob((await automation.listBackgroundJobs(goal.sessionId)).find(candidate => candidate.goalId === goal.id) ?? null, 'goal_blocked')
+    return c.json({ goal })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message === 'BLOCKED_AUDIT_REQUIRED') return apiError('Blocked audit is required', 422)
+    if (message === 'GOAL_NOT_FOUND') return apiError('Goal not found', 404)
+    throw error
+  }
+})
+
+app.post('/api/goals/:goalId/stop', async c => {
+  try {
+    const goal = await automation.stopGoal(c.req.param('goalId'))
+    await emitAutomationEvent({ sessionId: goal.sessionId, type: 'goal.updated', payload: { goalId: goal.id, status: goal.status } })
+    stopWorkerJob((await automation.listBackgroundJobs(goal.sessionId)).find(candidate => candidate.goalId === goal.id) ?? null, 'goal_stopped')
+    return c.json({ goal })
+  } catch (error) {
+    if ((error as Error).message === 'GOAL_NOT_FOUND') return apiError('Goal not found', 404)
+    throw error
+  }
+})
+
+app.get('/api/workflows', async c => c.json({ definitions: await automation.listWorkflowDefinitions(c.req.query('sessionId')), runs: await automation.listWorkflowRuns(c.req.query('sessionId')) }))
+app.get('/api/sessions/:sessionId/workflows', async c => c.json({ definitions: await automation.listWorkflowDefinitions(c.req.param('sessionId')), runs: await automation.listWorkflowRuns(c.req.param('sessionId')) }))
+
+app.post('/api/workflows', async c => {
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const name = typeof body.name === 'string' ? body.name.trim() : ''
+  const steps = Array.isArray(body.steps) ? body.steps as JsonValue[] : []
+  if (!name || steps.length === 0) return apiError('Workflow name and at least one step are required', 400)
+  if (steps.length > 100) return apiError('Workflow has too many steps', 422)
+  try {
+    const definition = await automation.upsertWorkflowDefinition({
+      ...(typeof body.id === 'string' ? { id: body.id } : {}),
+      sessionId: typeof body.sessionId === 'string' ? body.sessionId : null,
+      name, description: typeof body.description === 'string' ? body.description : '',
+      sourcePath: typeof body.sourcePath === 'string' ? body.sourcePath : null,
+      sourceHash: typeof body.sourceHash === 'string' ? body.sourceHash : null,
+      steps, metadata: body.metadata && typeof body.metadata === 'object' ? body.metadata as Record<string, JsonValue> : {},
+    })
+    if (definition.sessionId) await emitAutomationEvent({ sessionId: definition.sessionId, type: 'workflow.created', payload: { definitionId: definition.id, name: definition.name, steps: definition.steps } })
+    return c.json({ definition }, 201)
+  } catch (error) {
+    if ((error as Error).message === 'WORKFLOW_DEFINITION_INSERT_FAILED') return apiError('Workflow definition could not be stored', 422)
+    throw error
+  }
+})
+
+app.get('/api/workflows/:workflowId', async c => {
+  const snapshot = await automation.getWorkflowSnapshot(c.req.param('workflowId'))
+  if (!snapshot) return apiError('Workflow not found', 404)
+  return c.json(snapshot)
+})
+
+app.post('/api/workflows/:workflowId/runs', async c => {
+  const key = idempotencyKey(c.req.raw)
+  if (!key) return apiError('Idempotency-Key header is required', 400)
+  const definition = await automation.getWorkflowDefinition(c.req.param('workflowId'))
+  if (!definition) return apiError('Workflow not found', 404)
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const sessionId = typeof body.sessionId === 'string' ? body.sessionId : definition.sessionId
+  if (!sessionId || !await store.getSession(sessionId)) return apiError('Session not found', 404)
+  try {
+    const created = await automation.createWorkflowRun({ definitionId: definition.id, sessionId, value: body.input as JsonValue, maxRetries: typeof body.maxRetries === 'number' ? body.maxRetries : 1, idempotencyKey: key })
+    if (created.created) await emitAutomationEvent({ sessionId, type: 'workflow.run_started', payload: { runId: created.run.id, definitionId: definition.id, status: created.run.status, currentStepIndex: 0 } })
+    return c.json({ run: created.run }, created.created ? 201 : 200)
+  } catch (error) {
+    if ((error as Error).message === 'WORKFLOW_DEFINITION_NOT_FOUND') return apiError('Workflow not found', 404)
+    if ((error as Error).message === 'WORKFLOW_HAS_NO_EXECUTABLE_STEPS') return apiError('Workflow has no executable steps', 422)
+    throw error
+  }
+})
+
+app.post('/api/workflow-runs/:runId/cancel', async c => {
+  const run = await automation.cancelWorkflowRun(c.req.param('runId'))
+  if (!run) return apiError('Workflow run is not active', 409)
+  await emitAutomationEvent({ sessionId: run.sessionId, type: 'workflow.run_updated', payload: { runId: run.id, status: run.status } })
+  stopWorkerJob((await automation.listBackgroundJobs(run.sessionId)).find(candidate => candidate.workflowRunId === run.id) ?? null, 'workflow_cancelled')
+  return c.json({ run })
+})
+
+app.get('/api/cron', async c => c.json({ schedules: await automation.listCronSchedules(c.req.query('sessionId')) }))
+app.get('/api/sessions/:sessionId/cron', async c => c.json({ schedules: await automation.listCronSchedules(c.req.param('sessionId')) }))
+
+app.post('/api/cron', async c => {
+  const key = idempotencyKey(c.req.raw)
+  if (!key) return apiError('Idempotency-Key header is required', 400)
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const ownerSessionId = typeof body.sessionId === 'string' ? body.sessionId : ''
+  const session = ownerSessionId ? await store.getSession(ownerSessionId) : null
+  const expression = typeof body.expression === 'string' ? body.expression.trim() : ''
+  const timezone = typeof body.timezone === 'string' ? body.timezone : 'UTC'
+  const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
+  if (!session) return apiError('Session not found', 404)
+  if (!expression || !prompt) return apiError('Cron expression and prompt are required', 400)
+  if (expression !== '@once' && !/^@every\s+\d+(?:\.\d+)?\s*(?:ms|s|m|h|d)?$/i.test(expression)
+    && expression.split(/\s+/).length !== 5) return apiError('Cron expression must be @once, @every, or five-field cron', 422)
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format()
+    const clock = new Date()
+    const nextRunAt = expression === '@once'
+      ? new Date(clock.getTime() + 1_000)
+      : nextCronOccurrence(expression, clock, timezone)
+    if (!nextRunAt) return apiError('Cron expression has no valid occurrence', 422)
+    const created = await automation.createCron({
+      name: typeof body.name === 'string' && body.name.trim() ? body.name.trim() : expression,
+      ownerSessionId: session.id, expression, timezone, prompt,
+      title: typeof body.title === 'string' ? body.title : expression, workspaceId: session.workspaceId,
+      misfirePolicy: body.misfirePolicy === 'skip' || body.misfirePolicy === 'run_all' ? body.misfirePolicy : 'run_once',
+      maxCatchUp: typeof body.maxCatchUp === 'number' ? body.maxCatchUp : 1,
+      tokenBudget: typeof body.tokenBudget === 'number' ? body.tokenBudget : null,
+      nextRunAt, idempotencyKey: key,
+    })
+    if (created.created) await emitAutomationEvent({ sessionId: session.id, type: 'cron.scheduled', payload: { cronScheduleId: created.schedule.id, jobId: created.schedule.jobId, status: created.schedule.status, expression: created.schedule.expression, timezone: created.schedule.timezone, nextRunAt: created.schedule.nextRunAt } })
+    return c.json({ schedule: created.schedule }, created.created ? 201 : 200)
+  } catch (error) {
+    if ((error as Error).message.includes('time zone')) return apiError('Invalid IANA timezone', 422)
+    throw error
+  }
+})
+
+app.post('/api/cron/:scheduleId/cancel', async c => {
+  const schedule = await automation.cancelCron(c.req.param('scheduleId'))
+  if (!schedule) return apiError('Cron schedule not found', 404)
+  await emitAutomationEvent({ sessionId: schedule.ownerSessionId, type: 'cron.cancelled', payload: { cronScheduleId: schedule.id, jobId: schedule.jobId, status: schedule.status } })
+  stopWorkerJob(await automation.getBackgroundJob(schedule.jobId), 'cron_cancelled')
+  return c.json({ schedule })
+})
+
+app.get('/api/background-jobs', async c => c.json({ jobs: await automation.listBackgroundJobs(c.req.query('sessionId')) }))
+app.get('/api/sessions/:sessionId/background-jobs', async c => c.json({ jobs: await automation.listBackgroundJobs(c.req.param('sessionId')) }))
+
+app.post('/api/background-jobs', async c => {
+  const key = idempotencyKey(c.req.raw)
+  if (!key) return apiError('Idempotency-Key header is required', 400)
+  const body = await c.req.json().catch(() => ({})) as Record<string, unknown>
+  const sessionId = typeof body.sessionId === 'string' ? body.sessionId : ''
+  const session = sessionId ? await store.getSession(sessionId) : null
+  if (!session) return apiError('Session not found', 404)
+  const type = typeof body.type === 'string' ? body.type : ''
+  if (type === 'remote_trigger') return apiError('RemoteTrigger requires an authenticated external callback profile', 501)
+  if (type === 'agent_trigger') return apiError('Agent triggers are not exposed by the current ACP session surface', 501)
+  if (!['sleep', 'brief', 'away_summary', 'monitor'].includes(type)) return apiError('Unsupported background job type', 422)
+  const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
+  if (!prompt) return apiError('Background prompt is required', 400)
+  const delayMs = typeof body.delayMs === 'number' && Number.isFinite(body.delayMs)
+    ? Math.max(0, Math.min(body.delayMs, 365 * 24 * 60 * 60 * 1_000))
+    : 0
+  const requestedRunAt = typeof body.runAt === 'string' ? new Date(body.runAt) : null
+  if (requestedRunAt && !Number.isFinite(requestedRunAt.getTime())) return apiError('Invalid background runAt value', 422)
+  const nextRunAt = requestedRunAt ?? new Date(Date.now() + delayMs)
+  const created = await automation.createBackgroundJob({
+    type: type as 'sleep' | 'brief' | 'away_summary' | 'monitor', ownerSessionId: session.id,
+    workspaceId: session.workspaceId, title: typeof body.title === 'string' && body.title.trim() ? body.title.trim() : type,
+    prompt, nextRunAt, tokenBudget: typeof body.tokenBudget === 'number' ? body.tokenBudget : null, idempotencyKey: key,
+  })
+  if (created.created) await emitAutomationEvent({ sessionId: session.id, type: 'background.created', payload: { jobId: created.job.id, status: created.job.status, type: created.job.type, title: created.job.title } })
+  return c.json({ job: created.job }, created.created ? 201 : 200)
+})
+
+app.get('/api/background-jobs/:jobId', async c => {
+  const snapshot = await automation.getBackgroundSnapshot(c.req.param('jobId'), Number.parseInt(c.req.query('after') ?? '0', 10) || 0)
+  if (!snapshot) return apiError('Background job not found', 404)
+  return c.json(snapshot)
+})
+
+app.post('/api/background-jobs/:jobId/attach', async c => {
+  const after = Number.parseInt(c.req.query('after') ?? '0', 10) || 0
+  const snapshot = await automation.getBackgroundSnapshot(c.req.param('jobId'), Math.max(0, after))
+  if (!snapshot) return apiError('Background job not found', 404)
+  if (snapshot.job.ownerSessionId) await emitAutomationEvent({ sessionId: snapshot.job.ownerSessionId, type: 'background.attached', payload: { jobId: snapshot.job.id, status: snapshot.job.status } })
+  return c.json({ ...snapshot, attached: true })
+})
+
+app.post('/api/background-jobs/:jobId/stop', async c => {
+  const job = await automation.stopBackgroundJob(c.req.param('jobId'))
+  if (!job) return apiError('Background job is not active', 409)
+  if (job.ownerSessionId) {
+    await emitAutomationEvent({ sessionId: job.ownerSessionId, type: 'background.stopped', payload: { jobId: job.id, status: job.status, reason: 'user_requested' } })
+    stopWorkerJob(job, 'user_requested')
+  }
+  return c.json({ job })
 })
 
 app.post('/api/sessions', async c => {
@@ -878,6 +1166,8 @@ const server = Bun.serve<{ workerId: string | null }>({
     },
   },
 })
+
+scheduler.start()
 
 setInterval(() => {
   if (!workerSocket || workerSocket.readyState !== WebSocket.OPEN) return

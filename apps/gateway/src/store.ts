@@ -29,6 +29,7 @@ import type {
   WorkerCommand,
   WorkspaceRecord,
 } from '@deepharness/protocol'
+import { applyAutomationEvent } from './automation.ts'
 
 type Transaction = postgres.TransactionSql
 
@@ -2069,6 +2070,7 @@ export class GatewayStore {
         `
       })
     }
+    await applyAutomationEvent(this.database, event)
   }
 
   private async insertCommand(

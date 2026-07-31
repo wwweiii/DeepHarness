@@ -50,6 +50,59 @@ export type ContextCapabilityState =
   | 'disabled'
   | 'not_observable'
 
+export type GoalStatus =
+  | 'draft'
+  | 'queued'
+  | 'running'
+  | 'paused'
+  | 'completed'
+  | 'blocked'
+  | 'stopped'
+  | 'failed'
+  | 'quota_exceeded'
+
+export type WorkflowRunStatus =
+  | 'queued'
+  | 'running'
+  | 'retry_waiting'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'blocked'
+
+export type WorkflowStepStatus =
+  | 'pending'
+  | 'running'
+  | 'retry_waiting'
+  | 'completed'
+  | 'failed'
+  | 'skipped'
+  | 'cancelled'
+
+export type BackgroundJobType =
+  | 'goal'
+  | 'workflow'
+  | 'cron'
+  | 'sleep'
+  | 'brief'
+  | 'away_summary'
+  | 'monitor'
+  | 'remote_trigger'
+  | 'agent_trigger'
+
+export type BackgroundJobStatus =
+  | 'queued'
+  | 'running'
+  | 'sleeping'
+  | 'paused'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'orphaned'
+  | 'quota_exceeded'
+
+export type MisfirePolicy = 'run_once' | 'skip' | 'run_all'
+
 export type HarnessEventType =
   | 'session.created'
   | 'session.status_changed'
@@ -94,6 +147,26 @@ export type HarnessEventType =
   | 'commands.updated'
   | 'extensions.updated'
   | 'extension.configuration_changed'
+  | 'goal.created'
+  | 'goal.updated'
+  | 'goal.completed'
+  | 'goal.blocked'
+  | 'goal.continuation_started'
+  | 'workflow.created'
+  | 'workflow.run_started'
+  | 'workflow.step_updated'
+  | 'workflow.run_updated'
+  | 'workflow.output_delta'
+  | 'cron.scheduled'
+  | 'cron.run_started'
+  | 'cron.run_completed'
+  | 'cron.run_missed'
+  | 'cron.cancelled'
+  | 'background.created'
+  | 'background.updated'
+  | 'background.output_delta'
+  | 'background.attached'
+  | 'background.stopped'
 
 export const HARNESS_EVENT_TYPES: HarnessEventType[] = [
   'session.created',
@@ -139,6 +212,26 @@ export const HARNESS_EVENT_TYPES: HarnessEventType[] = [
   'commands.updated',
   'extensions.updated',
   'extension.configuration_changed',
+  'goal.created',
+  'goal.updated',
+  'goal.completed',
+  'goal.blocked',
+  'goal.continuation_started',
+  'workflow.created',
+  'workflow.run_started',
+  'workflow.step_updated',
+  'workflow.run_updated',
+  'workflow.output_delta',
+  'cron.scheduled',
+  'cron.run_started',
+  'cron.run_completed',
+  'cron.run_missed',
+  'cron.cancelled',
+  'background.created',
+  'background.updated',
+  'background.output_delta',
+  'background.attached',
+  'background.stopped',
 ]
 
 export interface HarnessEvent {
@@ -244,6 +337,16 @@ export type WorkerCommand =
         kind: 'plugin' | 'hook'
         name: string
         enabled: boolean
+      }
+    }
+  | {
+      id: string
+      type: 'stop_background_job'
+      sessionId: string
+      payload: {
+        jobId: string
+        turnId: string | null
+        reason: string
       }
     }
 
@@ -631,6 +734,138 @@ export interface ProviderProfile {
   active: boolean
   automatedTest: 'fake_passed' | 'config_validated' | 'not_tested'
   smokeCommand: string
+}
+
+export interface GoalRecord {
+  id: string
+  sessionId: string
+  vendorGoalId: string | null
+  objective: string
+  status: GoalStatus
+  tokenBudget: number | null
+  continuationLimit: number
+  continuationCount: number
+  completionEvidence: JsonValue
+  blockedAudit: JsonValue
+  permissionMode: string
+  workspaceId: string
+  nextContinuationAt: string | null
+  lastError: string | null
+  createdAt: string
+  updatedAt: string
+  completedAt: string | null
+}
+
+export interface WorkflowDefinitionRecord {
+  id: string
+  sessionId: string | null
+  name: string
+  description: string
+  sourcePath: string | null
+  sourceHash: string | null
+  enabled: boolean
+  steps: JsonValue[]
+  metadata: Record<string, JsonValue>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface WorkflowStepRecord {
+  id: string
+  runId: string
+  stepIndex: number
+  name: string
+  prompt: string
+  status: WorkflowStepStatus
+  attempt: number
+  maxAttempts: number
+  input: JsonValue
+  output: JsonValue
+  error: string | null
+  startedAt: string | null
+  finishedAt: string | null
+}
+
+export interface WorkflowRunRecord {
+  id: string
+  definitionId: string
+  sessionId: string
+  status: WorkflowRunStatus
+  currentStepIndex: number
+  input: JsonValue
+  output: JsonValue
+  retryCount: number
+  maxRetries: number
+  cancelRequested: boolean
+  createdAt: string
+  updatedAt: string
+  startedAt: string | null
+  finishedAt: string | null
+  steps: WorkflowStepRecord[]
+}
+
+export interface CronScheduleRecord {
+  id: string
+  name: string
+  ownerSessionId: string
+  jobId: string
+  expression: string
+  timezone: string
+  misfirePolicy: MisfirePolicy
+  maxCatchUp: number
+  status: 'active' | 'paused' | 'cancelled'
+  nextRunAt: string | null
+  lastScheduledAt: string | null
+  lastStartedAt: string | null
+  lastCompletedAt: string | null
+  metadata: Record<string, JsonValue>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BackgroundJobRecord {
+  id: string
+  type: BackgroundJobType
+  status: BackgroundJobStatus
+  ownerSessionId: string | null
+  workerId: string | null
+  workspaceId: string | null
+  cronScheduleId: string | null
+  goalId: string | null
+  workflowRunId: string | null
+  title: string
+  input: JsonValue
+  output: JsonValue
+  logCursor: number
+  continuationCount: number
+  maxContinuations: number
+  tokenBudget: number | null
+  spentTokens: number
+  nextRunAt: string | null
+  lastHeartbeatAt: string | null
+  orphanedAt: string | null
+  error: string | null
+  createdAt: string
+  updatedAt: string
+  startedAt: string | null
+  finishedAt: string | null
+}
+
+export interface BackgroundJobSnapshot {
+  job: BackgroundJobRecord
+  logs: HarnessEvent[]
+  attached: boolean
+}
+
+export interface GoalSnapshot {
+  goal: GoalRecord
+  job: BackgroundJobRecord | null
+  events: HarnessEvent[]
+}
+
+export interface WorkflowSnapshot {
+  definition: WorkflowDefinitionRecord
+  runs: WorkflowRunRecord[]
 }
 
 export interface CapabilityView {

@@ -80,6 +80,7 @@ services:
         bun test --timeout 240000 tests/integration/phase-4-stack.test.ts
         bun test --timeout 240000 tests/integration/phase-5-stack.test.ts
         bun test --timeout 300000 tests/integration/phase-6-stack.test.ts
+        bun test --timeout 180000 tests/integration/phase-7-stack.test.ts
         node node_modules/@playwright/test/cli.js test --config playwright.config.ts
     networks: [control]
     volumes:

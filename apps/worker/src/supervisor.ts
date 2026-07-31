@@ -39,6 +39,7 @@ import {
   setExtensionEnabled,
   type DiscoveredExtensions,
 } from './extensions.ts'
+import { discoverWorkflows, workflowDefinitionId } from './workflows.ts'
 
 type SendMessage = (message: WorkerToGatewayMessage) => void
 type PromptCommand = Extract<WorkerCommand, { type: 'prompt' }>
@@ -167,6 +168,8 @@ class AgentSessionRuntime {
       } else if (command.type === 'refresh_extensions'
         || command.type === 'set_extension_enabled') {
         await this.handleExtensionControl(command)
+      } else if (command.type === 'stop_background_job') {
+        this.stopBackgroundJob(command)
       } else await this.close(command)
       this.commandResult(command, true)
     } catch (error) {
@@ -246,6 +249,7 @@ class AgentSessionRuntime {
     })
     this.event('session.status_changed', { status: 'starting' }, null)
     await this.refreshExtensionState()
+    await this.refreshWorkflows()
     const runtime = process.env.AGENT_RUNTIME ?? 'bun'
     const entrypoint = process.env.AGENT_ENTRYPOINT ?? '/opt/claude-code/dist/cli-bun.js'
     const client = new AcpClient({
@@ -595,6 +599,20 @@ class AgentSessionRuntime {
     }, null)
   }
 
+  private async refreshWorkflows(): Promise<void> {
+    const workflows = await discoverWorkflows(this.prepared.cwd)
+    for (const workflow of workflows) {
+      this.event('workflow.created', {
+        definitionId: workflowDefinitionId(workflow.id, this.harnessSessionId ?? 'session'),
+        name: workflow.name,
+        description: workflow.description,
+        sourcePath: workflow.sourcePath,
+        sourceHash: workflow.sourceHash,
+        steps: jsonValue(workflow.steps),
+      }, null)
+    }
+  }
+
   private emitAvailableCommands(): void {
     this.event('commands.updated', {
       commands: jsonValue(this.availableCommands),
@@ -685,6 +703,17 @@ class AgentSessionRuntime {
       throw new Error('Agent session is not running')
     }
     this.client?.cancel()
+  }
+
+  private stopBackgroundJob(command: Extract<WorkerCommand, { type: 'stop_background_job' }>): void {
+    if (this.harnessSessionId !== command.sessionId) throw new Error('Agent session is not active')
+    if (command.payload.turnId && this.activeTurnId === command.payload.turnId) this.client?.cancel()
+    this.event('background.stopped', {
+      jobId: command.payload.jobId,
+      status: 'cancelled',
+      reason: command.payload.reason,
+      turnId: command.payload.turnId,
+    }, command.payload.turnId)
   }
 
   private async setMode(command: Extract<WorkerCommand, { type: 'set_mode' }>): Promise<void> {
